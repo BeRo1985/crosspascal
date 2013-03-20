@@ -27,7 +27,7 @@ type TParser=class
        procedure FinishCheckSymbols(ParentSymbol:PSymbol;List:TSymbolList);
        procedure AddDefaultSymbols;
        procedure GetDefaultTypes;
-       procedure ParseRecordField(var RecordType:PType;var RecordOffset:longint;IsObject,IsClass:boolean;SymbolAttributes:TSymbolAttributes;UntilDirectives:TScannerTokens;CaseOfLevel,CaseOfVariant:longint;VariantPrefix:ansistring);
+       procedure ParseRecordField(var RecordType:PType;IsRecord:boolean=true;SymbolAttributes:TSymbolAttributes=[];UntilDirectives:TScannerTokens=[];CaseOfLevel:longint=0;CaseOfVariant:longint=0;VariantPrefix:ansistring='');
        procedure ParsePropertyField(var RecordType:PType);
        function ParseParameterList(var Symbol:PSymbol;var SymbolParameter:TSymbolList;ParameterOffset:longint;Bracket,AllowParameterConstant:boolean;var ParameterSuffix:ansistring):longint;
        function ParseObjectDeclaration(ObjectName:ansistring;IsPacked:boolean):PType;
@@ -3274,9 +3274,8 @@ begin
  result:=nil;
 end;
 
-procedure TParser.ParseRecordField(var RecordType:PType;var RecordOffset:longint;IsObject,IsClass:boolean;SymbolAttributes:TSymbolAttributes;UntilDirectives:TScannerTokens;CaseOfLevel,CaseOfVariant:longint;VariantPrefix:ansistring);
-var ARecordOffset,VariantStart,VariantSize,TypeSize,Alignment:longint;
-    AType:PType;
+procedure TParser.ParseRecordField(var RecordType:PType;IsRecord:boolean=true;SymbolAttributes:TSymbolAttributes=[];UntilDirectives:TScannerTokens=[];CaseOfLevel:longint=0;CaseOfVariant:longint=0;VariantPrefix:ansistring='');
+var AType:PType;
     StartSymbol,Symbol,LastSymbol,NextSymbol:PSymbol;
     TypeName,VariantStr:ansistring;
     NewTreeNode:TTreeNode;
@@ -3305,27 +3304,14 @@ begin
   until (Scanner.CurrentToken<>tstIdentifier) or Scanner.IsEOFOrAbortError;
   Scanner.Match(tstCOLON);
   AType:=ParseTypeDefinition('');
-  TypeSize:=SymbolManager.GetSize(AType);
-  Alignment:=SymbolManager.GetAlignment(AType);
-  if (LocalSwitches^.Alignment>=2) and (Alignment<LocalSwitches^.Alignment) then begin
-   Alignment:=LocalSwitches^.Alignment;
-  end else if (LocalSwitches^.Alignment=1) or RecordType^.RecordPacked then begin
-   Alignment:=1;
-  end;
-  if RecordType^.RecordAlignment<Alignment then begin
-   RecordType^.RecordAlignment:=Alignment;
-  end;
   PortabilityDirectives:=ParsePortabilityDirectives;
   Symbol:=StartSymbol;
   while assigned(Symbol) do begin
-   if Alignment>=2 then begin
-    inc(RecordOffset,(RecordOffset+(Alignment-1)) and not (Alignment-1));
-   end;
    NextSymbol:=Symbol^.Next;
    Symbol^.Next:=nil;
    Symbol^.SymbolType:=Symbols.tstVARIABLE;
    Symbol^.TypeDefinition:=AType;
-   Symbol^.Offset:=RecordOffset;
+   Symbol^.Offset:=0;
    Symbol^.VariantPrefix:=VariantPrefix;
    Symbol^.VariableType:=SymbolManager.VariableType;
    Symbol^.TypedConstant:=false;
@@ -3339,7 +3325,6 @@ begin
    end;
    Symbol^.PortabilityDirectives:=PortabilityDirectives;
    RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
-   inc(RecordOffset,TypeSize);
    Symbol:=NextSymbol;
   end;
   if Scanner.CurrentToken=tstSEPARATOR then begin
@@ -3349,14 +3334,8 @@ begin
   end;
   Scanner.CheckForDirectives(UntilDirectives);
  until (Scanner.CurrentToken<>tstIdentifier) or Scanner.IsEOFOrAbortError;
- if RecordType^.RecordPacked then begin
-  RecordType^.RecordSize:=RecordOffset;
- end else begin
-  RecordType^.RecordSize:=(RecordOffset+(RecordType^.RecordAlignment-1)) and not (RecordType^.RecordAlignment-1);
- end;
- if (Scanner.CurrentToken=tstCASE) and not IsObject then begin
+ if (Scanner.CurrentToken=tstCASE) and IsRecord then begin
   Scanner.Match(tstCASE);
-  VariantSize:=0;
   TypeName:=tpsIdentifier+Scanner.CurrentIdentifier;
   Symbol:=SymbolManager.GetSymbol(TypeName,ModuleSymbol,CurrentObjectClass);
   if assigned(Symbol) then begin
@@ -3372,23 +3351,10 @@ begin
    Symbol^.Name:=Scanner.ReadIdentifier;
    Scanner.Match(tstCOLON);
    AType:=ParseTypeDefinition(TypeName);
-   TypeSize:=SymbolManager.GetSize(AType);
-   Alignment:=SymbolManager.GetAlignment(AType);
-   if (LocalSwitches^.Alignment>=2) and (Alignment<LocalSwitches^.Alignment) then begin
-    Alignment:=LocalSwitches^.Alignment;
-   end else if (LocalSwitches^.Alignment=1) or RecordType^.RecordPacked then begin
-    Alignment:=1;
-   end;
-   if RecordType^.RecordAlignment<Alignment then begin
-    RecordType^.RecordAlignment:=Alignment;
-   end;
-   if Alignment>=2 then begin
-    inc(RecordOffset,(RecordOffset+(Alignment-1)) and not (Alignment-1));
-   end;
    Symbol^.SymbolType:=Symbols.tstVariable;
    Symbol^.TypeDefinition:=AType;
    Symbol^.VariantPrefix:=VariantPrefix;
-   Symbol^.Offset:=RecordOffset;
+   Symbol^.Offset:=0;
    Symbol^.VariableType:=SymbolManager.VariableType;
    Symbol^.TypedConstant:=false;
    Symbol^.TypedTrueConstant:=false;
@@ -3400,20 +3366,13 @@ begin
     Symbol^.Attributes:=Symbol^.Attributes+[tsaPublic,tsaPublicUnitSymbol];
    end;
    RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
-   inc(RecordOffset,TypeSize);
   end;
   Scanner.Match(tstOF);
-  if RecordType^.RecordPacked then begin
-   RecordType^.RecordSize:=RecordOffset;
-  end else begin
-   RecordType^.RecordSize:=(RecordOffset+(RecordType^.RecordAlignment-1)) and not (RecordType^.RecordAlignment-1);
-  end;
   Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
   Symbol^.Name:='';
   Symbol^.SymbolType:=Symbols.tstCaseVariantLevelPush;
   RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
   inc(CaseOfLevel);
-  VariantStart:=RecordType^.RecordSize;
   while not Scanner.IsEOFOrAbortError do begin
    while not Scanner.IsEOFOrAbortError do begin
     NewTreeNode:=ParseExpression(false);
@@ -3433,23 +3392,18 @@ begin
    Scanner.Match(tstCOLON);
    Scanner.Match(tstLeftParen);
    inc(CaseOfVariant);
-   ARecordOffset:=VariantStart;
    if Scanner.CurrentToken<>tstRightParen then begin
     VariantStr:='L'+InttoStr(CaseOfLevel)+'V'+InttoStr(CaseOfVariant);
     Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
     Symbol^.Name:='';
     Symbol^.SymbolType:=Symbols.tstCaseVariantPush;
     RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
-    ParseRecordField(RecordType,ARecordOffset,IsObject,IsClass,SymbolAttributes,[],CaseOfLevel,CaseOfVariant,VariantPrefix+VariantStr+'.');
+    ParseRecordField(RecordType,IsRecord,SymbolAttributes,[],CaseOfLevel,CaseOfVariant,VariantPrefix+VariantStr+'.');
     Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
     Symbol^.Name:='';
     Symbol^.SymbolType:=Symbols.tstCaseVariantPop;
     RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
    end;
-   if VariantSize<RecordType^.RecordSize then begin
-    VariantSize:=RecordType^.RecordSize;
-   end;
-   RecordType^.RecordSize:=VariantStart;
    Scanner.Match(tstRightParen);
    if Scanner.CurrentToken=tstSEPARATOR then begin
     Scanner.Match(tstSEPARATOR);
@@ -3464,11 +3418,6 @@ begin
   Symbol^.Name:='';
   Symbol^.SymbolType:=Symbols.tstCaseVariantLevelPop;
   RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
-  if RecordType^.RecordPacked then begin
-   RecordType^.RecordSize:=VariantSize;
-  end else begin
-   RecordType^.RecordSize:=(VariantSize+(RecordType^.RecordAlignment-1)) and not (RecordType^.RecordAlignment-1);
-  end;
  end;
 end;
 
@@ -3886,10 +3835,9 @@ function TParser.ParseObjectDeclaration(ObjectName:ansistring;IsPacked:boolean):
 var Symbol,NewSymbol,Parent:PSymbol;
     OldList:TSymbolList;
     OldVariableType:TVariableType;
-    Dummy,TypeSize,Alignment,RecordOffset:longint;
     ParentName:ansistring;
     SymbolAttributes:TSymbolAttributes;
-    OldCurrentObjectClass,CurrentObject,AType:PType;
+    OldCurrentObjectClass,CurrentObject:PType;
     NewTreeNode:TTreeNode;
 begin
  if assigned(CurrentProcedureFunction) then begin
@@ -3927,7 +3875,6 @@ begin
  SymbolManager.CurrentList:=result^.RecordTable;
  OldVariableType:=SymbolManager.VariableType;
  SymbolManager.VariableType:=tvtObjectField;
- Dummy:=0;
  SymbolAttributes:=[tsaOOPPublic];
  result^.VirtualIndexCount:=0;
  if assigned(result^.ChildOf) then begin
@@ -3983,7 +3930,7 @@ begin
     SymbolAttributes:=(SymbolAttributes-OOPSymbolAttribute)+[tsaOOPPublished];
    end;
    tstIdentifier:begin
-    ParseRecordField(result,Dummy,true,false,SymbolAttributes,[tstSTRICT,tstPRIVATE,tstPUBLIC,tstPROTECTED,tstPUBLISHED],0,0,'');
+    ParseRecordField(result,false,SymbolAttributes,[tstSTRICT,tstPRIVATE,tstPUBLIC,tstPROTECTED,tstPUBLISHED],0,0,'');
    end;
    tstPROPERTY:begin
     ParsePropertyField(result);
@@ -4231,11 +4178,6 @@ begin
  SymbolManager.CurrentList:=result^.RecordTable;
  OldVariableType:=SymbolManager.VariableType;
  SymbolManager.VariableType:=tvtClassField;
- if Parent=nil then begin
-  I:=4;
- end else begin
-  I:=SymbolManager.GetSize(Parent^.TypeDefinition);
- end;
  SymbolAttributes:=[tsaOOPPublic];
  if not IsClassOf then begin
   while not Scanner.IsEOFOrAbortError do begin
@@ -4264,7 +4206,7 @@ begin
      SymbolAttributes:=(SymbolAttributes-OOPSymbolAttribute)+[tsaOOPPublished];
     end;
     tstIdentifier:begin
-     ParseRecordField(result,I,false,true,SymbolAttributes,[tstSTRICT,tstPRIVATE,tstPUBLIC,tstPROTECTED,tstPUBLISHED],0,0,'');
+     ParseRecordField(result,false,SymbolAttributes,[tstSTRICT,tstPRIVATE,tstPUBLIC,tstPROTECTED,tstPUBLISHED],0,0,'');
     end;
     tstPROPERTY:begin
      ParsePropertyField(result);
@@ -5614,8 +5556,7 @@ begin
    CurrentType^.RecordAlignment:=0;
    CurrentType^.RecordPacked:=IsPacked or (LocalSwitches^.Alignment=1);
    CurrentType^.RecordTable:=TSymbolList.Create(SymbolManager);
-   RecordSize:=0;
-   ParseRecordField(CurrentType,RecordSize,false,false,[],[],0,0,'');
+   ParseRecordField(CurrentType,true,[],[],0,0,'');
    SymbolManager.AlignRecord(CurrentType,LocalSwitches^.Alignment);
    if SymbolManager.GetSize(CurrentType)=0 then begin
     Error.AbortCode(516);
