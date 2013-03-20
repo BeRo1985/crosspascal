@@ -1829,7 +1829,6 @@ begin
    while assigned(Symbol) do begin
     case Symbol^.SymbolType of
      Symbols.tstVariable:begin
-      Symbol^.Offset:=SizeStack[StackPointer];
       AType:=Symbol^.TypeDefinition;
       TypeSize:=GetSize(AType);
       Alignment:=GetAlignment(AType);
@@ -1844,10 +1843,11 @@ begin
       if RecordType^.RecordAlignment<Alignment then begin
        RecordType^.RecordAlignment:=Alignment;
       end;
-      inc(SizeStack[StackPointer],TypeSize);
       if (Alignment>1) and ((SizeStack[StackPointer] and (Alignment-1))<>0) then begin
        SizeStack[StackPointer]:=(SizeStack[StackPointer]+(Alignment-1)) and not (Alignment-1);
       end;
+      Symbol^.Offset:=SizeStack[StackPointer];
+      inc(SizeStack[StackPointer],TypeSize);
       if RecordType^.RecordSize<SizeStack[StackPointer] then begin
        RecordType^.RecordSize:=SizeStack[StackPointer];
       end;
