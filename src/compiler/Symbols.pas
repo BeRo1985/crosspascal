@@ -12,7 +12,8 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
                        tsaMethod,tsaFORControlVariable,tsaParameterWithDefault,
                        tsaHiddenParameter,tsaParameterSelf,tsaParameterResult,
                        tsaTemporaryExceptionVariable,tsaField,tsaInternalField,
-                       tsaInherited,tsaInheritedInClass,tsaObjectVMT);
+                       tsaInherited,tsaInheritedInClass,tsaObjectVMT,
+                       tsaHidden);
      TSymbolAttributes=set of TSymbolAttribute;
 
      TPortabilityDirective=(tpdPLATFORM,tpdDEPRECATED,tpdLIBRARY);
@@ -715,7 +716,7 @@ var TestSymbol,OurNewSymbol:PSymbol;
     StringHashMapEntity:PBeRoStringHashMapEntity;
 begin
  HashSymbol(Symbol);
- if tsaInternalField in Symbol^.Attributes then begin
+ if ([tsaInternalField,tsaHidden]*Symbol^.Attributes)<>[] then begin
   TestSymbol:=nil;
  end else begin
   TestSymbol:=GetSymbol(Symbol^.Name,ModuleSymbol,ObjectClassType);
@@ -741,7 +742,7 @@ begin
    OurNewSymbol^.Next:=nil;
    OurNewSymbol^.Previous:=Last;
   end;
-  if not (tsaInternalField in Symbol^.Attributes) then begin
+  if ([tsaInternalField,tsaHidden]*Symbol^.Attributes)=[] then begin
    StringHashMapEntity:=StringHashMap.Get(Symbol^.Name);
    if assigned(StringHashMapEntity) then begin
     TestSymbol:=PSymbol(pointer(StringHashMapEntity^.Value));
