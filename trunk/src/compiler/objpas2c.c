@@ -13,8 +13,16 @@ typedef struct {
 
 typedef void* pasLongstring;
 
-inline void pasWriteInt(uint32_t Value) {
+inline void pasWriteInt(int64_t Value) {
   printf("%i", Value);
+}
+
+inline void pasWriteUInt(uint64_t Value) {
+  printf("%u", Value);
+}
+
+inline void pasWriteChar(uint32_t Value) {
+ printf("%c", Value);
 }
 
 inline void pasWriteFloat(double Value) {
@@ -84,11 +92,13 @@ inline void FreeLongstring(pasLongstring *str) {
 	*str = NULL;
 }
 
-inline uint32_t LengthLongstring(pasLongstring *str) {
-	if(*str == NULL)
+inline uint32_t LengthLongstring(pasLongstring str) {
+	if(str == NULL)
 		return 0;
-	LongstringRefHeader* header = (*str) - LongstringRefHeaderSize;
-	return header->length;
+	LongstringRefHeader* header = (str) - LongstringRefHeaderSize;
+	uint32_t len = header->length;
+	CheckRefLongstring(&str);
+	return len;
 }
 
 inline void AssignLongstring(pasLongstring *target, pasLongstring newStr) {
@@ -112,8 +122,8 @@ inline void UniqueLongstring(pasLongstring *target) {
 inline pasLongstring AddLongstring(pasLongstring *left, pasLongstring *right) {
 	uint32_t a,b;
 
-	a = LengthLongstring(left);
-	b = LengthLongstring(right);
+	a = LengthLongstring(*left);
+	b = LengthLongstring(*right);
 	if(a + b == 0)
 		return NULL;
 	if(b == 0)
