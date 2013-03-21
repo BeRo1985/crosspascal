@@ -21,6 +21,7 @@ type TCodeWriter = class
        FFooter: ansistring;
        FIncludes: array of ansistring;
        FRootNestedStartPosition: longint;
+       FMarker: longint;
       public
        constructor Create;
        destructor Destroy; override;
@@ -34,6 +35,9 @@ type TCodeWriter = class
 
        procedure Clear;
        procedure ExportStream(TargetStream: TBeRoStream);
+
+       procedure SetMarker;
+       procedure InsertAtMark(s: ansistring);
 
        // indenting, does not work with header & footer
        procedure IncTab;
@@ -52,6 +56,7 @@ type TCodeWriter = class
        FInProc, FNeedNestedStack: boolean;
        FProcSymbol: PSymbol;
        FProcStructCount: longint;
+       FStringConstCount: longint;
       protected
        function GetModuleName(Sym: PSymbol): ansistring;
        function GetSymbolName(Sym: PSymbol): ansistring;
@@ -68,6 +73,8 @@ type TCodeWriter = class
        procedure ProcessTypeOrName(AType: PType; Target: TCodeWriter; OwnType: PType = nil);
        procedure ProcessTypedConstant(var Constant: PConstant; AType: PType; Target: TCodeWriter);
        procedure ProcessFunctionType(ReturnType: PType; Parameter: TSymbolList; const funcName: ansistring; Target: TCodeWriter);
+
+       function TranslateStringConstant(ConstantStr: THugeString): ansistring;
 
        procedure TranslateCode(TreeNode:TTreeNode);
 
@@ -487,6 +494,7 @@ begin
  ConvertFuncSymbol(ProcSymbol, FProcCode);
  FProcCode.AddLn('{');
  FProcCode.IncTab;
+ FProcCode.SetMarker;
  if FNeedNestedStack then begin
   if SymbolManager.LexicalScopeLevel<=1 then begin
    FProcCode.AddLn('void* nestedLevelStack['+IntToStr(SymbolManager.LexicalScopeLevelCount)+'];');
@@ -575,6 +583,7 @@ begin
  FHeader.AddLn('extern int main(int argc, char **argv);');
 
  FProcCode.AddLn('void _start(){');
+ FProcCode.SetMarker;
  InitializeSymbolList(FSelf.SymbolList, FProcCode);
  FProcCode.IncTab;
  TranslateCode(ProgramCodeTree);
@@ -583,6 +592,7 @@ begin
  FProcCode.AddLn('}');
  FProcCode.AddLn('');
  FProcCode.AddLn('int main(int argc, char **argv){');
+ FProcCode.SetMarker;
  FProcCode.IncTab;
 
  for i:=0 to SymbolManager.UnitList.Count-1 do
@@ -1239,6 +1249,7 @@ begin
       tipWRITE, tipWRITELN:begin
        SubTreeNode := TreeNode.Left;
        // todo: check if first element is Text-type
+
        while assigned(SubTreeNode) and (SubTreeNode.TreeNodeType=ttntParameter) do begin
         if SubTreeNode.Colon then begin
          Error.InternalError(201303210010000);
@@ -1590,9 +1601,7 @@ begin
     FProcCode.Add(IntToStr(TreeNode.CharValue),spacesBOTH);
    end;
    ttntSTRINGConst:begin
-   if length(TreeNode.StringData)>0 then begin
-     FProcCode.Add(AnsiStringEscape(HugeStringToAnsiString(TreeNode.StringData)),spacesBOTH);
-    end;
+    FProcCode.Add(TranslateStringConstant(TreeNode.StringData),spacesBOTH);
    end;
    ttntFloatConst:begin
     Str(TreeNode.FloatValue,s);
@@ -1719,6 +1728,31 @@ end;
 procedure TCodegenCPP.TranslateTemp(Symbol: PSymbol; Target: TCodeWriter);
 begin
  Target.AddLn('//Reg ' + Symbol.Name);
+end;
+
+function TCodegenCPP.TranslateStringConstant(
+  ConstantStr: THugeString): ansistring;
+
+var AStr: ansistring;
+
+  function UIntToCString(const Value: Cardinal): ansistring;
+  begin
+    result := '\x'+IntToHex(Byte(Value div $1000000), 2) +
+              '\x'+IntToHex(Byte(Value div $10000), 2) +
+              '\x'+IntToHex(Byte(Value div $100), 2) +
+              '\x'+IntToHex(Byte(Value), 2);
+  end;
+
+begin
+  result := Uppercase(UnitName)+'_STRING_CONST_'+INTTOSTR(FStringConstCount);
+  Inc(FStringConstCount);
+
+  AStr := HugeStringToAnsiString(ConstantStr);
+
+  FProcCode.InsertAtMark('static const char '+result+'_DATA['+IntToStr(Length(AStr)+17)+'] = "' + UIntToCString(65535)+UIntToCSTring(1)
+                         +UIntToCString($FFFFFFFF)+UIntToCString(Length(AStr))+
+                         AStr+'\x00";');
+  FProcCode.InsertAtMark('void* '+result+' = (void*)(&'+result+'_DATA[16]);');
 end;
 
 procedure TCodegenCPP.TranslateSymbolList(List: TSymbolList; IgnoreTypes: boolean; ATarget: TCodeWriter = nil);
@@ -2601,9 +2635,24 @@ begin
  Inc(FTabs);
 end;
 
+procedure TCodeWriter.InsertAtMark(s: ansistring);
+var temp: string;
+begin
+  // this is rather ugly
+  temp := FData.Text;
+  Insert(s+#13#10, temp, FMarker);
+  FData.Text := temp;
+  inc(FMarker, Length(s) + 2);
+end;
+
 procedure TCodeWriter.MarkRootNested;
 begin
  FRootNestedStartPosition := FData.Position;
+end;
+
+procedure TCodeWriter.SetMarker;
+begin
+  FMarker := FData.Position;
 end;
 
 procedure TCodeWriter.UnmarkRootNested(Source:TCodeWriter);

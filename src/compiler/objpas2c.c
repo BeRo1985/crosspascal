@@ -28,8 +28,19 @@ inline void pasWriteBool(uint32_t Value) {
   printf("FALSE");
 }
 
+inline pasLongstring CheckRefLongstring(pasLongstring *str) {
+	if(*str == NULL)
+		return;
+	LongstringRefHeader* header = (*str) - LongstringRefHeaderSize;
+	if(0xffffffff == header->refCount) 
+		return;
+   	if((header->refCount) == 0)
+	 	free(&header);
+}
+
 inline void pasWriteLongString(void* Value) {
  printf(Value);
+ CheckRefLongstring(&Value);
 }
 
 inline pasLongstring CreateLongstring(uint32_t codePage, uint32_t elementSize, uint32_t length, void* data) {
@@ -53,7 +64,9 @@ inline pasLongstring DecRefLongstring(pasLongstring *str) {
 	if(*str == NULL)
 		return;
 	LongstringRefHeader* header = (*str) - LongstringRefHeaderSize;
-   	if(--(header->refCount) <= 0)
+	if(0xffffffff == header->refCount) 
+		return;
+   	if(--(header->refCount) == 0)
 	 	free(&header);
 }
 
@@ -61,6 +74,8 @@ inline pasLongstring IncRefLongstring(pasLongstring *str) {
 	if(*str == NULL)
 		return;
     LongstringRefHeader* header = (*str) - LongstringRefHeaderSize;
+	if(0xffffffff == header->refCount) 
+		return;
 	header->refCount++;
 }
 
