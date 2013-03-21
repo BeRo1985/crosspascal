@@ -1590,9 +1590,9 @@ begin
     FProcCode.Add(IntToStr(TreeNode.CharValue),spacesBOTH);
    end;
    ttntSTRINGConst:begin
-{   if length(TreeNode.StringData)>0 then begin
-     FProcCode.Add(IntToStr(TreeNode.StringData[0]),spacesBOTH);
-    end;}
+   if length(TreeNode.StringData)>0 then begin
+     FProcCode.Add(AnsiStringEscape(HugeStringToAnsiString(TreeNode.StringData)),spacesBOTH);
+    end;
    end;
    ttntFloatConst:begin
     Str(TreeNode.FloatValue,s);
