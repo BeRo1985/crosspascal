@@ -5042,6 +5042,9 @@ begin
     if assigned(Symbol^.ReturnType) then begin
      ResultSymbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
      ResultSymbol^.Name:='RESULT';
+     if not GlobalSwitches^.ExtendedSyntax then begin
+      ResultSymbol^.Attributes:=ResultSymbol^.Attributes+[tsaHidden];
+     end;
      ResultSymbol^.OverloadedName:=ResultSymbol^.Name;
      HashSymbol(ResultSymbol);
      ResultSymbol^.SymbolType:=Symbols.tstVariable;

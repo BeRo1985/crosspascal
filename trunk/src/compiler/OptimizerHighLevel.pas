@@ -1896,8 +1896,9 @@ begin
   OptimizeTree(TreeNode.Right);
   TreeNode.Right.Return:=TreeNode.Left.Return;
  end else if TreeNode.Left.TreeNodeType in [ttntCALL,ttntRESULT] then begin
-  TreeNode.Left.TreeNodeType:=ttntRESULT;
+  TreeNode.Left.TreeNodeType:=ttntVAR;
   TreeNode.Left.Return:=TreeNode.Left.Symbol^.ReturnType;
+  TreeNode.Left.Symbol:=TreeNode.Left.Symbol^.ResultSymbol;
   TreeNode.Left.ItemType:=ttnitMemoryReference;
  end;
  if (TreeNode.Right.TreeNodeType in [ttntSTRINGConst,ttntCHARConst]) and
