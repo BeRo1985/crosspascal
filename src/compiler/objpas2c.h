@@ -54,12 +54,19 @@ inline uint32_t CompareLongstring(pasLongstring left, pasLongstring right);
 // turns *target into an unique string
 inline void UniqueLongstring(pasLongstring *target);
 // returns length of string
-inline uint32_t LengthLongstring(pasLongstring *str);
+inline uint32_t LengthLongstring(pasLongstring str);
 // increase reference count
 inline void IncRefLongstring(pasLongstring *str);
 // decrease reference count, free if <=zero
 inline void DecRefLongstring(pasLongstring *str);
 // check reference of string and free if <=0
 inline void checkRefLongstring(pasLongstring str);
+
+inline void pasWriteInt(int64_t Value);
+inline void pasWriteUInt(uint64_t Value);
+inline void pasWriteChar(uint32_t Value);
+inline void pasWriteFloat(double Value);
+inline void pasWriteBool(uint32_t Value);
+inline void pasWriteLongString(void* Value);
 
 #endif // __OBJPAS2CH_H_INCLUDED__

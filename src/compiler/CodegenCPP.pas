@@ -1272,7 +1272,25 @@ begin
            //ttdInterface: FProcCode.AddLn('// Interface');
            //ttdSet: FProcCode.AddLn('// Set');
            //ttdCExpression: FProcCode.AddLn('// C-expression');
-           ttdSubRange: FProcCode.Add('pasWriteInt(');
+           ttdSubRange:
+           begin
+            case SubTreeNode.Left.Return.SubRangeType of
+             tstSigned8Bit,
+             tstSigned16Bit,
+             tstSigned32Bit,
+             tstSigned64Bit: FProcCode.Add('pasWriteInt(');
+             tstUnsigned8Bit,
+             tstUnsigned16Bit,
+             tstUnsigned32Bit,
+             tstUnsigned64Bit: FProcCode.Add('pasWriteUInt('); // WRONG! Should call an unsigned write-function
+             tstUnsignedChar,
+             tstUnsignedWideChar,
+             tstUnsignedHugeChar: FProcCode.Add('pasWriteChar(');
+             tstFloat32Bit,
+             tstFloat64Bit,
+             tstFloat80Bit: FProcCode.Add('pasWriteFloat(');
+            end;
+           end;
            ttdBoolean: FProcCode.Add('pasWriteBool(');
            ttdShortString: FProcCode.Add('pasWriteShortString(');
            ttdLongString: FProcCode.Add('pasWriteLongString(');
@@ -1404,6 +1422,22 @@ begin
       end;
       tipLENGTH:begin
        // TODO: Implement it!
+       if assigned(TreeNode.Left) and Assigned(TreeNode.Left.Left) then
+       begin
+        if Assigned(TreeNode.Left.Left.Return) then
+         case TreeNode.Left.Left.Return.TypeDefinition of
+          ttdLongString: begin
+           FProcCode.Add('LengthLongstring(');
+           TranslateCode(TreeNode.Left.Left);
+           FProcCode.Add(')');
+          end;
+          else
+           Error.InternalError(20130321033001);
+         end
+        else
+         Error.InternalError(201303210323837);
+
+       end;
       end;
       tipASSIGNED:begin
        // TODO: Check it, if it is right!
@@ -1793,6 +1827,7 @@ begin
    tstUnit: TranslateUnit(Sym, Target);
    tstTemp: TranslateTemp(Sym, Target);
   end;
+
   if Sym.SymbolType<>tstUnit then
     if LastProcStruct then
       FProcStruct.AddLn(';')
