@@ -119,20 +119,20 @@ inline void UniqueLongstring(pasLongstring *target) {
 	*target = newtarget;
 }
 
-inline pasLongstring AddLongstring(pasLongstring *left, pasLongstring *right) {
+inline pasLongstring AddLongstring(pasLongstring left, pasLongstring right) {
 	uint32_t a,b;
 
-	a = LengthLongstring(*left);
-	b = LengthLongstring(*right);
+	a = LengthLongstring(left);
+	b = LengthLongstring(right);
 	if(a + b == 0)
 		return NULL;
 	if(b == 0)
-		return *left;
+		return left;
 	if(a == 0)
-		return *right;
+		return right;
 
-	LongstringRefHeader* headerA = (*left) - LongstringRefHeaderSize;
-	LongstringRefHeader* headerB = (*right) - LongstringRefHeaderSize;
+	LongstringRefHeader* headerA = (left) - LongstringRefHeaderSize;
+	LongstringRefHeader* headerB = (right) - LongstringRefHeaderSize;
 
     pasLongstring result;
 
@@ -142,11 +142,11 @@ inline pasLongstring AddLongstring(pasLongstring *left, pasLongstring *right) {
         result = CreateLongstring(headerA->codePage, headerA->elementSize, a + b, NULL);
         void* temp = result;
         if(a!=0){
-            memcpy(temp, *left, a * headerA->elementSize);
+            memcpy(temp, left, a * headerA->elementSize);
             temp += a * headerA->elementSize;
         }
         if(b!=0)
-            memcpy(temp, *right, b * headerB->elementSize);
+            memcpy(temp, right, b * headerB->elementSize);
     }else{
         // TODO: Variable-length UTF8 and UTF16 handling
 
@@ -161,15 +161,15 @@ inline pasLongstring AddLongstring(pasLongstring *left, pasLongstring *right) {
           uint32_t v;
           switch(headerA->elementSize){
             case 1:{
-              v = ((uint8_t*)(*left))[i];
+              v = ((uint8_t*)(left))[i];
               break;
             }
             case 2:{
-              v = ((uint16_t*)(*left))[i];
+              v = ((uint16_t*)(left))[i];
               break;
             }
             case 4:{
-              v = ((uint32_t*)(*left))[i];
+              v = ((uint32_t*)(left))[i];
               break;
             }
           }
@@ -194,15 +194,15 @@ inline pasLongstring AddLongstring(pasLongstring *left, pasLongstring *right) {
           uint32_t v;
           switch(headerB->elementSize){
             case 1:{
-              v = ((uint8_t*)(*right))[i];
+              v = ((uint8_t*)(right))[i];
               break;
             }
             case 2:{
-              v = ((uint16_t*)(*right))[i];
+              v = ((uint16_t*)(right))[i];
               break;
             }
             case 4:{
-              v = ((uint32_t*)(*right))[i];
+              v = ((uint32_t*)(right))[i];
               break;
             }
           }
