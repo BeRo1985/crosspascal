@@ -29,7 +29,7 @@ type TParser=class
        procedure GetDefaultTypes;
        procedure ParseRecordField(var RecordType:PType;IsRecord:boolean=true;SymbolAttributes:TSymbolAttributes=[];UntilDirectives:TScannerTokens=[];CaseOfLevel:longint=0;CaseOfVariant:longint=0;VariantPrefix:ansistring='');
        procedure ParsePropertyField(var RecordType:PType);
-       function ParseParameterList(var Symbol:PSymbol;var SymbolParameter:TSymbolList;ParameterOffset:longint;Bracket,AllowParameterConstant:boolean;var ParameterSuffix:ansistring):longint;
+       procedure ParseParameterList(var Symbol:PSymbol;var SymbolParameter:TSymbolList;Bracket,AllowParameterConstant:boolean;var ParameterSuffix:ansistring);
        function ParseObjectDeclaration(ObjectName:ansistring;IsPacked:boolean):PType;
        function ParseClassDeclaration(ObjectName:ansistring;IsPacked:boolean):PType;
        function ParseInterfaceDeclaration(ObjectName:ansistring;IsPacked:boolean):PType;
@@ -3470,7 +3470,7 @@ begin
   HasParameter:=true;
   Symbol^.PropertyType:=nil;
   ParameterSuffix:='';
-  ParseParameterList(Symbol,Symbol^.PropertyParameter,0,true,false,ParameterSuffix);
+  ParseParameterList(Symbol,Symbol^.PropertyParameter,true,false,ParameterSuffix);
   SymbolManager.PopSymbolList(Symbol^.PropertyParameter);
   Symbol^.PropertyRead:=nil;
   Symbol^.PropertyWrite:=nil;
@@ -3825,7 +3825,7 @@ begin
  result^.TypeDefinition:=ttdProcedure;
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.ParameterSuffix:='';
- ParseParameterList(Symbol,Symbol^.Parameter,8,false,true,Symbol^.ParameterSuffix);
+ ParseParameterList(Symbol,Symbol^.Parameter,false,true,Symbol^.ParameterSuffix);
  SymbolManager.PopSymbolList(Symbol^.Parameter);
  result^.Parameter:=Symbol^.Parameter;
  SymbolManager.CurrentList:=OldList;
@@ -4413,13 +4413,12 @@ begin
  SymbolManager.CurrentList:=OldList;
 end;
 
-function TParser.ParseParameterList(var Symbol:PSymbol;var SymbolParameter:TSymbolList;ParameterOffset:longint;Bracket,AllowParameterConstant:boolean;var ParameterSuffix:ansistring):longint;
+procedure TParser.ParseParameterList(var Symbol:PSymbol;var SymbolParameter:TSymbolList;Bracket,AllowParameterConstant:boolean;var ParameterSuffix:ansistring);
 var ParameterSymbol,StartSymbol,LastSymbol,NextSymbol,CurrentSymbol:PSymbol;
     AType:PType;
     VariableType:TVariableType;    
     TypeName:ansistring;
 begin
- result:=0;
  SymbolParameter:=TSymbolList.Create(SymbolManager);
  if Bracket then begin
   Scanner.Match(tstLeftBracket);
@@ -4433,10 +4432,6 @@ begin
    Scanner.Match(tstRightParen);
    exit;
   end;
- end;
- inc(ParameterOffset,8);
- if SymbolManager.LexicalScopeLevel>=2 then begin
-  inc(ParameterOffset,4);
  end;
  repeat
   case Scanner.CurrentToken of
@@ -4526,7 +4521,7 @@ begin
    ParameterSymbol^.LocalProcSymbolAccessedFromHigherNestedProc:=false;
    ParameterSymbol^.AbsoluteReference:=false;
    ParameterSymbol^.Alias:=nil;
-   ParameterSymbol^.Offset:=ParameterOffset;
+   ParameterSymbol^.Offset:=0;
    ParameterSymbol^.TypeDefinition:=AType;
    ParameterSymbol^.TypedConstant:=false;
    ParameterSymbol^.TypedTrueConstant:=false;
@@ -4535,15 +4530,7 @@ begin
     ParameterSymbol^.Attributes:=ParameterSymbol^.Attributes+[tsaPublic,tsaPublicUnitSymbol];
    end;
    SymbolParameter.AddSymbol(ParameterSymbol,ModuleSymbol,CurrentObjectClass);
-   if VariableType in [tvtParameterVariable,tvtParameterConstant,tvtParameterResult] then begin
-    inc(ParameterOffset,4);
-   end else if assigned(ParameterSymbol^.TypeDefinition) then begin
-    if (ParameterSymbol^.TypeDefinition^.TypeDefinition in [ttdBoolean,ttdSubRange]) and (SymbolManager.GetSize(ParameterSymbol^.TypeDefinition)<4) then begin
-     inc(ParameterOffset,4);
-    end else begin
-     inc(ParameterOffset,SymbolManager.GetSize(ParameterSymbol^.TypeDefinition));
-    end;
-   end else begin
+   if not ((VariableType in [tvtParameterVariable,tvtParameterConstant,tvtParameterResult]) or assigned(ParameterSymbol^.TypeDefinition)) then begin
     if Error.Errors then begin
      Error.DoAbort:=true;
     end else begin
@@ -4566,7 +4553,6 @@ begin
  end else begin
   Scanner.Match(tstRightParen);
  end;
- result:=ParameterOffset-8;
  HashSymbol(Symbol);
 end;
 
@@ -4719,45 +4705,10 @@ end;
 function TParser.ParseProcedure(ParseHeader:boolean;ProcedureAttributes:TProcedureAttributes):PSymbol;
 var Parent:PSymbol;
     ObjectClassSymbolList:TSymbolList;
- function CheckForMethod(ObjectName:ansistring):PSymbol;
- var Symbol:PSymbol;
-     Method:ansistring;
- begin
-  result:=nil;
-  if (Scanner.CurrentToken=tstPeriod) and not ParseHeader then begin
-   Scanner.Match(tstPeriod);
-   Symbol:=SymbolManager.GetSymbol(ObjectName,ModuleSymbol,CurrentObjectClass);
-   if not assigned(Symbol) then begin
-    Error.AbortCode(19);
-    exit;
-   end else if not assigned(Symbol^.TypeDefinition) then begin
-    Error.AbortCode(19);
-    exit;
-   end else if not (Symbol^.TypeDefinition^.TypeDefinition in [ttdObject,ttdClass]) then begin
-    Error.AbortCode(19);
-    exit;
-   end;
-   ObjectClassSymbolList:=Symbol^.TypeDefinition^.RecordTable;
-   Parent:=Symbol^.TypeDefinition^.ChildOf;
-   while assigned(Parent) do begin
-    SymbolManager.PushSymbolList(Parent^.TypeDefinition^.RecordTable);
-    Parent:=Parent^.TypeDefinition^.ChildOf;
-   end;
-   Method:=Scanner.ReadIdentifier;
-   result:=ObjectClassSymbolList.GetSymbol(Method,ModuleSymbol,CurrentObjectClass);
-   if not assigned(result) then begin
-    Error.AbortCode(101);
-    exit;
-   end;
-   result^.OverloadedName:=ObjectName+'_'+result^.OverloadedName;
-   HashSymbol(result);
-   SymbolManager.PushSymbolList(ObjectClassSymbolList);
-  end;
- end;
-var OldObjectName,OldName,Name,ParameterSuffix:ansistring;
-    Method,SearchSymbol,Symbol,SymbolA,SymbolB,OldCurrentMethod,OldCurrentProcedureFunction:PSymbol;
+var OldObjectName,OldName,Name,ParameterSuffix,MethodName:ansistring;
+    Method,MethodSymbol,SearchSymbol,Symbol,SymbolA,SymbolB,
+    OldCurrentMethod,OldCurrentProcedureFunction:PSymbol;
     OldCurrentObjectClass:PType;
-    StackOffset:longint;
     AType:PType;
     BlockNode:TTreeNode;
     OldVariableType:TVariableType;
@@ -4829,15 +4780,44 @@ begin
  end else begin
   Scanner.ProcedureName:=Name;
  end;
- 
- Method:=CheckForMethod(Scanner.ProcedureName);
+
+ if (Scanner.CurrentToken=tstPeriod) and not ParseHeader then begin
+  Scanner.Match(tstPeriod);
+  MethodSymbol:=SymbolManager.GetSymbol(Scanner.ProcedureName,ModuleSymbol,CurrentObjectClass);
+  if not assigned(MethodSymbol) then begin
+   Error.AbortCode(19);
+   exit;
+  end else if not assigned(MethodSymbol^.TypeDefinition) then begin
+   Error.AbortCode(19);
+   exit;
+  end else if not (MethodSymbol^.TypeDefinition^.TypeDefinition in [ttdObject,ttdClass]) then begin
+   Error.AbortCode(19);
+   exit;
+  end;
+  ObjectClassSymbolList:=MethodSymbol^.TypeDefinition^.RecordTable;
+  Parent:=MethodSymbol^.TypeDefinition^.ChildOf;
+  while assigned(Parent) do begin
+   SymbolManager.PushSymbolList(Parent^.TypeDefinition^.RecordTable);
+   Parent:=Parent^.TypeDefinition^.ChildOf;
+  end;
+  MethodName:=Scanner.ReadIdentifier;
+  Method:=ObjectClassSymbolList.GetSymbol(MethodName,ModuleSymbol,CurrentObjectClass);
+  if not assigned(result) then begin
+   Error.AbortCode(101);
+   exit;
+  end;
+  Method^.OverloadedName:=Scanner.ProcedureName+'_'+result^.OverloadedName;
+  HashSymbol(Method);
+  SymbolManager.PushSymbolList(ObjectClassSymbolList);
+ end else begin
+  Method:=nil;
+  ObjectClassSymbolList:=nil;
+ end;
  Symbol^.ProcedureName:=Scanner.ProcedureName;
  Symbol^.Name:=Name;
  HashSymbol(Symbol);
 
- StackOffset:=0;
  if assigned(Method) then begin
-  inc(StackOffset,4);
   CurrentObjectClass:=Method^.OwnerObjectClass;
 { Symbol^.MethodSymbol:=Method;
   Method^.MethodSymbol:=Symbol;}
@@ -4850,13 +4830,9 @@ begin
 
  if Scanner.CurrentToken=tstLeftParen then begin
   Symbol^.ParameterSuffix:='';
-  Symbol^.ParameterSize:=ParseParameterList(Symbol,Symbol^.Parameter,StackOffset,false,true,Symbol^.ParameterSuffix);
+  ParseParameterList(Symbol,Symbol^.Parameter,false,true,Symbol^.ParameterSuffix);
  end;
- if Symbol^.ParameterSize=0 then begin
-  Symbol^.ParameterSize:=StackOffset;
-  if SymbolManager.LexicalScopeLevel>=2 then begin
-   inc(Symbol^.ParameterSize,4);
-  end;
+ if not (assigned(Symbol^.Parameter) and assigned(Symbol^.Parameter.First)) then begin
   Symbol^.Parameter:=nil;
   Symbol^.OverloadedName:=Scanner.ProcedureName;
   HashSymbol(Symbol);
