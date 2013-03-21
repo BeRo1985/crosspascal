@@ -686,7 +686,7 @@ begin
     OldLeft.Destroy;
     OptimizeTree(TreeNode);
    end;
-  end else if TreeNode.Left.TreeNodeType in [ttntVAR,ttntRESULT] then begin
+  end else if TreeNode.Left.TreeNodeType=ttntVAR then begin
    CompareTypesEqual:=CompareTypesExt(Error,SymbolManager,TreeNode.Left.Return,TreeNode.Return,TreeNode.TreeNodeType,ConvertType,ProcType,[tctoEXPLICIT]);
    if CompareTypesEqual=tcteConvertWithPossibleLossOfData then begin
     if not TreeNode.Warning500 then begin
@@ -1866,7 +1866,7 @@ begin
  if not assigned(TreeNode.Left) then begin
   Error.AbortCode(37);
   exit;
- end else if not (TreeNode.Left.TreeNodeType in [ttntINDEX,ttntVAR,ttntCALL,ttntRESULT,ttntFIELD]) then begin
+ end else if not (TreeNode.Left.TreeNodeType in [ttntINDEX,ttntVAR,ttntCALL,ttntFIELD]) then begin
 //end else if TreeNode.Left.TreeNodeType IN [ttntORDConst,ttntFLOATConst,ttntCHARConst,ttntStringConst,ttntWideStringConst] then begin
   Error.AbortCode(37);
   exit;
@@ -1895,7 +1895,7 @@ begin
   TreeNode.Right:=TreeManager.GenerateLeftNode(ttntAddress,TreeNode.Right);
   OptimizeTree(TreeNode.Right);
   TreeNode.Right.Return:=TreeNode.Left.Return;
- end else if TreeNode.Left.TreeNodeType in [ttntCALL,ttntRESULT] then begin
+ end else if TreeNode.Left.TreeNodeType=ttntCALL then begin
   TreeNode.Left.TreeNodeType:=ttntVAR;
   TreeNode.Left.Return:=TreeNode.Left.Symbol^.ReturnType;
   TreeNode.Left.Symbol:=TreeNode.Left.Symbol^.ResultSymbol;
@@ -2420,9 +2420,6 @@ begin
    end;
    ttntCALL:begin
     OptimizeCall(TreeNode);
-   end;
-   ttntRESULT:begin
-    OptimizeRESULT(TreeNode);
    end;
    ttntParameter:begin
 //  OptimizeParameter(TreeNode);
