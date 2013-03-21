@@ -1053,9 +1053,9 @@ begin
  NewTreeNode:=nil;
  AType:=nil;
  CanHaveQualifiers:=false;
- if assigned(CurrentProcedureFunction) and GlobalSwitches^.ExtendedSyntax then begin
+{if assigned(CurrentProcedureFunction) and GlobalSwitches^.ExtendedSyntax then begin
   Scanner.CheckForDirectives([tstRESULT]);
- end;
+ end;}
  case Scanner.CurrentToken of          
   tstIdentifier:begin
    Error.Push;
@@ -4709,7 +4709,7 @@ function TParser.ParseProcedure(ParseHeader:boolean;ProcedureAttributes:TProcedu
 var Parent:PSymbol;
     ObjectClassSymbolList:TSymbolList;
 var OldObjectName,OldName,Name,ParameterSuffix,MethodName:ansistring;
-    Method,MethodSymbol,SearchSymbol,Symbol,SymbolA,SymbolB,
+    Method,MethodSymbol,SearchSymbol,Symbol,SymbolA,SymbolB,ResultSymbol,
     OldCurrentMethod,OldCurrentProcedureFunction:PSymbol;
     OldCurrentObjectClass:PType;
     AType:PType;
@@ -4849,14 +4849,8 @@ begin
    exit;
   end;
   Symbol^.ParameterSuffix:=Symbol^.ParameterSuffix+'_RESULT_'+Symbol^.ReturnType^.OwnerModule^.Name+'_'+ParameterSuffix;
-  if Symbol^.ReturnType^.TypeDefinition in [ttdShortString,ttdLongString] then begin
-   inc(Symbol^.ParameterSize,4);
-  end else begin
-   Symbol^.LocalSize:=SymbolManager.GetSize(Symbol^.ReturnType);
-  end;
  end else begin
   Symbol^.ReturnType:=nil;
-  Symbol^.LocalSize:=0;
  end;
 
  Symbol^.OverloadedName:=Scanner.ProcedureName+Symbol^.ParameterSuffix;
@@ -5045,6 +5039,28 @@ begin
    end;
    if not ((tpaUnderscore in Symbol^.ProcedureAttributes) or (tpaExternal in Symbol^.ProcedureAttributes)) then begin
     SymbolManager.VariableType:=tvtLocal;
+    if assigned(Symbol^.ReturnType) then begin
+     ResultSymbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+     ResultSymbol^.Name:='RESULT';
+     ResultSymbol^.OverloadedName:=ResultSymbol^.Name;
+     HashSymbol(ResultSymbol);
+     ResultSymbol^.SymbolType:=Symbols.tstVariable;
+     ResultSymbol^.TypeDefinition:=Symbol^.ReturnType;
+     ResultSymbol^.VariableLevel:=SymbolManager.LexicalScopeLevel;
+     ResultSymbol^.VariableType:=tvtResult;
+     ResultSymbol^.LocalProcSymbol:=CurrentProcedureFunction;
+     ResultSymbol^.LocalProcSymbolAccessedFromHigherNestedProc:=false;
+     ResultSymbol^.Alias:=nil;
+     ResultSymbol^.AbsoluteReference:=false;
+     ResultSymbol^.TypedConstant:=false;
+     ResultSymbol^.TypedTrueConstant:=false;
+     ResultSymbol^.TypedConstantReadOnly:=false;
+     ResultSymbol^.PortabilityDirectives:=[];
+     Symbol^.ResultSymbol:=ResultSymbol;
+     SymbolManager.CurrentList.AddSymbol(ResultSymbol,ModuleSymbol,CurrentObjectClass);
+    end else begin
+     Symbol^.ResultSymbol:=nil;
+    end;
     ParseHeadBlock(false,false);
     case Scanner.CurrentToken of
      tstASM:begin
@@ -5059,7 +5075,6 @@ begin
       end else begin
        BlockNode:=ParseASMBlockStatement;
       end;
-      inc(Symbol^.LocalSize,SymbolManager.StackSize);
       OldAssemblerMode:=SymbolManager.AssemblerMode;
       SymbolManager.AssemblerMode:=true;
       OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
@@ -5069,7 +5084,6 @@ begin
      end;
      tstBEGIN:begin
       BlockNode:=ParseMAINBlock;
-      inc(Symbol^.LocalSize,SymbolManager.StackSize);
       OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
       OptimizerHighLevel.CurrentObjectClass:=CurrentObjectClass;
       OptimizerHighLevel.OptimizeTree(BlockNode);
@@ -5560,9 +5574,6 @@ begin
     Scanner.Match(tstCOLON);
     if assigned(Symbol) then begin
      Symbol^.ReturnType:=ParseTypeDefinition('');
-     if Symbol^.ReturnType^.TypeDefinition in [ttdShortString,ttdLongString] then begin
-      inc(Symbol^.ParameterSize,4);
-     end;
     end;
    end;
    if Scanner.CurrentToken=tstOF then begin

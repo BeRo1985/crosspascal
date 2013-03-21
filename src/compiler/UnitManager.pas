@@ -793,18 +793,9 @@ begin
      ReadTypeReference(Symbol^.ReturnType);
     end;
     if (Flags and 8)<>0 then begin
-     if Stream.Read(Symbol^.LocalSize,SizeOf(longint))<>SizeOf(longint) then begin
-      SymbolPointerList.Destroy;
-      TypePointerList.Destroy;
-      SetLength(UsedUnits,0);
-      exit;
-     end;
     end;
     if (Flags and 16)<>0 then begin
-     if Stream.Read(Symbol^.ParameterSize,SizeOf(longint))<>SizeOf(longint) then begin
-      SetLength(UsedUnits,0);
-      exit;
-     end;
+     ReadSymbolReference(Symbol^.ResultSymbol);
     end;
     if (Flags and 32)<>0 then begin
      if Stream.Read(Symbol^.ProcedureLevel,SizeOf(longint))<>SizeOf(longint) then begin
@@ -1610,10 +1601,10 @@ begin
     if assigned(Symbol^.ReturnType) then begin
      Flags:=Flags or 4;
     end;
-    if Symbol^.LocalSize<>0 then begin
+{   if Symbol^.??? then begin
      Flags:=Flags or 8;
-    end;
-    if Symbol^.ParameterSize<>0 then begin
+    end;}
+    if assigned(Symbol^.ResultSymbol) then begin
      Flags:=Flags or 16;
     end;
     if Symbol^.ProcedureLevel<>0 then begin
@@ -1635,15 +1626,10 @@ begin
     if (Flags and 4)<>0 then begin
      WriteTypeReference(Symbol^.ReturnType);
     end;
-    if (Flags and 8)<>0 then begin
-     if Stream.Write(Symbol^.LocalSize,SizeOf(longint))<>SizeOf(longint) then begin
-      exit;
-     end;
-    end;
+{   if (Flags and 8)<>0 then begin
+    end;}
     if (Flags and 16)<>0 then begin
-     if Stream.Write(Symbol^.ParameterSize,SizeOf(longint))<>SizeOf(longint) then begin
-      exit;
-     end;
+     WriteSymbolReference(Symbol^.ResultSymbol);
     end;
     if (Flags and 32)<>0 then begin
      if Stream.Write(Symbol^.ProcedureLevel,SizeOf(longint))<>SizeOf(longint) then begin
