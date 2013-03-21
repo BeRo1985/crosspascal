@@ -123,8 +123,8 @@ const Directives:TScannerTokens=[tstAT_,tstABSOLUTE,tstABSTRACT,tstASSEMBLER,tst
                                  tstLOCAL,tstNEAR,tstNODEFAULT,tstON,tstOPENSTRING,
                                  tstOVERLOAD,tstOVERRIDE,tstPASCAL,tstPLATFORM,tstPRIVATE,
                                  tstPROTECTED,tstPUBLIC,tstPUBLISHED,tstREAD,tstREGISTER,
-                                 tstREINTRODUCE,tstSAFECALL,tstSTDCALL,tstSTRICT,tstSTORED,
-                                 tstVARARGS,tstVIRTUAL,tstWRITE];
+                                 tstREINTRODUCE,tstRESULT,tstSAFECALL,tstSTDCALL,tstSTRICT,
+                                 tstSTORED,tstVARARGS,tstVIRTUAL,tstWRITE];
 
 implementation
 
@@ -154,7 +154,7 @@ const TokenNames:array[TScannerToken] of ansistring=('',
        'LOCAL','VARARGS','PACKAGE','CONTAINS','REQUIRES','EXPORTS',
        'OPENSTRING','HUGESTRING','UNICODESTRING','AT',
        'identifier');
-
+                                                                               
       MaxToken=tstIdentifier;
 
 {$ifdef HAS_TYPE_EXTENDED}

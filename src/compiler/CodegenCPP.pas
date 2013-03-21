@@ -1801,7 +1801,7 @@ begin
  end;
 
  Inc(FDepth);
- if assigned(AType) and not ((AType^.TypeDefinition=ttdPointer) and assigned(AType^.PointerTo)) and (AType^.PointerTo^.TypeDefinition=OwnType) then begin
+ if assigned(AType) and (AType^.TypeDefinition=ttdPointer) and assigned(AType^.PointerTo) and (AType^.PointerTo^.TypeDefinition=OwnType) then begin
    Target.Add('void*');
  end
  else if Assigned(Sym) and (AType.TypeDefinition = ttdEmpty) then
