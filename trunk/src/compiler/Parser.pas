@@ -1053,7 +1053,10 @@ begin
  NewTreeNode:=nil;
  AType:=nil;
  CanHaveQualifiers:=false;
- case Scanner.CurrentToken of
+ if assigned(CurrentProcedureFunction) and GlobalSwitches^.ExtendedSyntax then begin
+  Scanner.CheckForDirectives([tstRESULT]);
+ end;
+ case Scanner.CurrentToken of          
   tstIdentifier:begin
    Error.Push;
    Name:=Scanner.ReadIdentifier;
