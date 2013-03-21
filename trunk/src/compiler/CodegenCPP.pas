@@ -65,7 +65,7 @@ type TCodeWriter = class
        function AnsiStringEscape(const Input: ansistring): ansistring;
        function WideStringEscape(const Input: widestring): ansistring;
 
-       procedure ProcessTypeOrName(AType: PType; Target: TCodeWriter);
+       procedure ProcessTypeOrName(AType: PType; Target: TCodeWriter; OwnType: PType = nil);
        procedure ProcessTypedConstant(var Constant: PConstant; AType: PType; Target: TCodeWriter);
        procedure ProcessFunctionType(ReturnType: PType; Parameter: TSymbolList; const funcName: ansistring; Target: TCodeWriter);
 
@@ -160,17 +160,25 @@ begin
       end else begin
        result:=GetModuleName(Sym.OwnerModule)+'_VARIABLE_'+Sym.Name;
       end;
+      if FInProc and assigned(Sym^.TypeDefinition) and (Sym^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
+       result:='(('+GetTypeName(Sym^.TypeDefinition)+')'+result+')';
+      end;
      end else begin
       if Sym^.TypedConstant then begin
        result:='LOCAL_TYPEDCONSTANT_'+Sym.Name;
       end else begin
        result:='LOCAL_VARIABLE_'+Sym.Name;
       end;
-      if FInProc and assigned(Sym^.LocalProcSymbol) and Sym^.LocalProcSymbolAccessedFromHigherNestedProc then begin
-       result:='(('+GetSymbolName(Sym^.LocalProcSymbol)+'_NESTED_STACK*)(nestedLevelStack['+IntToStr(Sym^.LocalProcSymbol^.LexicalScopeLevel)+']))->'+result;
-      end;
-      if FInProc and IsSymbolReference(Sym) then begin
-       result:='(*('+result+'))';
+      if FInProc then begin
+       if assigned(Sym^.LocalProcSymbol) and Sym^.LocalProcSymbolAccessedFromHigherNestedProc then begin
+        result:='(('+GetSymbolName(Sym^.LocalProcSymbol)+'_NESTED_STACK*)(nestedLevelStack['+IntToStr(Sym^.LocalProcSymbol^.LexicalScopeLevel)+']))->'+result;
+       end;
+       if IsSymbolReference(Sym) then begin
+        result:='(*('+result+'))';
+       end;
+       if assigned(Sym^.TypeDefinition) and (Sym^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
+        result:='(('+GetTypeName(Sym^.TypeDefinition)+')'+result+')';
+       end;
       end;
      end;
     end;
@@ -1778,7 +1786,7 @@ begin
  end;
 end;
 
-procedure TCodegenCPP.ProcessTypeOrName(AType: PType; Target: TCodeWriter);
+procedure TCodegenCPP.ProcessTypeOrName(AType: PType; Target: TCodeWriter; OwnType: PType = nil);
 var Sym: PSymbol;
 begin
  if not Assigned(AType) then
@@ -1788,11 +1796,21 @@ begin
  end;
 
  Inc(FDepth);
- Sym := FindSymbol(AType);
- if Assigned(Sym) and (AType.TypeDefinition <> ttdPointer) then
-  Target.Add(GetSymbolName(Sym))
+ if assigned(AType) and not ((AType^.TypeDefinition=ttdPointer) and assigned(AType^.PointerTo)) and (AType^.PointerTo^.TypeDefinition=OwnType) then begin
+   Target.Add('void*');
+ end
+ else if Assigned(Sym) and (AType.TypeDefinition = ttdEmpty) then
+ begin
+   Target.Add('void');
+ end
  else
-  Target.Add(GetTypeName(AType));
+ begin
+   Sym := FindSymbol(AType);
+   if Assigned(Sym) and (AType.TypeDefinition <> ttdPointer) then
+    Target.Add(GetSymbolName(Sym))
+   else
+    Target.Add(GetTypeName(AType));
+ end;
  Dec(FDepth);
 end;
 
@@ -2111,7 +2129,7 @@ var TypeItems:TTypeItems;
         end;
        end;
        ttdArray:begin
-        if assigned(Type_^.Definition) and not (((Type_^.Definition^.TypeDefinition=ttdPointer) and assigned(Type_^.Definition^.PointerTo)) and (Type_^.Definition^.PointerTo^.TypeDefinition<>Type_)) then begin
+        if assigned(Type_^.Definition) and not (((Type_^.Definition^.TypeDefinition=ttdPointer) and assigned(Type_^.Definition^.PointerTo)) and (Type_^.Definition^.PointerTo^.TypeDefinition=Type_)) then begin
          Index:=TypePointerList.IndexOf(Type_^.Definition);
          if (Index>=0) and (DependencyItems[Counter].Dependencies.IndexOf(Index)<0) then begin
           DependencyItems[Counter].Dependencies.Add(Index);
@@ -2125,7 +2143,7 @@ var TypeItems:TTypeItems;
          while assigned(Symbol) do begin
           case Symbol^.SymbolType of
            Symbols.tstVariable:begin
-            if assigned(Symbol^.TypeDefinition) and not (((Symbol^.TypeDefinition.TypeDefinition=ttdPointer) and assigned(Symbol^.TypeDefinition^.PointerTo)) and (Symbol^.TypeDefinition^.PointerTo^.TypeDefinition<>Type_)) then begin
+            if assigned(Symbol^.TypeDefinition) and not (((Symbol^.TypeDefinition.TypeDefinition=ttdPointer) and assigned(Symbol^.TypeDefinition^.PointerTo)) and (Symbol^.TypeDefinition^.PointerTo^.TypeDefinition=Type_)) then begin
              Index:=TypePointerList.IndexOf(Symbol^.TypeDefinition);
              if (Index>=0) and (DependencyItems[Counter].Dependencies.IndexOf(Index)<0) then begin
               DependencyItems[Counter].Dependencies.Add(Index);
@@ -2144,18 +2162,18 @@ var TypeItems:TTypeItems;
          while assigned(Symbol) do begin
           case Symbol^.SymbolType of
            Symbols.tstVariable:begin
-            if assigned(Symbol^.TypeDefinition) and not (((Symbol^.TypeDefinition.TypeDefinition=ttdPointer) and assigned(Symbol^.TypeDefinition^.PointerTo)) and (Symbol^.TypeDefinition^.PointerTo^.TypeDefinition<>Type_)) then begin
+            if assigned(Symbol^.TypeDefinition) and not (((Symbol^.TypeDefinition.TypeDefinition=ttdPointer) and assigned(Symbol^.TypeDefinition^.PointerTo)) and (Symbol^.TypeDefinition^.PointerTo^.TypeDefinition=Type_)) then begin
              Index:=TypePointerList.IndexOf(Symbol^.TypeDefinition);
              if (Index>=0) and (DependencyItems[Counter].Dependencies.IndexOf(Index)<0) then begin
               DependencyItems[Counter].Dependencies.Add(Index);
              end;
-            enD;
+            end;
            end;
           end;
           Symbol:=Symbol^.Next;
          end;
         end;
-        if assigned(Type_^.ReturnType) and not (((Type_^.ReturnType.TypeDefinition=ttdPointer) and assigned(Type_^.ReturnType^.PointerTo)) and (Type_^.ReturnType^.PointerTo^.TypeDefinition<>Type_)) then begin
+        if assigned(Type_^.ReturnType) and not (((Type_^.ReturnType.TypeDefinition=ttdPointer) and assigned(Type_^.ReturnType^.PointerTo)) and (Type_^.ReturnType^.PointerTo^.TypeDefinition=Type_)) then begin
          Index:=TypePointerList.IndexOf(Type_^.ReturnType);
          if (Index>=0) and (DependencyItems[Counter].Dependencies.IndexOf(Index)<0) then begin
           DependencyItems[Counter].Dependencies.Add(Index);
@@ -2247,10 +2265,17 @@ begin
       Target.Add('// dynArray');
      end else begin
       Type_^.Dumped:=true;
-      Target.AddLn('typedef '+
-                   GetTypeName(Type_^.Definition)+' '+
-                   Name+
-                   '['+IntToStr((Type_^.Range^.UpperLimit-Type_^.Range^.LowerLimit)+1)+'];');
+      if assigned(Type_^.Definition) and ((Type_^.Definition^.TypeDefinition=ttdPointer) and assigned(Type_^.Definition^.PointerTo)) and (Type_^.Definition^.PointerTo^.TypeDefinition=Type_) then begin
+       Target.AddLn('typedef '+
+                    'void* '+
+                    Name+
+                    '['+IntToStr((Type_^.Range^.UpperLimit-Type_^.Range^.LowerLimit)+1)+'];');
+      end else begin
+       Target.AddLn('typedef '+
+                    GetTypeName(Type_^.Definition)+' '+
+                    Name+
+                    '['+IntToStr((Type_^.Range^.UpperLimit-Type_^.Range^.LowerLimit)+1)+'];');
+      end;
      end;
     end;
     ttdRecord,ttdObject,ttdClass,ttdInterface:begin
@@ -2320,7 +2345,11 @@ begin
            end;
           end;
          end else begin
-          Target.AddLn(GetTypeName(Symbol^.TypeDefinition)+' '+GetSymbolName(Symbol)+';');
+          if assigned(Symbol^.TypeDefinition) and ((Symbol^.TypeDefinition^.TypeDefinition=ttdPointer) and assigned(Symbol^.TypeDefinition^.PointerTo)) and (Symbol^.TypeDefinition^.Definition^.PointerTo^.TypeDefinition=Symbol^.TypeDefinition) then begin
+           Target.AddLn('void* '+GetSymbolName(Symbol)+';');
+          end else begin
+           Target.AddLn(GetTypeName(Symbol^.TypeDefinition)+' '+GetSymbolName(Symbol)+';');
+          end;
          end;
         end;
        end;
@@ -2358,6 +2387,8 @@ begin
      if assigned(Symbol) then begin
       if Symbol^.TypeDefinition^.TypeDefinition in [ttdRecord,ttdObject,ttdClass,ttdInterface] then begin
        Target.AddLn('typedef struct '+GetTypeName(Symbol^.TypeDefinition)+'* '+Name+';');
+      end else if assigned(Symbol^.TypeDefinition) and ((Symbol^.TypeDefinition^.TypeDefinition=ttdPointer) and assigned(Symbol^.TypeDefinition^.Definition^.PointerTo)) and (Symbol^.TypeDefinition^.Definition^.PointerTo^.TypeDefinition=Symbol^.TypeDefinition) then begin
+       Target.AddLn('typedef void* '+Name+';');
       end else begin
        Target.AddLn('typedef '+GetTypeName(Symbol^.TypeDefinition)+'* '+Name+';');
       end;
@@ -2372,7 +2403,7 @@ begin
     ttdProcedure:begin
      Target.AddLn('// procedure');
      Target.Add('typedef',spacesRIGHT);
-     ProcessTypeOrName(Type_^.ReturnType, Target);
+     ProcessTypeOrName(Type_^.ReturnType, Target, Type_);
      Target.Add('*',spacesRIGHT);
      Target.Add(Name);
      Target.Add('(');
@@ -2382,7 +2413,7 @@ begin
       if Symbol<>Type_.Parameter.First then begin
        Target.Add(',',spacesRIGHT);
       end;
-      ProcessTypeOrName(Symbol.TypeDefinition, Target);
+      ProcessTypeOrName(Symbol.TypeDefinition, Target, Type_);
       if IsSymbolReference(Symbol) then begin
        Target.Add('*',spacesRIGHT);
       end;
