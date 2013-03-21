@@ -164,7 +164,9 @@ begin
        result:=GetModuleName(Sym.OwnerModule)+'_VARIABLE_'+Sym.Name;
       end;
      end else begin
-      if Sym^.TypedConstant then begin
+      if Sym^.VariableType=tvtResult then begin
+       result:='result';
+      end else if Sym^.TypedConstant then begin
        result:='LOCAL_TYPEDCONSTANT_'+Sym.Name;
       end else begin
        result:='LOCAL_VARIABLE_'+Sym.Name;
@@ -504,11 +506,6 @@ begin
    end;
   end;
  end;
- if Assigned(ProcSymbol.ReturnType) then
- begin
-  ProcessTypeOrName(ProcSymbol.ReturnType, FProcCode);
-  FProcCode.AddLn(' result;');
- end;
 
  InitializeSymbolList(SymbolManager.CurrentList, FProcCode);
 
@@ -530,7 +527,7 @@ begin
  end;
 
  if Assigned(ProcSymbol.ReturnType) then begin
-   FProcCode.AddLn('return result;');
+   FProcCode.AddLn('return '+GetSymbolName(ProcSymbol.ResultSymbol)+';');
  end;
 
  FProcCode.DecTab;
@@ -1200,7 +1197,7 @@ begin
    end;
    ttntEXIT:begin
     if assigned(FSelf.ReturnType) then begin
-     FProcCode.Add('return result',spacesBOTH);
+     FProcCode.Add('return '+GetSymbolName(FSelf.ResultSymbol),spacesBOTH);
     end else begin
      FProcCode.Add('return',spacesBOTH);
     end;
@@ -1438,9 +1435,9 @@ begin
    end;
    ttntRESULT:begin
     if assigned(FProcSymbol) and assigned(FProcSymbol^.ReturnType) and (FProcSymbol^.ReturnType^.TypeDefinition=ttdPointer) then begin
-     FProcCode.Add('(('+GetTypeName(FProcSymbol^.ReturnType)+')((void*)result)');
+     FProcCode.Add('(('+GetTypeName(FProcSymbol^.ReturnType)+')((void*)'+GetSymbolName(FSelf.ResultSymbol)+')');
     end else begin
-     FProcCode.Add('result',spacesBOTH);
+     FProcCode.Add(GetSymbolName(FSelf.ResultSymbol),spacesBOTH);
     end;
    end;
    ttntParameter:begin

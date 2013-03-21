@@ -61,10 +61,11 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
                     tctAlign,
                     tctStop);
 
-     TVariableType=(tvtGlobal,tvtLocal,tvtParameterVariable,
-                    tvtParameterResult,tvtParameterConstant,
-                    tvtParameterValue,tvtObjectField,
-                    tvtClassField,tvtInterfaceField,
+     TVariableType=(tvtGlobal,tvtLocal,tvtResult,
+                    tvtParameterVariable,tvtParameterResult,
+                    tvtParameterConstant,tvtParameterValue,
+                    tvtObjectField,tvtClassField,
+                    tvtInterfaceField,
                     tvtTemporaryVariable);
 
      TFileType=(tftText,tftUntyped,tftTyped);
@@ -297,8 +298,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
         MethodOfType:PType;
         NextOverloaded:PSymbol;
         Parameter:TSymbolList;
-        LocalSize:longint;
-        ParameterSize:longint;
+        ResultSymbol:PSymbol;
         ReturnType:PType;
         ProcedureLevel:longint;
         ProcedureAttributes:TProcedureAttributes;
