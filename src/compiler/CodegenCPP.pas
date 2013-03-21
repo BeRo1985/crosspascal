@@ -1236,11 +1236,63 @@ begin
    ttntCALL:begin
     if assigned(TreeNode.Symbol) then begin
      case TreeNode.Symbol.InternalProcedure of
-      tipWRITE:begin
-       // TODO: Implement it!
-      end;
-      tipWRITELN:begin
-       // TODO: Implement it!
+      tipWRITE, tipWRITELN:begin
+       SubTreeNode := TreeNode.Left;
+       // todo: check if first element is Text-type
+       while assigned(SubTreeNode) and (SubTreeNode.TreeNodeType=ttntParameter) do begin
+        if SubTreeNode.Colon then begin
+         Error.InternalError(201303210010000);
+         break;
+        end else begin
+         if Assigned(SubTreeNode.Left.Return) then
+          case SubTreeNode.Left.Return.TypeDefinition of
+           //ttdEmpty: FProcCode.AddLn('// Empty');
+           //ttdEnumerated: FProcCode.AddLn('// Enumeration');
+           //ttdCurrency: FProcCode.AddLn('// Currency');
+           //ttdVariant: FProcCode.AddLn('// Variant');
+           //ttdArray: FProcCode.AddLn('// Array');
+           //ttdRecord: FProcCode.AddLn('// Record');
+           //ttdFile: FProcCode.AddLn('// File');
+           //ttdPointer: FProcCode.AddLn('// Pointer');
+           //ttdProcedure: FProcCode.AddLn('// Procedure');
+           //ttdObject: FProcCode.AddLn('// Object');
+           //ttdClass: FProcCode.AddLn('// Class');
+           //ttdClassRef: FProcCode.AddLn('// ClassRef');
+           //ttdInterface: FProcCode.AddLn('// Interface');
+           //ttdSet: FProcCode.AddLn('// Set');
+           //ttdCExpression: FProcCode.AddLn('// C-expression');
+           ttdSubRange: FProcCode.Add('pasWriteInt(');
+           ttdBoolean: FProcCode.Add('pasWriteBool(');
+           ttdShortString: FProcCode.Add('pasWriteShortString(');
+           ttdLongString: FProcCode.Add('pasWriteLongString(');
+           ttdFloat: FProcCode.Add('pasWriteFloat(');
+           else
+            Error.InternalError(201303210020000);
+          end
+         else
+          Error.InternalError(201303210030000);
+         if SubTreeNode.ReferenceParameter then begin
+          FProcCode.Add('((void*)(&(');
+         end else if assigned(SubTreeNode.Left.Return) and (SubTreeNode.Left.Return^.TypeDefinition=ttdPointer) then begin
+          FProcCode.Add('((void*)(');
+         end;
+         TranslateCode(SubTreeNode.Left);
+         if SubTreeNode.ReferenceParameter then begin
+          FProcCode.Add(')))');
+         end else if assigned(SubTreeNode.Left.Return) and (SubTreeNode.Left.Return^.TypeDefinition=ttdPointer) then begin
+          FProcCode.Add('))');
+         end;
+         SubTreeNode:=SubTreeNode.Right;
+         FProcCode.AddLn(');');
+         if assigned(SubTreeNode) and (SubTreeNode.TreeNodeType=ttntParameter) then begin
+//          FProcCode.Add(',',spacesRIGHT);
+         end else begin
+          break;
+         end;
+        end;
+       end;
+       if TreeNode.Symbol.InternalProcedure = tipWRITELN then
+        FPRocCode.AddLn('printf("\n");');
       end;
       tipREAD:begin
        // TODO: Implement it!
