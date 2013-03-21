@@ -13,6 +13,25 @@ typedef struct {
 
 typedef void* pasLongstring;
 
+inline void pasWriteInt(uint32_t Value) {
+  printf("%i", Value);
+}
+
+inline void pasWriteFloat(double Value) {
+ printf("%f", Value);
+}
+
+inline void pasWriteBool(uint32_t Value) {
+ if(Value)
+  printf("TRUE");
+ else
+  printf("FALSE");
+}
+
+inline void pasWriteLongString(void* Value) {
+ printf(Value);
+}
+
 inline pasLongstring CreateLongstring(uint32_t codePage, uint32_t elementSize, uint32_t length, void* data) {
 	if(length == 0)
 		return NULL;
