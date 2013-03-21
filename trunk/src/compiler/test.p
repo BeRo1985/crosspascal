@@ -2,8 +2,7 @@ program test;
 
 type THandle = Cardinal;
 
-function GetStdHandle(nStdHandle: Cardinal): THandle; stdcall; external 'windows.h' name 'GetStdHandle';
-function WriteConsole(Handle: THandle; Buffer: Pointer; CharsToWrite: Cardinal; CharsWritten: Pointer; Reserved: Pointer): Boolean; external 'windows.h' name 'WriteConsole';
+function GetTickCount: Integer; external 'windows.h' name 'GetTickCount';
 
 var Handle: Cardinal;
     Dummy: Cardinal;
@@ -16,10 +15,14 @@ type PFoo = ^Foo;
 const HelloWorld: PChar = 'Hallo Welt!\n'+#10;
       MyString: string = 'Hallo';
       MyString2: string = ' Stringwelt!';
+	  
 const fooSize = 19999;
+
 var Argh: array[0..fooSize] of Byte;
     A, B: string;
     Temp: PChar;
+	StartTime: Cardinal;
+	
 procedure BubbleSort;
 var i,j,k: integer;
     B: Boolean;
@@ -51,14 +54,15 @@ begin
 end;
 
 begin
+ Writeln('Hello World!');
+ 
  A:=MyString + Mystring2;
  B:=A;
- BubbleSort;
+ WriteLn('"',A,'" has a length of ', Length(MyString + MyString2));
 
+ StartTime := GetTickCount;
+ BubbleSort;
+ Writeln(GetTickCount - StartTime, ' ms for bubblesort');
+ 
  TestA;
- temp:=PChar(B);
- Handle := GetStdHandle(Cardinal(-11));
- if Handle <> 0 then
-  WriteConsole(Handle, PAnsiChar(b), 17, @Dummy, nil);
-// WriteConsole(Handle, temp, 17, @Dummy, nil);
 end.

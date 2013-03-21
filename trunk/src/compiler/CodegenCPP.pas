@@ -67,7 +67,7 @@ type TCodeWriter = class
        function ConvertConstSymbol(const Symbol: PSymbol): ansistring;
        procedure ConvertFuncSymbol(const Symbol: PSymbol; Target: TCodeWriter);
 
-       function AnsiStringEscape(const Input: ansistring): ansistring;
+       function AnsiStringEscape(const Input: ansistring; Quotes: Boolean = True): ansistring;
        function WideStringEscape(const Input: widestring): ansistring;
 
        procedure ProcessTypeOrName(AType: PType; Target: TCodeWriter; OwnType: PType = nil);
@@ -1436,7 +1436,6 @@ begin
          end
         else
          Error.InternalError(201303210323837);
-
        end;
       end;
       tipASSIGNED:begin
@@ -1695,7 +1694,10 @@ begin
    Target.Add(' '+GetSymbolName(Symbol)+'(');
    s:='';
 
-   Sym:=Symbol.Parameter.First;
+   if not Assigned(Symbol.Parameter) then
+    Sym := nil
+   else
+    Sym:=Symbol.Parameter.First;
    while Assigned(sym) do
    begin
     if Sym <> Symbol.Parameter.First then
@@ -1785,7 +1787,7 @@ begin
 
   FProcCode.InsertAtMark('static const char '+result+'_DATA['+IntToStr(Length(AStr)+17)+'] = "' + UIntToCString(65535)+UIntToCSTring(1)
                          +UIntToCString($FFFFFFFF)+UIntToCString(Length(AStr))+
-                         AStr+'\x00";');
+                         AnsiStringEscape(AStr,False)+'\x00";');
   FProcCode.InsertAtMark('void* '+result+' = (void*)(&'+result+'_DATA[16]);');
 end;
 
@@ -2009,11 +2011,14 @@ begin
   FHeader.ExportStream(HeaderStream);
 end;
 
-function TCodegenCPP.AnsiStringEscape(const Input: ansistring): ansistring;
+function TCodegenCPP.AnsiStringEscape(const Input: ansistring; Quotes: Boolean = True): ansistring;
 var Counter: Integer;
     c: Ansichar;
 begin
- Result:='"';
+ if Quotes then
+  Result:='"'
+ else
+  Result:='';
  for Counter:=1 to length(Input) do begin
   C:=Input[Counter];
   case C of
@@ -2028,7 +2033,8 @@ begin
    else Result:=Result+C;
   end;
  end;
- Result:=Result+'"';
+ if Quotes then
+  Result:=Result+'"';
 end;
 
 function TCodegenCPP.WideStringEscape(const Input: widestring): ansistring;
