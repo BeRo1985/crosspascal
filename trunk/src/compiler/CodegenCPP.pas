@@ -1452,10 +1452,14 @@ begin
      end else begin
       if SubTreeNode.ReferenceParameter then begin
        FProcCode.Add('((void*)(&(');
+      end else if assigned(SubTreeNode.Left.Return) and (SubTreeNode.Left.Return^.TypeDefinition=ttdPointer) then begin
+       FProcCode.Add('((void*)(');
       end;
       TranslateCode(SubTreeNode.Left);
       if SubTreeNode.ReferenceParameter then begin
        FProcCode.Add(')))');
+      end else if assigned(SubTreeNode.Left.Return) and (SubTreeNode.Left.Return^.TypeDefinition=ttdPointer) then begin
+       FProcCode.Add('))');
       end;
       SubTreeNode:=SubTreeNode.Right;
       if assigned(SubTreeNode) and (SubTreeNode.TreeNodeType=ttntParameter) then begin
