@@ -152,6 +152,9 @@ begin
       end else begin
        result:='FIELD_'+Sym.Name;
       end;
+      if assigned(Sym^.TypeDefinition) and (Sym^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
+       result:='(('+GetTypeName(Sym^.TypeDefinition)+')((void*)'+result+'))';
+      end;
      end;
     end else begin
      if Sym.VariableLevel=0 then begin
@@ -159,9 +162,6 @@ begin
        result:=GetModuleName(Sym.OwnerModule)+'_TYPEDCONSTANT_'+Sym.Name;
       end else begin
        result:=GetModuleName(Sym.OwnerModule)+'_VARIABLE_'+Sym.Name;
-      end;
-      if FInProc and assigned(Sym^.TypeDefinition) and (Sym^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
-       result:='(('+GetTypeName(Sym^.TypeDefinition)+')'+result+')';
       end;
      end else begin
       if Sym^.TypedConstant then begin
@@ -176,8 +176,9 @@ begin
        if IsSymbolReference(Sym) then begin
         result:='(*('+result+'))';
        end;
-       if assigned(Sym^.TypeDefinition) and (Sym^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
-        result:='(('+GetTypeName(Sym^.TypeDefinition)+')'+result+')';
+       if (Sym^.VariableType in [tvtParameterVariable,tvtParameterResult,tvtParameterConstant,tvtParameterValue]) and
+          assigned(Sym^.TypeDefinition) and (Sym^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
+        result:='(('+GetTypeName(Sym^.TypeDefinition)+')((void*)'+result+'))';
        end;
       end;
      end;
@@ -1436,7 +1437,11 @@ begin
      end;
    end;
    ttntRESULT:begin
-    FProcCode.Add('result',spacesBOTH);
+    if assigned(FProcSymbol) and assigned(FProcSymbol^.ReturnType) and (FProcSymbol^.ReturnType^.TypeDefinition=ttdPointer) then begin
+     FProcCode.Add('(('+GetTypeName(FProcSymbol^.ReturnType)+')((void*)result)');
+    end else begin
+     FProcCode.Add('result',spacesBOTH);
+    end;
    end;
    ttntParameter:begin
     SubTreeNode:=TreeNode;
