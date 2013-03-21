@@ -773,7 +773,6 @@ begin
  Error.LocalSwitches:=nil;
  OldList:=SymbolManager.CurrentList;
  Scanner.ReadNext;
- SymbolManager.StackSize:=0;
  DoBreak:=false;
  Scanner.CheckForDirectives([tstLIBRARY,tstPACKAGE]);
  case Scanner.CurrentToken of
@@ -1053,10 +1052,7 @@ begin
  NewTreeNode:=nil;
  AType:=nil;
  CanHaveQualifiers:=false;
-{if assigned(CurrentProcedureFunction) and GlobalSwitches^.ExtendedSyntax then begin
-  Scanner.CheckForDirectives([tstRESULT]);
- end;}
- case Scanner.CurrentToken of          
+ case Scanner.CurrentToken of
   tstIdentifier:begin
    Error.Push;
    Name:=Scanner.ReadIdentifier;
@@ -1354,18 +1350,6 @@ begin
   tstNIL:begin
    Scanner.Match(tstNIL);
    NewTreeNode:=TreeManager.GenerateNilNode(SymbolManager.TypePointer);
-  end;
-  tstRESULT:begin
-   if assigned(CurrentProcedureFunction) then begin
-    if GlobalSwitches^.ExtendedSyntax then begin
-     Scanner.Match(tstRESULT);
-     NewTreeNode:=TreeManager.GenerateResultNode(CurrentProcedureFunction);
-    end else begin
-     Error.AbortCode(504);
-    end;
-   end else begin
-    Error.AbortCode(504);
-   end;
   end;
   tstCEXPR:begin
    NewTreeNode:=TreeManager.GenerateCExpressionNode(Scanner.CurrentString);
@@ -2553,7 +2537,6 @@ begin
   ParseHeadBlock(false,true);
   CodeTree:=ParseMainBlock;
   FinishCheckSymbols(Symbol,Symbol^.SymbolList);
-  SymbolManager.StackSize:=0;
   if assigned(CodeTree) then begin
    if not Error.Errors then begin
     OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
@@ -2655,7 +2638,6 @@ begin
   end;
   Scanner.Match(tstEND);
   FinishCheckSymbols(Symbol,Symbol^.SymbolList);
-  SymbolManager.StackSize:=0;
   if assigned(CodeTree) then begin
    if not Error.Errors then begin
     OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
@@ -2733,7 +2715,6 @@ begin
    Scanner.Match(tstEND);
   end;
   FinishCheckSymbols(Symbol,Symbol^.SymbolList);
-  SymbolManager.StackSize:=0;
   if assigned(CodeTree) then begin
    if not Error.Errors then begin
     OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
@@ -2883,8 +2864,6 @@ begin
   end;
 
   FinishCheckSymbols(Symbol,Symbol^.SymbolList);
-
-  SymbolManager.StackSize:=0;
 
   OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
   OptimizerHighLevel.CurrentObjectClass:=CurrentObjectClass;
@@ -3165,7 +3144,7 @@ begin
   tstSeparator:begin
    result:=nil;
   end;
-  tstRESULT,tstValue,tstIdentifier,tstINHERITED:begin
+  tstValue,tstIdentifier,tstINHERITED:begin
    if Scanner.MaybeLabel(Scanner.CurrentToken) then begin
     Error.Push;
     if length(Scanner.ProcedureName)=0 then begin
@@ -3189,7 +3168,7 @@ begin
     end;
     Error.Pop;
    end;
-   if Scanner.CurrentToken in [tstRESULT,tstIdentifier,tstINHERITED] then begin
+   if Scanner.CurrentToken in [tstIdentifier,tstINHERITED] then begin
     result:=ParseExpression(true);
     if assigned(result) then begin
      if (not GlobalSwitches^.ExtendedSyntax) and (result.TreeNodeType=ttntCALL) and assigned(result.Symbol) and assigned(result.Symbol^.ReturnType) then begin
@@ -4739,7 +4718,6 @@ begin
  end;
  Symbol^.LexicalScopeLevel:=SymbolManager.LexicalScopeLevel-1;
  Symbol^.ProcedureLevel:=SymbolManager.LexicalScopeLevel;
- SymbolManager.StackSize:=0;
 
  if Scanner.CurrentToken=tstCLASS then begin
   Scanner.Match(tstCLASS);
@@ -6663,7 +6641,7 @@ procedure TParser.ParseVARDeclartion;
 type TAbsoluteType=(tatNone,tatMemoryConstant,tatVariableOverlay);
 var Symbol,AbsoluteSymbol,StartSymbol,LastSymbol,CurrentSymbol,NextSymbol:PSymbol;
     AType:PType;
-    Size,Alignment,AbsoluteAddress:longint;
+    AbsoluteAddress:int64;
     AbsoluteType:TAbsoluteType;
     NewTreeNode:TTreeNode;
     ExternalVariable:boolean;
@@ -6819,14 +6797,6 @@ begin
    Symbol^.TypedTrueConstant:=false;
    Symbol^.TypedConstantReadOnly:=false;
    Symbol^.PortabilityDirectives:=PortabilityDirectives;
-   Size:=SymbolManager.GetSize(Symbol^.TypeDefinition);
-   if AbsoluteType=tatNone then begin
-    Alignment:=Size and 3;
-    if Alignment<>0 then begin
-     inc(Size,4-Alignment);
-    end;
-    inc(SymbolManager.StackSize,Size);
-   end;
    case AbsoluteType of
     tatVariableOverlay:begin
      if assigned(AbsoluteSymbol) then begin
@@ -6845,7 +6815,7 @@ begin
      Symbol^.AbsoluteReference:=true;
     end;
     else begin
-     Symbol^.Offset:=SymbolManager.StackSize;
+     Symbol^.Offset:=0;
     end;
    end;
    SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);

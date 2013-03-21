@@ -19,7 +19,7 @@ type TTreeNodeType=(ttntEmpty,
                     ttntBREAK,ttntCONTINUE,ttntEXIT,
                     ttntLABEL,ttntGOTO,
                     ttntTRY,ttntTRYONELSE,ttntRAISE,
-                    ttntPROCEDURE,ttntCALL,ttntRESULT,ttntParameter,ttntIndex,ttntPointer,
+                    ttntPROCEDURE,ttntCALL,ttntParameter,ttntIndex,ttntPointer,
                     ttntAddress,ttntField,
                     ttntORDConst,ttntCHARConst,ttntSTRINGConst,ttntFloatConst,
                     ttntSETConst,ttntPCHARConst,
@@ -92,7 +92,6 @@ type TTreeNodeType=(ttntEmpty,
        function GenerateCCodeNode(const S:THugeString):TTreeNode;
        function GenerateCExpressionNode(const S:THugeString):TTreeNode;
        function GenerateNilNode(AType:PType):TTreeNode;
-       function GenerateResultNode(Symbol:PSymbol):TTreeNode;
        function GenerateEmptyNode:TTreeNode;
 //     function GenerateAsmNode(ASMBlock:TAsmList):TTreeNode;
        function GenerateIfNode(Left,Right,ElseTree:TTreeNode):TTreeNode;
@@ -479,9 +478,6 @@ begin
      WriteData('Symbol: '+CorrectSymbolName(TreeNode.Symbol^.name));
     end;
    end;
-   ttntRESULT:begin
-    WriteType('RESULT');
-   end;
    ttntParameter:begin
     WriteType('PARAMETER');
    end;
@@ -739,13 +735,6 @@ begin
  result.TreeNodeType:=ttntOrdConst;
  result.Value:=0;
  result.Return:=AType;
-end;
-
-function TTreeManager.GenerateResultNode(Symbol:PSymbol):TTreeNode;
-begin
- result:=NewNode;
- result.TreeNodeType:=ttntRESULT;
- result.Symbol:=Symbol;
 end;
 
 function TTreeManager.GenerateEmptyNode:TTreeNode;

@@ -1433,13 +1433,6 @@ begin
       end;
      end;
    end;
-   ttntRESULT:begin
-    if assigned(FProcSymbol) and assigned(FProcSymbol^.ReturnType) and (FProcSymbol^.ReturnType^.TypeDefinition=ttdPointer) then begin
-     FProcCode.Add('(('+GetTypeName(FProcSymbol^.ReturnType)+')((void*)'+GetSymbolName(FSelf.ResultSymbol)+')');
-    end else begin
-     FProcCode.Add(GetSymbolName(FSelf.ResultSymbol),spacesBOTH);
-    end;
-   end;
    ttntParameter:begin
     SubTreeNode:=TreeNode;
     while assigned(SubTreeNode) and (SubTreeNode.TreeNodeType=ttntParameter) do begin
