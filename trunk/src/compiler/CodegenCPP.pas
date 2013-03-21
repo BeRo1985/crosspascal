@@ -778,12 +778,12 @@ begin
    end;
    ttntAdd:begin
     if assigned(TreeNode.Left) and assigned(TreeNode.Right) then begin
-     if Assigned(TreeNode.Left.Symbol) and Assigned(TreeNode.Right.Symbol) and
-        (TreeNode.Left.Symbol.TypeDefinition.TypeDefinition = ttdLongString)and
-        (TreeNode.Right.Symbol.TypeDefinition.TypeDefinition = ttdLongString) then begin
-       FProcCode.Add('AddLongstring(&');
+     if Assigned(TreeNode.Left.Return) and Assigned(TreeNode.Right.Return) and
+        (TreeNode.Left.Return.TypeDefinition = ttdLongString)and
+        (TreeNode.Right.Return.TypeDefinition = ttdLongString) then begin
+       FProcCode.Add('AddLongstring(');
        TranslateCode(TreeNode.Left);
-       FProcCode.Add(', &');
+       FProcCode.Add(', ');
        TranslateCode(TreeNode.Right);
        FProcCode.Add(')');
      end else begin

@@ -48,7 +48,7 @@ inline void AssignLongstring(pasLongstring *target, pasLongstring newStr);
 // clears string value
 inline void FreeLongstring(pasLongstring *str);
 // returns new string with refCount = 0
-inline pasLongstring AddLongstring(pasLongstring *left, pasLongstring *right);
+inline pasLongstring AddLongstring(pasLongstring left, pasLongstring right);
 // compares two strings, checks refCount of input
 inline uint32_t CompareLongstring(pasLongstring left, pasLongstring right);
 // turns *target into an unique string
