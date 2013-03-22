@@ -120,7 +120,7 @@ begin
      tcc_add_include_path(TCCState,pansichar(SysUtils.IncludeTrailingPathDelimiter(SysUtils.IncludeTrailingPathDelimiter(SysUtils.ExtractFilePath(ParamStr(0)))+'include')+'winapi'));
      tcc_set_lib_path(TCCState,pansichar(SysUtils.IncludeTrailingPathDelimiter(SysUtils.ExtractFilePath(ParamStr(0)))+'lib'));}
      tcc_set_output_type(TCCState,TCC_OUTPUT_OBJ);
-//   tcc_set_options(TCCState,'-g');
+     tcc_set_options(TCCState,'-O3');
      if tcc_add_file(TCCState,pansichar(ChangeFileExt(Name,'.c')))>=0 then begin
       if tcc_output_file(TCCState,pansichar(ChangeFileExt(Name,'.o')))<0 then begin
        Error.AddErrorCode(10000);
@@ -133,7 +133,8 @@ begin
     end;
    end;
   end else begin
-   DebugLog('Compiling '+name+'.c: '+GetDosOutput(Options.TargetCompiler+' -c '+name+'.c'));
+   Writeln(Options.TargetCompiler+' -c '+Copy(name,1,pos('.',Name)-1)+'.c');
+   DebugLog('Compiling '+name+'.c: '+GetDosOutput(Options.TargetCompiler+' -c '+Copy(name,1,pos('.',Name)-1)+'.c'));
   end;
  finally
   Error.LocalSwitches:=@LocalSwitches;
@@ -180,7 +181,7 @@ begin
  {  tcc_set_lib_path(TCCState,pansichar(SysUtils.IncludeTrailingPathDelimiter(SysUtils.IncludeTrailingPathDelimiter(SysUtils.ExtractFilePath(ParamStr(0)))+'lib')));
     tcc_add_library(TCCState,pansichar(SysUtils.IncludeTrailingPathDelimiter(SysUtils.IncludeTrailingPathDelimiter(SysUtils.ExtractFilePath(ParamStr(0)))+'lib')+'libtcc1.a'));}
     tcc_set_output_type(TCCState,TCC_OUTPUT_EXE);
-//  tcc_set_options(TCCState,'-g');
+    tcc_set_options(TCCState,'-O3');
     s:=ChangeFileExt(ExtractFileName(FileName),'.o');
     if tcc_add_file(TCCState,'objpas2c.o')<0 then begin
      Error.AddErrorCode(10000);
@@ -208,12 +209,13 @@ begin
   s:=ChangeFileExt(ExtractFileName(FileName),'');
   s:=s+'.o -o '+s+'.exe';
   for i:=0 to SymbolManager.UnitList.Count-1 do begin
-   s:=Copy(SymbolManager.UnitList[i],2,length(SymbolManager.UnitList[i])-1)+'.o '+s;
+   s:=Copy(SymbolManager.UnitList[i],1,length(SymbolManager.UnitList[i]))+'.o '+s;
   end;
 
   DebugLog(GetDosOutput(Options.TargetCompiler+' -c objpas2c.c'));
 
   s:=Options.TargetCompiler+' objpas2c.o '+s;
+  Writeln(s);
   DebugLog('Executing: '+s);
   DebugLog(GetDosOutput(s));
  end;

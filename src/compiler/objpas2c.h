@@ -42,31 +42,31 @@ typedef struct {
 	uint32_t dummy;
 } pasFile;
 
-inline pasLongstring CreateLongstring(uint32_t codePage, uint32_t elementSize, uint32_t length, void* data);
+__inline pasLongstring CreateLongstring(uint32_t codePage, uint32_t elementSize, uint32_t length, void* data);
 // AssignLongstring releases old string in *target, sets newStr and increases refcount
-inline void AssignLongstring(pasLongstring *target, pasLongstring newStr);
+__inline void AssignLongstring(pasLongstring *target, pasLongstring newStr);
 // clears string value
-inline void FreeLongstring(pasLongstring *str);
+__inline void FreeLongstring(pasLongstring *str);
 // returns new string with refCount = 0
-inline pasLongstring AddLongstring(pasLongstring left, pasLongstring right);
+__inline pasLongstring AddLongstring(pasLongstring left, pasLongstring right);
 // compares two strings, checks refCount of input
-inline uint32_t CompareLongstring(pasLongstring left, pasLongstring right);
+__inline uint32_t CompareLongstring(pasLongstring left, pasLongstring right);
 // turns *target into an unique string
-inline void UniqueLongstring(pasLongstring *target);
+__inline void UniqueLongstring(pasLongstring *target);
 // returns length of string
-inline uint32_t LengthLongstring(pasLongstring str);
+__inline uint32_t LengthLongstring(pasLongstring str);
 // increase reference count
-inline void IncRefLongstring(pasLongstring *str);
+__inline void IncRefLongstring(pasLongstring *str);
 // decrease reference count, free if <=zero
-inline void DecRefLongstring(pasLongstring *str);
+__inline void DecRefLongstring(pasLongstring *str);
 // check reference of string and free if <=0
-inline void checkRefLongstring(pasLongstring str);
+void CheckRefLongstring(pasLongstring str);
 
-inline void pasWriteInt(int64_t Value);
-inline void pasWriteUInt(uint64_t Value);
-inline void pasWriteChar(uint32_t Value);
-inline void pasWriteFloat(double Value);
-inline void pasWriteBool(uint32_t Value);
-inline void pasWriteLongString(void* Value);
+__inline void pasWriteInt(int64_t Value);
+__inline void pasWriteUInt(uint64_t Value);
+__inline void pasWriteChar(uint32_t Value);
+__inline void pasWriteFloat(double Value);
+__inline void pasWriteBool(uint32_t Value);
+__inline void pasWriteLongString(void* Value);
 
 #endif // __OBJPAS2CH_H_INCLUDED__

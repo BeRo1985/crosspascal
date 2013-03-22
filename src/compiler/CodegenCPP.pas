@@ -1689,7 +1689,7 @@ begin
   begin
    Target.AddInclude(Symbol.LibraryName);
 
-   Target.Add('inline ');
+   Target.Add('__inline ');
    ProcessTypeOrName(Symbol.ReturnType, Target);
    Target.Add(' '+GetSymbolName(Symbol)+'(');
    s:='';
