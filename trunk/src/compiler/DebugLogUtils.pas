@@ -1,5 +1,5 @@
 unit DebugLogUtils;
-{$i Compiler.inc}
+{$i Compiler.inc} 
 
 interface
 

@@ -1,4 +1,4 @@
-unit HugeString;
+unit HugeString; 
 {$I Compiler.inc}
 
 interface
