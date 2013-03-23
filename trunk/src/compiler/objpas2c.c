@@ -1,6 +1,7 @@
 #include "stdint.h"
 #include "string.h"
 #include "stdlib.h"
+#include "stdio.h"
 
 typedef struct {
     uint32_t codePage;     // 0x0000 - 0xffff = ansistring codepage
@@ -13,48 +14,19 @@ typedef struct {
 
 typedef void* pasLongstring;
 
-__inline void pasWriteInt(int64_t Value) {
-  printf("%i", Value);
-}
-
-__inline void pasWriteUInt(uint64_t Value) {
-  printf("%u", Value);
-}
-
-__inline void pasWriteChar(uint32_t Value) {
- printf("%c", Value);
-}
-
-__inline void pasWriteFloat(double Value) {
- printf("%f", Value);
-}
-
-__inline void pasWriteBool(uint32_t Value) {
- if(Value)
-  printf("TRUE");
- else
-  printf("FALSE");
-} 
-
-__inline void CheckRefLongstring(pasLongstring str) {
+void CheckRefLongstring(pasLongstring str) {
 	LongstringRefHeader* header;
 	
 	if(str == NULL)
 		return;
-		
-	header = (void*)((int)(str) - LongstringRefHeaderSize);
+	header = (void*)((uint32_t)(str) - LongstringRefHeaderSize);
 	if(0xffffffff == header->refCount) 
 		return;
    	if((header->refCount) == 0)
 	 	free(&header);
 }
 
-__inline void pasWriteLongString(void* Value) {
- printf(Value);
- CheckRefLongstring(&Value);
-}
-
-__inline pasLongstring CreateLongstring(uint32_t codePage, uint32_t elementSize, uint32_t length, void* data) {
+pasLongstring CreateLongstring(uint32_t codePage, uint32_t elementSize, uint32_t length, void* data) {
 	LongstringRefHeader* header;
 	char* ref;
 	uint32_t* zero;
@@ -75,58 +47,60 @@ __inline pasLongstring CreateLongstring(uint32_t codePage, uint32_t elementSize,
 	return ref;
 }
 
-__inline void DecRefLongstring(pasLongstring *str) {
+void DecRefLongstring(pasLongstring *str) {
 	LongstringRefHeader* header;
 	if(*str == NULL)
 		return;
-	header = (pasLongstring)((int)(*str) - LongstringRefHeaderSize);
+	
+	header = (pasLongstring)((uint32_t)(*str) - LongstringRefHeaderSize);
 	if(0xffffffff == header->refCount) 
 		return;
-   	if(--(header->refCount) == 0)
-	 	free(&header);
-}
+	
+	if(--(header->refCount) == 0) 
+	 	free(header);
+   	}
 
-__inline void IncRefLongstring(pasLongstring *str) {
+void IncRefLongstring(pasLongstring *str) {
 	LongstringRefHeader* header;
 	
 	if(*str == NULL)
 		return;
-    header = (LongstringRefHeader*)((int)(*str) - LongstringRefHeaderSize);
+    header = (LongstringRefHeader*)((uint32_t)(*str) - LongstringRefHeaderSize);
 	if(0xffffffff == header->refCount) 
 		return;
 	header->refCount++;
 }
 
-__inline void FreeLongstring(pasLongstring *str) {
+void FreeLongstring(pasLongstring *str) {
 	DecRefLongstring(str);
 	*str = NULL;
 }
 
-__inline uint32_t LengthLongstring(pasLongstring str) {
+uint32_t LengthLongstring(pasLongstring str) {
 	uint32_t len;
 	LongstringRefHeader* header;
 	
 	if(str == NULL)
 		return 0;
-	header = (LongstringRefHeader*)((int)(str) - LongstringRefHeaderSize);
+	header = (LongstringRefHeader*)((uint32_t)(str) - LongstringRefHeaderSize);
 	len = header->length;
 	CheckRefLongstring(&str);
 	return len;
 }
 
-__inline void AssignLongstring(pasLongstring *target, pasLongstring newStr) {
+void AssignLongstring(pasLongstring *target, pasLongstring newStr) {
 	DecRefLongstring(target);
 	*target = newStr;
 	IncRefLongstring(target);
 }
 
-__inline void UniqueLongstring(pasLongstring *target) {
+void UniqueLongstring(pasLongstring *target) {
 	LongstringRefHeader* header;
 	pasLongstring newtarget;
 	
 	if(target == NULL)
 		return;
-    header = (LongstringRefHeader*)((int)(*target) - LongstringRefHeaderSize);
+    header = (LongstringRefHeader*)((uint32_t)(*target) - LongstringRefHeaderSize);
 	if(header->refCount == 1)
 		return;
 
@@ -135,7 +109,7 @@ __inline void UniqueLongstring(pasLongstring *target) {
 	*target = newtarget;
 }
 
-__inline pasLongstring AddLongstring(pasLongstring left, pasLongstring right) {
+pasLongstring AddLongstring(pasLongstring left, pasLongstring right) {
 	uint32_t a,b;
 	LongstringRefHeader* headerA;
     LongstringRefHeader* headerB;
@@ -153,8 +127,8 @@ __inline pasLongstring AddLongstring(pasLongstring left, pasLongstring right) {
 	if(a == 0)
 		return right;
 
-	headerA = (LongstringRefHeader*)((int)(left) - LongstringRefHeaderSize);
-	headerB = (LongstringRefHeader*)((int)(right) - LongstringRefHeaderSize);
+	headerA = (LongstringRefHeader*)((uint32_t)(left) - LongstringRefHeaderSize);
+	headerB = (LongstringRefHeader*)((uint32_t)(right) - LongstringRefHeaderSize);
 
     // TODO: Codepage handling
 
@@ -246,4 +220,3 @@ __inline pasLongstring AddLongstring(pasLongstring left, pasLongstring right) {
 	return result;
 }
 
-//#endif // __OBJPAS2CMAIN__
