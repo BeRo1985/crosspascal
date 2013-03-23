@@ -1821,7 +1821,7 @@ var AStr: ansistring;
   end;
 
 begin
-  result := Uppercase(UnitName)+'_STRING_CONST_'+INTTOSTR(FStringConstCount);
+  result := GetSymbolName(FSelf) +'_STRING_CONST_'+INTTOSTR(FStringConstCount);
   Inc(FStringConstCount);
 
   AStr := HugeStringToAnsiString(ConstantStr);
