@@ -582,7 +582,7 @@ begin
 
  FHeader.AddLn('extern int main(int argc, char **argv);');
 
- FProcCode.AddLn('void _start(){');
+ FProcCode.AddLn('void pasStart(){');
  FProcCode.SetMarker;
  InitializeSymbolList(FSelf.SymbolList, FProcCode);
  FProcCode.IncTab;
@@ -598,7 +598,7 @@ begin
  for i:=0 to SymbolManager.UnitList.Count-1 do
    FProcCode.AddLn(SymbolManager.UnitList[i]+'_C_INITIALIZATION();');
 
- FProcCode.AddLn('_start();');
+ FProcCode.AddLn('pasStart();');
 
  for i:=SymbolManager.UnitList.Count-1 downto 0 do
    FProcCode.AddLn(SymbolManager.UnitList[i]+'_C_FINALIZATION();');
