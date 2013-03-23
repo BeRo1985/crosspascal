@@ -133,8 +133,7 @@ begin
     end;
    end;
   end else begin
-   Writeln(Options.TargetCompiler+' -c '+Copy(name,1,pos('.',Name)-1)+'.c');
-   DebugLog('Compiling '+name+'.c: '+GetDosOutput(Options.TargetCompiler+' -c '+Copy(name,1,pos('.',Name)-1)+'.c'));
+   DebugLog('Compiling '+name+'.c: '+GetDosOutput(Options.TargetCompiler+' -c '+pansichar(ChangeFileExt(Name,'.c'))));
   end;
  finally
   Error.LocalSwitches:=@LocalSwitches;
@@ -209,13 +208,11 @@ begin
   s:=ChangeFileExt(ExtractFileName(FileName),'');
   s:=s+'.o -o '+s+'.exe';
   for i:=0 to SymbolManager.UnitList.Count-1 do begin
-   s:=Copy(SymbolManager.UnitList[i],1,length(SymbolManager.UnitList[i]))+'.o '+s;
+   s:=SymbolManager.UnitList[i]+'.o '+s;
   end;
 
   DebugLog(GetDosOutput(Options.TargetCompiler+' -c objpas2c.c'));
-
   s:=Options.TargetCompiler+' objpas2c.o '+s;
-  Writeln(s);
   DebugLog('Executing: '+s);
   DebugLog(GetDosOutput(s));
  end;

@@ -42,31 +42,22 @@ typedef struct {
 	uint32_t dummy;
 } pasFile;
 
-__inline pasLongstring CreateLongstring(uint32_t codePage, uint32_t elementSize, uint32_t length, void* data);
-// AssignLongstring releases old string in *target, sets newStr and increases refcount
-__inline void AssignLongstring(pasLongstring *target, pasLongstring newStr);
-// clears string value
-__inline void FreeLongstring(pasLongstring *str);
-// returns new string with refCount = 0
-__inline pasLongstring AddLongstring(pasLongstring left, pasLongstring right);
-// compares two strings, checks refCount of input
-__inline uint32_t CompareLongstring(pasLongstring left, pasLongstring right);
-// turns *target into an unique string
-__inline void UniqueLongstring(pasLongstring *target);
-// returns length of string
-__inline uint32_t LengthLongstring(pasLongstring str);
-// increase reference count
-__inline void IncRefLongstring(pasLongstring *str);
-// decrease reference count, free if <=zero
-__inline void DecRefLongstring(pasLongstring *str);
-// check reference of string and free if <=0
 void CheckRefLongstring(pasLongstring str);
+pasLongstring AddLongstring(pasLongstring left, pasLongstring right);
+void UniqueLongstring(pasLongstring *target);
+pasLongstring CreateLongstring(uint32_t codePage, uint32_t elementSize, uint32_t length, void* data);
+void DecRefLongstring(pasLongstring *str);
+void IncRefLongstring(pasLongstring *str);
+void FreeLongstring(pasLongstring *str);
+uint32_t LengthLongstring(pasLongstring str);
+void AssignLongstring(pasLongstring *target, pasLongstring newStr);
+void UniqueLongstring(pasLongstring *target);
 
-__inline void pasWriteInt(int64_t Value);
-__inline void pasWriteUInt(uint64_t Value);
-__inline void pasWriteChar(uint32_t Value);
-__inline void pasWriteFloat(double Value);
-__inline void pasWriteBool(uint32_t Value);
-__inline void pasWriteLongString(void* Value);
+#define pasWriteInt(x) printf("%i", x);
+#define pasWriteUInt(x) printf("%u", x);
+#define pasWriteChar(x) printf("%c", x);
+#define pasWriteFloat(x) printf("%f", x);
+#define pasWriteBool(x) if(x) printf("TRUE"); else printf("FALSE");
+#define pasWriteLongString(x) printf(x); CheckRefLongstring(x);
 
 #endif // __OBJPAS2CH_H_INCLUDED__
