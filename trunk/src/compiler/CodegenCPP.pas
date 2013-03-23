@@ -1194,8 +1194,35 @@ begin
    ttntWITH:begin
    end;
    ttntCASE:begin
+    FProcCode.Add('switch (');
+    TranslateCode(TreeNode.Left);
+    FProcCode.AddLn('){');
+    FProcCode.IncTab;
+    SubTreeNode := TreeNode.Right;
+    while Assigned(SubTreeNode) do
+    begin
+      TranslateCode(SubTreeNode);
+      SubTreeNode := SubTreeNode.Left;
+    end;
+    if Assigned(TreeNode.ElseTree) then
+    begin
+      FProcCode.AddLn('default: {');
+      FProcCode.IncTab;
+      TranslateCode(TreeNode.ElseTree);
+      FProcCode.DecTab;
+      FProcCode.AddLn('}');
+    end;
+    FProcCode.DecTab;
+    FProcCode.AddLn('}');
    end;
    ttntCASEBLOCK:begin
+    FProcCode.Add('case ');
+    TranslateCode(TreeNode.Right);
+    FProcCode.AddLn(': {');
+    FProcCode.IncTab;
+    TranslateCode(TreeNode.Block);
+    FProcCode.DecTab;
+    FProcCode.AddLn('};');
    end;
    ttntCASEValue:begin
    end;
