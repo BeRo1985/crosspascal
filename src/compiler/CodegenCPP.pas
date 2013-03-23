@@ -1240,8 +1240,10 @@ begin
     end;
    end;
    ttntLABEL:begin
+    FProcCode.AddLn('LABEL_'+GetSymbolName(FSelf)+'_'+TreeNode.LabelName+':')
    end;
    ttntGOTO:begin
+     FProcCode.Add('goto LABEL_'+GetSymbolName(FSelf)+'_'+TreeNode.LabelName);
    end;
    ttntTRY:begin
    end;
