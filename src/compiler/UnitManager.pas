@@ -1,4 +1,4 @@
-unit UnitManager; 
+unit UnitManager;
 {$i Compiler.inc}
 
 interface
