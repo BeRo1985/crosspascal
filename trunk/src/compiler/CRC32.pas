@@ -1,9 +1,9 @@
-unit CRC32;
+unit CRC32; 
 {$i Compiler.inc}
 
 interface
 
-uses BERoUtils,BeRoStream;
+uses BeRoUtils,BeRoStream;
 
 type PCRC32Table=^TCRC32Table;
      TCRC32Table=array[0..255] of longword;
