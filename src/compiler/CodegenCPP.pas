@@ -682,7 +682,7 @@ begin
 end;
 
 procedure TCodegenCPP.TranslateCode(TreeNode:TTreeNode);
-var SubTreeNode:TTreeNode;
+var SubTreeNode,SubTreeNode2:TTreeNode;
     s:ansistring;
     HaveParameters:boolean;
 begin
@@ -1193,7 +1193,9 @@ begin
    end;
    ttntWITH:begin
    end;
-   ttntCASE:begin
+   ttntCASE:if not Assigned(TreeNode.Left) then begin
+    Error.InternalError(201303230327482);
+   end else begin
     FProcCode.Add('switch (');
     TranslateCode(TreeNode.Left);
     FProcCode.AddLn('){');
@@ -1201,8 +1203,25 @@ begin
     SubTreeNode := TreeNode.Right;
     while Assigned(SubTreeNode) do
     begin
-      TranslateCode(SubTreeNode);
+     FProcCode.Add('case ');
+     TranslateCode(SubTreeNode.Right);
+     FProcCode.Add(':');
+     SubTreeNode2 := SubTreeNode.Block;
+     while Assigned(SubTreeNode.Left) and (not Assigned(SubTreeNode.Left.Block)) do
+     begin
+      FProcCode.AddLn('');
+      FProcCode.Add('case ');
       SubTreeNode := SubTreeNode.Left;
+      TranslateCode(SubTreeNode.Right);
+      FProcCode.Add(':');
+     end;
+     FProcCode.AddLn('{');
+     FProcCode.IncTab;
+     TranslateCode(SubTreeNode2);
+     FProcCode.DecTab;
+     FProcCode.AddLn('};');
+     FProcCode.AddLn('break;');
+     SubTreeNode := SubTreeNode.Left;
     end;
     if Assigned(TreeNode.ElseTree) then
     begin
@@ -1216,13 +1235,6 @@ begin
     FProcCode.AddLn('}');
    end;
    ttntCASEBLOCK:begin
-    FProcCode.Add('case ');
-    TranslateCode(TreeNode.Right);
-    FProcCode.AddLn(': {');
-    FProcCode.IncTab;
-    TranslateCode(TreeNode.Block);
-    FProcCode.DecTab;
-    FProcCode.AddLn('};');
    end;
    ttntCASEValue:begin
    end;
