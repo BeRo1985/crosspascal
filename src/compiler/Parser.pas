@@ -25,6 +25,7 @@ type TParser=class
        procedure CheckParameters(Symbol:PSymbol;SymbolParameters:TSymbolList;var Parameters:TTreeNode);
        procedure SearchOverloadedSymbolAndCheckParameters(var Symbol:PSymbol;var Parameters:TTreeNode);
        procedure FinishCheckSymbols(ParentSymbol:PSymbol;List:TSymbolList);
+       procedure FinishCheckMethods(ParentSymbol:PSymbol);
        procedure AddDefaultSymbols;
        procedure GetDefaultTypes;
        procedure ParseRecordField(var RecordType:PType;IsRecord:boolean=true;SymbolAttributes:TSymbolAttributes=[];UntilDirectives:TScannerTokens=[];CaseOfLevel:longint=0;CaseOfVariant:longint=0;VariantPrefix:ansistring='');
@@ -156,6 +157,31 @@ begin
   Symbol:=Symbol^.Next;
  end;
 
+end;
+
+procedure TParser.FinishCheckMethods(ParentSymbol:PSymbol);
+var Symbol:PSymbol;
+    AType:PType;
+    i:longint;
+begin
+ for i:=0 to ModuleSymbol^.TypePointerList.Count-1 do begin
+  AType:=ModuleSymbol^.TypePointerList[i];
+  if assigned(AType) and (AType^.TypeDefinition in [ttdOBJECT,ttdCLASS]) and assigned(AType^.RecordTable) then begin
+   Symbol:=AType^.RecordTable.First;
+   while assigned(Symbol) do begin
+    if (Symbol^.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction]) and not (tpaAbstract in Symbol^.ProcedureAttributes) then begin
+     if not (tsaMethodDefined in Symbol^.Attributes) then begin
+      if assigned(AType^.Symbol) then begin
+       Error.AddErrorCode(66,CorrectSymbolName(AType^.Symbol^.Name)+'.'+CorrectSymbolName(Symbol^.Name));
+      end else begin
+       Error.AddErrorCode(66,CorrectSymbolName(Symbol^.Name));
+      end;
+     end;
+    end;
+    Symbol:=Symbol^.Next;
+   end;
+  end;
+ end;
 end;
 
 procedure TParser.AddDefaultSymbols;
@@ -2535,6 +2561,7 @@ begin
   end;
   MakeSymbolsPublic:=true;
   ParseHeadBlock(false,true);
+  FinishCheckMethods(Symbol);
   CodeTree:=ParseMainBlock;
   FinishCheckSymbols(Symbol,Symbol^.SymbolList);
   if assigned(CodeTree) then begin
@@ -2637,6 +2664,7 @@ begin
    ParseUSESStatement(true,true,true);
   end;
   Scanner.Match(tstEND);
+  FinishCheckMethods(Symbol);
   FinishCheckSymbols(Symbol,Symbol^.SymbolList);
   if assigned(CodeTree) then begin
    if not Error.Errors then begin
@@ -2709,6 +2737,7 @@ begin
    ParseUSESStatement(true,true,false);
   end;
   ParseHeadBlock(false,true);
+  FinishCheckMethods(Symbol);
   if Scanner.CurrentToken=tstBEGIN then begin
    CodeTree:=ParseMainBlock;
   end else begin
@@ -2847,6 +2876,9 @@ begin
   end;
 
   ParseHeadBlock(false,true);
+
+  FinishCheckMethods(Symbol);
+  
   InitializationCodeTree:=nil;
   FinalizationCodeTree:=nil;
   if Scanner.CurrentToken=tstBEGIN then begin
@@ -3892,7 +3924,7 @@ begin
   case Scanner.CurrentToken of
    tstSTRICT:begin
     Scanner.Match(tstSTRICT);
-    Scanner.Match(tstPRIVATE);
+    Scanner.Match(tstPRIVATE);  
     SymbolAttributes:=(SymbolAttributes-OOPSymbolAttribute)+[tsaOOPStrictPrivate];
    end;
    tstPRIVATE:begin
@@ -4687,7 +4719,7 @@ end;
 function TParser.ParseProcedure(ParseHeader:boolean;ProcedureAttributes:TProcedureAttributes):PSymbol;
 var Parent:PSymbol;
     ObjectClassSymbolList:TSymbolList;
-var OldObjectName,OldName,Name,ParameterSuffix,MethodName:ansistring;
+    OldObjectName,OldName,Name,ParameterSuffix,MethodName:ansistring;
     Method,MethodSymbol,SearchSymbol,Symbol,SymbolA,SymbolB,ResultSymbol,
     OldCurrentMethod,OldCurrentProcedureFunction:PSymbol;
     OldCurrentObjectClass:PType;
@@ -4695,7 +4727,7 @@ var OldObjectName,OldName,Name,ParameterSuffix,MethodName:ansistring;
     BlockNode:TTreeNode;
     OldVariableType:TVariableType;
     OldList,OldProcList,LocalList:TSymbolList;
-    OldAssemblerMode,ForwardProc:boolean;
+    OldAssemblerMode,ForwardProc,OK:boolean;
 begin
  result:=nil;
 
@@ -4783,31 +4815,21 @@ begin
   end;
   MethodName:=Scanner.ReadIdentifier;
   Method:=ObjectClassSymbolList.GetSymbol(MethodName,ModuleSymbol,CurrentObjectClass);
-  if not assigned(result) then begin
+  if not assigned(Method) then begin
    Error.AbortCode(101);
    exit;
   end;
-  Method^.OverloadedName:=Scanner.ProcedureName+'_'+result^.OverloadedName;
+  Method^.OverloadedName:=Scanner.ProcedureName+'_'+Method^.OverloadedName;
   HashSymbol(Method);
   SymbolManager.PushSymbolList(ObjectClassSymbolList);
  end else begin
+  MethodSymbol:=nil;
   Method:=nil;
   ObjectClassSymbolList:=nil;
  end;
  Symbol^.ProcedureName:=Scanner.ProcedureName;
  Symbol^.Name:=Name;
  HashSymbol(Symbol);
-
- if assigned(Method) then begin
-  CurrentObjectClass:=Method^.OwnerObjectClass;
-{ Symbol^.MethodSymbol:=Method;
-  Method^.MethodSymbol:=Symbol;}
-  Symbol^.Attributes:=Symbol^.Attributes+[tsaMethod];
-  Scanner.ProcedureName:=Scanner.ProcedureName+'_'+Method^.Name;
-  Symbol^.ProcedureName:=Scanner.ProcedureName;
-  Symbol^.Name:=Method^.Name;
-  HashSymbol(Symbol);
- end;
 
  if Scanner.CurrentToken=tstLeftParen then begin
   Symbol^.ParameterSuffix:='';
@@ -4829,6 +4851,47 @@ begin
   Symbol^.ParameterSuffix:=Symbol^.ParameterSuffix+'_RESULT_'+Symbol^.ReturnType^.OwnerModule^.Name+'_'+ParameterSuffix;
  end else begin
   Symbol^.ReturnType:=nil;
+ end;
+
+ if assigned(Method) then begin
+  while assigned(Method) do begin
+   case CompareParameters(Error,SymbolManager,Symbol^.Parameter,Method.Parameter,tcptNONE,[tcpoCOMPAREDEFAULTVALUE]) of
+    tcteExact,tcteEqual:begin
+     if assigned(Symbol^.ReturnType)<>assigned(Method^.ReturnType) then begin
+      OK:=false;
+     end else if assigned(Symbol^.ReturnType) and assigned(Method^.ReturnType) then begin
+      OK:=EqualTypes(Error,SymbolManager,Symbol^.ReturnType,Method^.ReturnType);
+     end else begin
+      OK:=true;
+     end;
+    end;
+    else begin
+     OK:=false;
+    end;
+   end;
+   if OK then begin
+    break;
+   end else begin
+    Method:=Method^.NextOverloaded;
+   end;
+  end;
+  if not assigned(Method) then begin
+   Error.AbortCode(265,CorrectSymbolName(Symbol^.Name));
+   exit;
+  end;
+  Method^.Attributes:=Method^.Attributes+[tsaMethodDefined];
+  HashSymbol(Method);
+ end;
+
+ if assigned(Method) then begin
+  CurrentObjectClass:=Method^.OwnerObjectClass;
+{ Symbol^.MethodSymbol:=Method;
+  Method^.MethodSymbol:=Symbol;}
+  Symbol^.Attributes:=Symbol^.Attributes+[tsaMethod];
+  Scanner.ProcedureName:=Scanner.ProcedureName+'_'+Method^.Name;
+  Symbol^.ProcedureName:=Scanner.ProcedureName;
+  Symbol^.Name:=Method^.Name;
+  HashSymbol(Symbol);
  end;
 
  Symbol^.OverloadedName:=Scanner.ProcedureName+Symbol^.ParameterSuffix;
