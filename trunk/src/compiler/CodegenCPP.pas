@@ -2790,10 +2790,10 @@ begin
          if tpaVirtual in Symbol^.ProcedureAttributes then begin
           Target.Add('typedef',spacesRIGHT);
           ProcessTypeOrName(Symbol^.ReturnType, Target, nil);
-          Target.Add('*',spacesRIGHT);
+          Target.Add('(*',spacesLEFT);
           Target.Add(Name+'_VMT_'+IntToStr(Symbol^.VirtualIndex));
-          Target.Add('(');
-          Target.Add(GetSymbolName(Symbol^.OwnerObjectClass^.Symbol)+' *instanceData');
+          Target.Add(')(');
+          Target.Add(GetSymbolName(Symbol^.OwnerObjectClass^.Symbol)+'*');
           if assigned(Symbol.Parameter) then
           begin
             OtherSymbol:=Symbol.Parameter.First;
