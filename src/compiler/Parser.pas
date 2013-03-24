@@ -4885,8 +4885,8 @@ begin
 
  if assigned(Method) then begin
   CurrentObjectClass:=Method^.OwnerObjectClass;
-{ Symbol^.MethodSymbol:=Method;
-  Method^.MethodSymbol:=Symbol;}
+  Symbol^.MethodSymbol:=Method;
+  Method^.MethodSymbol:=Symbol;
   Symbol^.Attributes:=Symbol^.Attributes+[tsaMethod];
   Scanner.ProcedureName:=Scanner.ProcedureName+'_'+Method^.Name;
   Symbol^.ProcedureName:=Scanner.ProcedureName;
