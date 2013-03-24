@@ -207,8 +207,14 @@ begin
    Symbols.tstConstant:begin
     result:=GetModuleName(Sym.OwnerModule)+'_CONSTANT_'+Sym.Name
    end;
-   Symbols.tstProcedure:begin                                     
-    result:=GetModuleName(Sym.OwnerModule)+'_PROCEDURE_'+Sym.OverloadedName;
+   Symbols.tstProcedure:begin
+    if tpaConstructor in Sym.ProcedureAttributes then begin
+     result:=GetModuleName(Sym.OwnerModule)+'_CONSTRUCTOR_'+Sym.OverloadedName;
+    end else if tpaDestructor in Sym.ProcedureAttributes then begin
+     result:=GetModuleName(Sym.OwnerModule)+'_DESTRUCTOR_'+Sym.OverloadedName;
+    end else begin
+     result:=GetModuleName(Sym.OwnerModule)+'_PROCEDURE_'+Sym.OverloadedName;
+    end;
 {   if (tpaOverload in Sym.ProcedureAttributes) and (Sym.OverloadedName<>'') and (Sym.OverloadedName<>Sym.Name) then begin
      result:=GetModuleName(Sym.OwnerModule)+'_PROCEDURE_'+Sym.OverloadedName;
     end else begin
