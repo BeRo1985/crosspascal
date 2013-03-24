@@ -1102,11 +1102,11 @@ begin
           end else begin
            HugeStringConcatChar(CurrentString,ord(']'),Len);
            HugeStringConcatChar(CurrentString,ord(']'),Len);
-           ReadChar;
+//           ReadChar;
           end;
          end else begin
           HugeStringConcatChar(CurrentString,ord(']'),Len);
-          ReadChar;
+//          ReadChar;
          end;
         end else begin
          HugeStringConcatChar(CurrentString,CurrentChar,Len);
