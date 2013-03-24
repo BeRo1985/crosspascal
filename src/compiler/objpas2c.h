@@ -36,6 +36,7 @@ typedef struct pasObjectVirtualMethodTable {
   size_t size;
   void* dynamicMethodTable;
   pasObjectVirtualMethodTablePointer ancestorVirtualMethodTable;
+  void* virtualMethods[0];
 } pasObjectVirtualMethodTable;
 
 typedef struct {

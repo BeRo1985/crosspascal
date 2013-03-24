@@ -1581,10 +1581,10 @@ begin
           if assigned(TreeNode.MethodSymbol) and (tpaVirtual in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
            if assigned(TreeNode.Symbol^.TypeDefinition) and (TreeNode.Symbol^.TypeDefinition^.TypeDefinition=ttdOBJECT) then begin
             // OBJECT
-            FProcCode.Add('(('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasObjectVMTDispatch((void*)&('+GetSymbolName(TreeNode.Symbol)+','+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')))');
+            FProcCode.Add('(('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')((*((('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'*)&'+GetSymbolName(TreeNode.Symbol)+'))->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
            end else begin
             // CLASS
-            FProcCode.Add('(('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasClassVMTDispatch((void*)('+GetSymbolName(TreeNode.Symbol)+','+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')))');
+            FProcCode.Add('(('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')((*((('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+')'+GetSymbolName(TreeNode.Symbol)+'))->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
            end;
           end else if assigned(TreeNode.MethodSymbol) and (tpaDynamic in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
            if assigned(TreeNode.Symbol^.TypeDefinition) and (TreeNode.Symbol^.TypeDefinition^.TypeDefinition=ttdOBJECT) then begin
