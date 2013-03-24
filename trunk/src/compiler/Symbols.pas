@@ -13,7 +13,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
                        tsaHiddenParameter,tsaParameterSelf,tsaParameterResult,
                        tsaTemporaryExceptionVariable,tsaField,tsaInternalField,
                        tsaInherited,tsaInheritedInClass,tsaObjectVMT,
-                       tsaHidden);
+                       tsaHidden,tsaMethodDefined);
      TSymbolAttributes=set of TSymbolAttribute;
 
      TPortabilityDirective=(tpdPLATFORM,tpdDEPRECATED,tpdLIBRARY);

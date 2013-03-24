@@ -1121,10 +1121,100 @@ var TypeOptions:TCompareTypesOptions;
     ProcType:PType;
 begin
  result:=tcteIncompatible;
- if (assigned(ParametersA) and assigned(ParametersB)) then begin
-  TypeOptions:=[tctoCHECKOPERATOR,tctoALLOWVARIANT];
+ TypeOptions:=[tctoCHECKOPERATOR,tctoALLOWVARIANT];
+ if assigned(ParametersA) then begin
   SymbolA:=ParametersA.First;
+ end else begin
+  SymbolA:=nil;
+ end;
+ if assigned(ParametersB) then begin
   SymbolB:=ParametersB.First;
+ end else begin
+  SymbolB:=nil;
+ end;
+ if tcpoIGNOREHIDDEN in Options then begin
+  while assigned(SymbolA) and (tsaHiddenParameter in SymbolA^.Attributes) do begin
+   SymbolA:=SymbolA^.Next;
+  end;
+  while assigned(SymbolB) and (tsaHiddenParameter in SymbolB^.Attributes) do begin
+   SymbolB:=SymbolB^.Next;
+  end;
+ end;
+{if not (assigned(SymbolA) and assigned(SymbolB)) then begin
+  if SymbolA=SymbolB then begin
+   result:=tcteEqual;
+  end;
+  exit;
+ erd;}
+ WorstEqual:=high(TCompareTypesEqual);
+ while assigned(SymbolA) and assigned(SymbolB) do begin
+
+  if (assigned(SymbolA^.TypeDefinition) and assigned(SymbolB^.TypeDefinition)) and
+     ((SymbolA^.TypeDefinition^.Unique) or (SymbolB^.TypeDefinition^.Unique)) and
+     (SymbolA^.TypeDefinition<>SymbolB^.TypeDefinition) then begin
+   exit;
+  end;
+
+  if (tsaHiddenParameter in SymbolA^.Attributes) or
+     (tsaHiddenParameter in SymbolB^.Attributes) then begin
+   if (tsaHiddenParameter in SymbolA^.Attributes)<>(tsaHiddenParameter in SymbolB^.Attributes) then begin
+    exit;
+   end;
+   Equal:=tcteEqual;
+   if (not (tsaParameterSelf in SymbolA^.Attributes)) and
+      (not (tsaParameterSelf in SymbolB^.Attributes)) then begin
+    if SymbolA^.VariableType<>SymbolB^.VariableType then begin
+     exit;
+    end;
+    Equal:=CompareTypesExt(Error,SymbolManager,SymbolA^.TypeDefinition,SymbolB^.TypeDefinition,ttntEmpty,ConvertType,ProcType,TypeOptions);
+   end;
+  end else begin
+   case ParametersType of
+    tcptVALUEEQUALCONST:begin
+     if (SymbolA^.VariableType<>SymbolB^.VariableType) and
+        ((SymbolA^.VariableType in [tvtParameterVariable,tvtParameterResult]) or
+         (SymbolB^.VariableType in [tvtParameterVariable,tvtParameterResult])) then begin
+      exit;
+     end;
+     Equal:=CompareTypesExt(Error,SymbolManager,SymbolA^.TypeDefinition,SymbolB^.TypeDefinition,ttntEmpty,ConvertType,ProcType,TypeOptions);
+    end;
+    tcptALL:begin
+     if SymbolA^.VariableType<>SymbolB^.VariableType then begin
+      exit;
+     end;
+     Equal:=CompareTypesExt(Error,SymbolManager,SymbolA^.TypeDefinition,SymbolB^.TypeDefinition,ttntEmpty,ConvertType,ProcType,TypeOptions);
+    end;
+    tcptPROCVAR:begin
+     if SymbolA^.VariableType<>SymbolB^.VariableType then begin
+      exit;
+     end;
+     Equal:=CompareTypesExt(Error,SymbolManager,SymbolA^.TypeDefinition,SymbolB^.TypeDefinition,ttntEmpty,ConvertType,ProcType,TypeOptions);
+     if Equal<tcteEqual then begin
+      Equal:=tcteIncompatible;
+     end;
+    end;
+    else begin
+     Equal:=CompareTypesExt(Error,SymbolManager,SymbolA^.TypeDefinition,SymbolB^.TypeDefinition,ttntEmpty,ConvertType,ProcType,TypeOptions);
+    end;
+   end;
+  end;
+
+  if Equal=tcteIncompatible then begin
+   exit;
+  end;
+  if Equal<WorstEqual then begin
+   WorstEqual:=Equal;
+  end;
+
+  if tcpoCOMPAREDEFAULTVALUE in Options then begin
+   if (assigned(SymbolA^.DefaultParameterSymbol) and assigned(SymbolB^.DefaultParameterSymbol)) and not
+      SymbolManager.AreConstSymbolEqual(SymbolA^.DefaultParameterSymbol,SymbolB^.DefaultParameterSymbol) then begin
+    exit;
+   end;
+  end;
+
+  SymbolA:=SymbolA^.Next;
+  SymbolB:=SymbolB^.Next;
   if tcpoIGNOREHIDDEN in Options then begin
    while assigned(SymbolA) and (tsaHiddenParameter in SymbolA^.Attributes) do begin
     SymbolA:=SymbolA^.Next;
@@ -1133,97 +1223,13 @@ begin
     SymbolB:=SymbolB^.Next;
    end;
   end;
- {if not (assigned(SymbolA) and assigned(SymbolB)) then begin
-   if SymbolA=SymbolB then begin
-    result:=tcteEqual;
-   end;
-   exit;
-  erd;}
-  WorstEqual:=high(TCompareTypesEqual);
-  while assigned(SymbolA) and assigned(SymbolB) do begin
-
-   if (assigned(SymbolA^.TypeDefinition) and assigned(SymbolB^.TypeDefinition)) and
-      ((SymbolA^.TypeDefinition^.Unique) or (SymbolB^.TypeDefinition^.Unique)) and
-      (SymbolA^.TypeDefinition<>SymbolB^.TypeDefinition) then begin
-    exit;
-   end;
-
-   if (tsaHiddenParameter in SymbolA^.Attributes) or
-      (tsaHiddenParameter in SymbolB^.Attributes) then begin
-    if (tsaHiddenParameter in SymbolA^.Attributes)<>(tsaHiddenParameter in SymbolB^.Attributes) then begin
-     exit;
-    end;
-    Equal:=tcteEqual;
-    if (not (tsaParameterSelf in SymbolA^.Attributes)) and
-       (not (tsaParameterSelf in SymbolB^.Attributes)) then begin
-     if SymbolA^.VariableType<>SymbolB^.VariableType then begin
-      exit;
-     end;
-     Equal:=CompareTypesExt(Error,SymbolManager,SymbolA^.TypeDefinition,SymbolB^.TypeDefinition,ttntEmpty,ConvertType,ProcType,TypeOptions);
-    end;
-   end else begin
-    case ParametersType of
-     tcptVALUEEQUALCONST:begin
-      if (SymbolA^.VariableType<>SymbolB^.VariableType) and
-         ((SymbolA^.VariableType in [tvtParameterVariable,tvtParameterResult]) or
-          (SymbolB^.VariableType in [tvtParameterVariable,tvtParameterResult])) then begin
-       exit;
-      end;
-      Equal:=CompareTypesExt(Error,SymbolManager,SymbolA^.TypeDefinition,SymbolB^.TypeDefinition,ttntEmpty,ConvertType,ProcType,TypeOptions);
-     end;
-     tcptALL:begin
-      if SymbolA^.VariableType<>SymbolB^.VariableType then begin
-       exit;
-      end;
-      Equal:=CompareTypesExt(Error,SymbolManager,SymbolA^.TypeDefinition,SymbolB^.TypeDefinition,ttntEmpty,ConvertType,ProcType,TypeOptions);
-     end;
-     tcptPROCVAR:begin
-      if SymbolA^.VariableType<>SymbolB^.VariableType then begin
-       exit;
-      end;
-      Equal:=CompareTypesExt(Error,SymbolManager,SymbolA^.TypeDefinition,SymbolB^.TypeDefinition,ttntEmpty,ConvertType,ProcType,TypeOptions);
-      if Equal<tcteEqual then begin
-       Equal:=tcteIncompatible;
-      end;
-     end;
-     else begin
-      Equal:=CompareTypesExt(Error,SymbolManager,SymbolA^.TypeDefinition,SymbolB^.TypeDefinition,ttntEmpty,ConvertType,ProcType,TypeOptions);
-     end;
-    end;
-   end;
-
-   if Equal=tcteIncompatible then begin
-    exit;
-   end;
-   if Equal<WorstEqual then begin
-    WorstEqual:=Equal;
-   end;
-
-   if tcpoCOMPAREDEFAULTVALUE in Options then begin
-    if (assigned(SymbolA^.DefaultParameterSymbol) and assigned(SymbolB^.DefaultParameterSymbol)) and not
-       SymbolManager.AreConstSymbolEqual(SymbolA^.DefaultParameterSymbol,SymbolB^.DefaultParameterSymbol) then begin
-     exit;
-    end;
-   end;
-
-   SymbolA:=SymbolA^.Next;
-   SymbolB:=SymbolB^.Next;
-   if tcpoIGNOREHIDDEN in Options then begin
-    while assigned(SymbolA) and (tsaHiddenParameter in SymbolA^.Attributes) do begin
-     SymbolA:=SymbolA^.Next;
-    end;
-    while assigned(SymbolB) and (tsaHiddenParameter in SymbolB^.Attributes) do begin
-     SymbolB:=SymbolB^.Next;
-    end;
-   end;
-  end;
-  if not (assigned(SymbolA) or assigned(SymbolB)) then begin
-   result:=WorstEqual;
-  end else if (tcpoALLOWDEFAULTS in Options) and
-              (assigned(SymbolA) and (tsaParameterWithDefault in SymbolA^.Attributes) or
-               assigned(SymbolB) and (tsaParameterWithDefault in SymbolB^.Attributes)) then begin
-   result:=WorstEqual;
-  end;
+ end;
+ if not (assigned(SymbolA) or assigned(SymbolB)) then begin
+  result:=WorstEqual;
+ end else if (tcpoALLOWDEFAULTS in Options) and
+             (assigned(SymbolA) and (tsaParameterWithDefault in SymbolA^.Attributes) or
+              assigned(SymbolB) and (tsaParameterWithDefault in SymbolB^.Attributes)) then begin
+  result:=WorstEqual;
  end;
 end;
 
