@@ -1578,7 +1578,25 @@ begin
        end else begin
         if assigned(TreeNode.Symbol.OwnerModule) then begin
          if assigned(TreeNode.MethodSymbol) then begin
-          FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol));
+          if assigned(TreeNode.MethodSymbol) and (tpaVirtual in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
+           if assigned(TreeNode.Symbol^.TypeDefinition) and (TreeNode.Symbol^.TypeDefinition^.TypeDefinition=ttdOBJECT) then begin
+            // OBJECT
+            FProcCode.Add('(('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasObjectVMTDispatch((void*)&('+GetSymbolName(TreeNode.Symbol)+','+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')))');
+           end else begin
+            // CLASS
+            FProcCode.Add('(('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasClassVMTDispatch((void*)('+GetSymbolName(TreeNode.Symbol)+','+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')))');
+           end;
+          end else if assigned(TreeNode.MethodSymbol) and (tpaDynamic in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
+           if assigned(TreeNode.Symbol^.TypeDefinition) and (TreeNode.Symbol^.TypeDefinition^.TypeDefinition=ttdOBJECT) then begin
+            // OBJECT
+            FProcCode.Add('(('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasObjectDMTDispatch((void*)&('+GetSymbolName(TreeNode.Symbol)+','+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')))');
+           end else begin
+            // CLASS
+            FProcCode.Add('(('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasClassDMTDispatch((void*)('+GetSymbolName(TreeNode.Symbol)+','+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')))');
+           end;
+          end else begin
+           FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol));
+          end;
          end else begin
           FProcCode.Add(GetSymbolName(TreeNode.Symbol));
          end;
