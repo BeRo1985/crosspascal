@@ -2718,7 +2718,15 @@ begin
     ttdObject,ttdClass:begin
      SymbolList:=Type_^.RecordTable;
      if assigned(SymbolList) then begin
-      CurrentVariantLevelIndex:=0;
+      if Type_^.HasVirtualTable then begin
+       Target.AddLn('typedef struct {');
+       Target.IncTab;
+       Target.AddLn('pasObjectVirtualMethodTable VMT;');
+       Target.AddLn('void* virtualMethods['+IntToStr(Type_^.VirtualIndexCount)+'];');
+       Target.DecTab;
+       Target.AddLn('} '+Name+'_VMT_TYPE;');
+       Target.AddLn('extern '+Name+'_VMT_TYPE '+Name+'_VMT;');
+      end;
       Symbol:=SymbolList.First;
       while assigned(Symbol) do begin
        case Symbol^.SymbolType of
