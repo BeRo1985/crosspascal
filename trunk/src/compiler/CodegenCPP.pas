@@ -60,6 +60,7 @@ type TCodeWriter = class
        FBreakCount: Integer;
        FNestedBreakCount: Integer;
        FBreakLabelNeeded: array of Integer;
+       FContinueLabelNeeded: array of Integer;
       protected
        function GetModuleName(Sym: PSymbol): ansistring;
        function GetSymbolName(Sym: PSymbol): ansistring;
@@ -81,8 +82,9 @@ type TCodeWriter = class
 
        procedure TranslateCode(TreeNode:TTreeNode);
 
-       procedure StartBreakPart;
+       procedure StartBreakContinuePart;
        procedure StopBreakPart;
+       procedure StopContinuePart;
 
        procedure TranslateConstant(Symbol: PSymbol; Target: TCodeWriter);
        procedure TranslateVariable(Symbol: PSymbol; Target: TCodeWriter);
@@ -1145,12 +1147,13 @@ begin
       FProcCode.Add('; '+GetSymbolName(TreeNode.Left.Left.Symbol)+'++');
      FProcCode.AddLn('){');
 
-     StartBreakPart;
+     StartBreakContinuePart;
      FProcCode.IncTab;
      TranslateCode(TreeNode.Block);
 
      FProcCode.AddLn(';');
      FProcCode.DecTab;
+     StopContinuePart;
      FProcCode.Add('}');
      StopBreakPart;
    end;
@@ -1160,10 +1163,11 @@ begin
      TranslateCode(TreeNode.Left);
      FProcCode.AddLn('){');
 
-     StartBreakPart;
+     StartBreakContinuePart;
      FProcCode.IncTab;
      TranslateCode(TreeNode.Right);
      FProcCode.DecTab;
+     StopContinuePart;
      FProcCode.Add('}');
      StopBreakPart;
     end else begin
@@ -1174,11 +1178,11 @@ begin
     if assigned(TreeNode.Left) then begin
 
      FProcCode.AddLn('do{');
-     StartBreakPart;
+     StartBreakContinuePart;
      FProcCode.IncTab;
      TranslateCode(TreeNode.Right);
-
      FProcCode.DecTab;
+     StopContinuePart;
      FProcCode.Add('}while(!(');
      TranslateCode(TreeNode.Left);
      FProcCode.Add('))');
@@ -1267,7 +1271,15 @@ begin
     end;
    end;
    ttntCONTINUE:begin
-    FProcCode.Add('continue',spacesBOTH);
+    if FNestedBreakCount = 0 then begin
+     Error.InternalError(20130324000201)
+    end else begin
+     if(FContinueLabelNeeded[FNestedBreakCount-1] = -1) then begin
+      FContinueLabelNeeded[FNestedBreakCount-1] := FBreakCount;
+      Inc(FBreakCount);
+     end;
+     FProcCode.AddLn('goto '+GetSymbolName(FSelf)+'_CONTINUELABEL'+IntToStr(FContinueLabelNeeded[FNestedBreakCount-1])+';');
+    end;
    end;
    ttntEXIT:begin
     if assigned(FSelf.ReturnType) then begin
@@ -2076,11 +2088,13 @@ begin
   FHeader.ExportStream(HeaderStream);
 end;
 
-procedure TCodegenCPP.StartBreakPart;
+procedure TCodegenCPP.StartBreakContinuePart;
 begin
  inc(FNestedBreakCount);
  SetLength(FBreakLabelNeeded, FNestedBreakCount);
+ SetLength(FContinueLabelNeeded, FNestedBreakCount);
  FBreakLabelNeeded[FNestedBreakCount-1] := -1;
+ FContinueLabelNeeded[FNestedBreakCount-1] := -1;
 end;
 
 procedure TCodegenCPP.StopBreakPart;
@@ -2091,6 +2105,15 @@ begin
  end;
  dec(FNestedBreakCount);
  SetLength(FBreakLabelNeeded, FNestedBreakCount);
+ SetLength(FContinueLabelNeeded, FNestedBreakCount);
+end;
+
+procedure TCodegenCPP.StopContinuePart;
+begin
+ if FContinueLabelNeeded[FNestedBreakCount-1] <> -1 then begin
+  FProcCode.AddLn(';');
+  FProcCode.AddLn(GetSymbolName(FSelf)+'_CONTINUELABEL'+IntToStr(FContinueLabelNeeded[FNestedBreakCount-1])+': ;');
+ end;
 end;
 
 function TCodegenCPP.AnsiStringEscape(const Input: ansistring; Quotes: Boolean = True): ansistring;
