@@ -1574,10 +1574,14 @@ begin
       end;
       else {tipNone:}begin
        if assigned(TreeNode.Symbol.OwnerObjectClass) then begin
-         FProcCode.Add(GetSymbolName(TreeNode.Symbol));
+        FProcCode.Add(GetSymbolName(TreeNode.Symbol));
        end else begin
         if assigned(TreeNode.Symbol.OwnerModule) then begin
-         FProcCode.Add(GetSymbolName(TreeNode.Symbol));
+         if assigned(TreeNode.MethodSymbol) then begin
+          FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol));
+         end else begin
+          FProcCode.Add(GetSymbolName(TreeNode.Symbol));
+         end;
         end;
        end;
       end;
@@ -1600,6 +1604,19 @@ begin
         FProcCode.Add(',',spacesRIGHT);
        end;
        FProcCode.Add('(void*)instanceData');
+       HaveParameters:=true;
+      end else if assigned(TreeNode.MethodSymbol) and assigned(TreeNode.Symbol^.TypeDefinition) then begin
+       if HaveParameters then
+       begin
+        FProcCode.Add(',',spacesRIGHT);
+       end;
+       if TreeNode.Symbol^.TypeDefinition^.TypeDefinition=ttdOBJECT then begin
+        // OBJECT
+        FProcCode.Add('((void*)&('+GetSymbolName(TreeNode.Symbol)+'))');
+       end else begin
+        // CLASS
+        FProcCode.Add('(void*)'+GetSymbolName(TreeNode.Symbol));
+       end;
        HaveParameters:=true;
       end;
       if HaveParameters and Assigned(TreeNode.Left) then
