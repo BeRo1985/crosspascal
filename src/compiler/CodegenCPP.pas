@@ -109,6 +109,9 @@ type TCodeWriter = class
        procedure BeginRootNestedProc; override;
        procedure EndRootNestedProc; override;
 
+       procedure AddHeader(const Input: string);
+       procedure AddCode(const Input: string);
+
        procedure GenerateProc(ProcSymbol:PSymbol;ProcCodeTree:TTreeNode); override;
        procedure GenerateProgram(ProgramSymbol:PSymbol;ProgramCodeTree:TTreeNode); override;
        procedure GenerateLibrary(LibrarySymbol:PSymbol;LibraryCodeTree:TTreeNode); override;
@@ -599,7 +602,6 @@ begin
 
  FCode.AddLn('//program ' + ProgramSymbol.Name);
  FCode.AddHeader('#define __OBJPAS2CMAIN__');
- FCode.AddInclude('objpas2c.h');
  FSelf := ProgramSymbol;
 
  TranslateModuleTypes(FSelf, FHeader, FModuleCode);
@@ -656,7 +658,6 @@ begin
  FHeader.AddHeader('');
  FHeader.AddInclude('system.h');
  FHeader.AddInclude('stdint.h');
- FHeader.AddInclude('objpas2c.h');
  for i:=0 to SymbolManager.UnitList.Count-1 do
   FHeader.AddInclude(Copy(SymbolManager.UnitList[i], 1, Length(SymbolManager.UnitList[i]))+'.h');
  FHeader.AddLn('');
@@ -1377,7 +1378,7 @@ begin
              tstUnsigned8Bit,
              tstUnsigned16Bit,
              tstUnsigned32Bit,
-             tstUnsigned64Bit: FProcCode.Add('pasWriteUInt('); // WRONG! Should call an unsigned write-function
+             tstUnsigned64Bit: FProcCode.Add('pasWriteUInt(');
              tstUnsignedChar,
              tstUnsignedWideChar,
              tstUnsignedHugeChar: FProcCode.Add('pasWriteChar(');
@@ -2167,6 +2168,16 @@ begin
   FProcCode.AddLn(';');
   FProcCode.AddLn(GetSymbolName(FSelf)+'_CONTINUELABEL'+IntToStr(FContinueLabelNeeded[FNestedBreakCount-1])+': ;');
  end;
+end;
+
+procedure TCodegenCPP.AddCode(const Input: string);
+begin
+  FCode.AddLn(Input);
+end;
+
+procedure TCodegenCPP.AddHeader(const Input: string);
+begin
+  FHeader.AddLn(Input);
 end;
 
 function TCodegenCPP.AnsiStringEscape(const Input: ansistring; Quotes: Boolean = True): ansistring;

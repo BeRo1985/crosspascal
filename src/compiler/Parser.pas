@@ -3090,6 +3090,14 @@ procedure TParser.ParseHeadBlock(ParseHeader,IsGlobal:boolean);
 begin
  while not Scanner.IsEOFOrAbortError do begin
   case Scanner.CurrentToken of
+   tstCCODE:begin
+    if ParseHeader then
+     TCodegenCPP(CodeGenerator).AddHeader(HugeStringToAnsiString(Scanner.CurrentString))
+    else
+     TCodegenCPP(CodeGenerator).AddCode(HugeStringToAnsiString(Scanner.CurrentString));
+    Scanner.ReadNext;
+    Scanner.ReadNext;
+   end;
    tstRESOURCESTRING:begin
     ParseRESOURCESTRINGDeclartion;
    end;

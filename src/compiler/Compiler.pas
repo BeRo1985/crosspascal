@@ -182,9 +182,7 @@ begin
     tcc_set_output_type(TCCState,TCC_OUTPUT_EXE);
     tcc_set_options(TCCState,'-O3');
     s:=ChangeFileExt(ExtractFileName(FileName),'.o');
-    if tcc_add_file(TCCState,'objpas2c.o')<0 then begin
-     Error.AddErrorCode(10000);
-    end else if tcc_add_file(TCCState,pansichar(s))<0 then begin
+    if tcc_add_file(TCCState,pansichar(s))<0 then begin
      Error.AddErrorCode(10000);
     end else begin
      for i:=0 to SymbolManager.UnitList.Count-1 do begin
@@ -211,7 +209,7 @@ begin
    s:=SymbolManager.UnitList[i]+'.o '+s;
   end;
 
-  DebugLog(GetDosOutput(Options.TargetCompiler+' -c objpas2c.c'));
+//  DebugLog(GetDosOutput(Options.TargetCompiler+' -c objpas2c.c'));
   s:=Options.TargetCompiler+' objpas2c.o '+s;
   DebugLog('Executing: '+s);
   DebugLog(GetDosOutput(s));
