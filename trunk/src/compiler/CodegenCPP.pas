@@ -57,6 +57,9 @@ type TCodeWriter = class
        FProcSymbol: PSymbol;
        FProcStructCount: longint;
        FStringConstCount: longint;
+       FBreakCount: Integer;
+       FNestedBreakCount: Integer;
+       FBreakLabelNeeded: array of Integer;
       protected
        function GetModuleName(Sym: PSymbol): ansistring;
        function GetSymbolName(Sym: PSymbol): ansistring;
@@ -77,6 +80,9 @@ type TCodeWriter = class
        function TranslateStringConstant(ConstantStr: THugeString): ansistring;
 
        procedure TranslateCode(TreeNode:TTreeNode);
+
+       procedure StartBreakPart;
+       procedure StopBreakPart;
 
        procedure TranslateConstant(Symbol: PSymbol; Target: TCodeWriter);
        procedure TranslateVariable(Symbol: PSymbol; Target: TCodeWriter);
@@ -1138,34 +1144,45 @@ begin
      else
       FProcCode.Add('; '+GetSymbolName(TreeNode.Left.Left.Symbol)+'++');
      FProcCode.AddLn('){');
+
+     StartBreakPart;
      FProcCode.IncTab;
      TranslateCode(TreeNode.Block);
+
      FProcCode.AddLn(';');
      FProcCode.DecTab;
-     FProcCode.AddLn('}');
+     FProcCode.Add('}');
+     StopBreakPart;
    end;
    ttntWHILE:begin
     if assigned(TreeNode.Left) then begin
      FProcCode.Add('while(');
      TranslateCode(TreeNode.Left);
      FProcCode.AddLn('){');
+
+     StartBreakPart;
      FProcCode.IncTab;
      TranslateCode(TreeNode.Right);
      FProcCode.DecTab;
      FProcCode.Add('}');
+     StopBreakPart;
     end else begin
      Error.InternalError(201302222306000);
     end;
    end;
    ttntREPEAT:begin
     if assigned(TreeNode.Left) then begin
+
      FProcCode.AddLn('do{');
+     StartBreakPart;
      FProcCode.IncTab;
      TranslateCode(TreeNode.Right);
+
      FProcCode.DecTab;
      FProcCode.Add('}while(!(');
      TranslateCode(TreeNode.Left);
      FProcCode.Add('))');
+     StopBreakPart;
     end else begin
      Error.InternalError(201302222306000);
     end;
@@ -1239,7 +1256,15 @@ begin
    ttntCASEValue:begin
    end;
    ttntBREAK:begin
-    FProcCode.Add('break',spacesBOTH);
+    if FNestedBreakCount = 0 then begin
+     Error.InternalError(20130324000201)
+    end else begin
+     if(FBreakLabelNeeded[FNestedBreakCount-1] = -1) then begin
+      FBreakLabelNeeded[FNestedBreakCount-1] := FBreakCount;
+      Inc(FBreakCount);
+     end;
+     FProcCode.AddLn('goto '+GetSymbolName(FSelf)+'_BREAKLABEL'+IntToStr(FBreakLabelNeeded[FNestedBreakCount-1])+';');
+    end;
    end;
    ttntCONTINUE:begin
     FProcCode.Add('continue',spacesBOTH);
@@ -1942,7 +1967,6 @@ begin
    end;
   end;
   ttdPointer: Target.Add(AnsiStringEscape(HugeStringToAnsiString(Constant.StringValue)),spacesBOTH); // is it safe to assume that all pointer typed constants are strings?
-
   ttdVariant: ;
   ttdFloat: Target.Add(FloatToStr(Constant.FloatValue));
   ttdCExpression: ; // IGNORE!!!
@@ -2050,6 +2074,23 @@ begin
   FCode.ExportStream(CodeStream);
   CodeStream.Append(FProcCode.FData);
   FHeader.ExportStream(HeaderStream);
+end;
+
+procedure TCodegenCPP.StartBreakPart;
+begin
+ inc(FNestedBreakCount);
+ SetLength(FBreakLabelNeeded, FNestedBreakCount);
+ FBreakLabelNeeded[FNestedBreakCount-1] := -1;
+end;
+
+procedure TCodegenCPP.StopBreakPart;
+begin
+ if FBreakLabelNeeded[FNestedBreakCount-1] <> -1 then begin
+  FProcCode.AddLn(';');
+  FProcCode.AddLn(GetSymbolName(FSelf)+'_BREAKLABEL'+IntToStr(FBreakLabelNeeded[FNestedBreakCount-1])+': ;');
+ end;
+ dec(FNestedBreakCount);
+ SetLength(FBreakLabelNeeded, FNestedBreakCount);
 end;
 
 function TCodegenCPP.AnsiStringEscape(const Input: ansistring; Quotes: Boolean = True): ansistring;
