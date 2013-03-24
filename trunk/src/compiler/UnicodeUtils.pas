@@ -104,6 +104,9 @@ function UTF8LevenshteinDistance(const s,t:ansistring):longint;
 function UTF8DamerauLevenshteinDistance(const s,t:ansistring):longint;
 function StringLength(const s:ansistring):longint;
 
+function UTF8ToUTF16(const s:ansistring):widestring;
+function UTF16ToUTF8(const s:widestring):ansistring;
+
 implementation
 
 function UnicodeGetCategoryFromTable(c:longword):longword; {$ifdef caninline}inline;{$endif}
@@ -1169,6 +1172,206 @@ begin
  end;
 end;
 
+function UTF8ToUTF16(const s:ansistring):widestring;
+var i,j:longint;
+    w:longword;
+    b:byte;
+begin
+ result:='';
+ i:=1;
+ j:=0;
+ while i<=length(s) do begin
+  b:=byte(s[i]);
+  if (b and $80)=0 then begin
+   w:=b;
+   inc(i);
+  end else if ((i+1)<=length(s)) and ((b and $e0)=$c0) and ((byte(s[i+1]) and $c0)=$80) then begin
+   w:=((byte(s[i]) and $1f) shl 6) or (byte(s[i+1]) and $3f);
+   inc(i,2);
+  end else if ((i+2)<=length(s)) and ((b and $f0)=$e0) and ((byte(s[i+1]) and $c0)=$80) and ((byte(s[i+2]) and $c0)=$80) then begin
+   w:=((byte(s[i]) and $0f) shl 12) or ((byte(s[i+1]) and $3f) shl 6) or (byte(s[i+2]) and $3f);
+   inc(i,3);
+  end else if ((i+3)<=length(s)) and ((b and $f8)=$f0) and ((byte(s[i+1]) and $c0)=$80) and ((byte(s[i+2]) and $c0)=$80) and ((byte(s[i+3]) and $c0)=$80) then begin
+   w:=((byte(s[i]) and $07) shl 18) or ((byte(s[i+1]) and $3f) shl 12) or ((byte(s[i+2]) and $3f) shl 6) or (byte(s[i+3]) and $3f);
+   inc(i,4);
+{$ifndef strictutf8}
+  end else if ((i+4)<=length(s)) and ((b and $fc)=$f8) and ((byte(s[i+1]) and $c0)=$80) and ((byte(s[i+2]) and $c0)=$80) and ((byte(s[i+3]) and $c0)=$80) and ((byte(s[i+4]) and $c0)=$80) then begin
+   w:=((byte(s[i]) and $03) shl 24) or ((byte(s[i+1]) and $3f) shl 18) or ((byte(s[i+2]) and $3f) shl 12) or ((byte(s[i+3]) and $3f) shl 6) or (byte(s[i+4]) and $3f);
+   inc(i,5);
+  end else if ((i+5)<=length(s)) and ((b and $fe)=$fc) and ((byte(s[i+1]) and $c0)=$80) and ((byte(s[i+2]) and $c0)=$80) and ((byte(s[i+3]) and $c0)=$80) and ((byte(s[i+4]) and $c0)=$80) and ((byte(s[i+5]) and $c0)=$80) then begin
+   w:=((byte(s[i]) and $01) shl 30) or ((byte(s[i+1]) and $3f) shl 24) or ((byte(s[i+2]) and $3f) shl 18) or ((byte(s[i+3]) and $3f) shl 12) or ((byte(s[i+4]) and $3f) shl 6) or (byte(s[i+5]) and $3f);
+   inc(i,6);
+{$endif}
+  end else begin
+   w:=$fffd;
+   inc(i);
+  end;
+  if w<=$d7ff then begin
+   inc(j);
+  end else if w<=$dfff then begin
+   inc(j);
+  end else if w<=$fffd then begin
+   inc(j);
+  end else if w<=$ffff then begin
+   inc(j);
+  end else if w<=$10ffff then begin
+   inc(j,2);
+  end else begin
+   inc(j);
+  end;
+ end;
+ SetLength(result,j);
+ i:=1;
+ j:=0;
+ while i<=length(s) do begin
+  b:=byte(s[i]);
+  if (b and $80)=0 then begin
+   w:=b;
+   inc(i);
+  end else if ((i+1)<=length(s)) and ((b and $e0)=$c0) and ((byte(s[i+1]) and $c0)=$80) then begin
+   w:=((byte(s[i]) and $1f) shl 6) or (byte(s[i+1]) and $3f);
+   inc(i,2);
+  end else if ((i+2)<=length(s)) and ((b and $f0)=$e0) and ((byte(s[i+1]) and $c0)=$80) and ((byte(s[i+2]) and $c0)=$80) then begin
+   w:=((byte(s[i]) and $0f) shl 12) or ((byte(s[i+1]) and $3f) shl 6) or (byte(s[i+2]) and $3f);
+   inc(i,3);
+  end else if ((i+3)<=length(s)) and ((b and $f8)=$f0) and ((byte(s[i+1]) and $c0)=$80) and ((byte(s[i+2]) and $c0)=$80) and ((byte(s[i+3]) and $c0)=$80) then begin
+   w:=((byte(s[i]) and $07) shl 18) or ((byte(s[i+1]) and $3f) shl 12) or ((byte(s[i+2]) and $3f) shl 6) or (byte(s[i+3]) and $3f);
+   inc(i,4);
+{$ifndef strictutf8}
+  end else if ((i+4)<=length(s)) and ((b and $fc)=$f8) and ((byte(s[i+1]) and $c0)=$80) and ((byte(s[i+2]) and $c0)=$80) and ((byte(s[i+3]) and $c0)=$80) and ((byte(s[i+4]) and $c0)=$80) then begin
+   w:=((byte(s[i]) and $03) shl 24) or ((byte(s[i+1]) and $3f) shl 18) or ((byte(s[i+2]) and $3f) shl 12) or ((byte(s[i+3]) and $3f) shl 6) or (byte(s[i+4]) and $3f);
+   inc(i,5);
+  end else if ((i+5)<=length(s)) and ((b and $fe)=$fc) and ((byte(s[i+1]) and $c0)=$80) and ((byte(s[i+2]) and $c0)=$80) and ((byte(s[i+3]) and $c0)=$80) and ((byte(s[i+4]) and $c0)=$80) and ((byte(s[i+5]) and $c0)=$80) then begin
+   w:=((byte(s[i]) and $01) shl 30) or ((byte(s[i+1]) and $3f) shl 24) or ((byte(s[i+2]) and $3f) shl 18) or ((byte(s[i+3]) and $3f) shl 12) or ((byte(s[i+4]) and $3f) shl 6) or (byte(s[i+5]) and $3f);
+   inc(i,6);
+{$endif}
+  end else begin
+   w:=$fffd;
+   inc(i);
+  end;
+  if w<=$d7ff then begin
+   inc(j);
+   result[j]:=widechar(word(w));
+  end else if w<=$dfff then begin
+   inc(j);
+   result[j]:=#$fffd;
+  end else if w<=$fffd then begin
+   inc(j);
+   result[j]:=widechar(word(w));
+  end else if w<=$ffff then begin
+   inc(j);
+   result[j]:=#$fffd;
+  end else if w<=$10ffff then begin
+   dec(w,$10000);
+   inc(j);
+   result[j]:=widechar(word((w shr 10) or $d800));
+   inc(j);
+   result[j]:=widechar(word((w and $3ff) or $dc00));
+  end else begin
+   inc(j);
+   result[j]:=#$fffd;
+  end;
+ end;
+end;
+
+function UTF16ToUTF8(const s:widestring):ansistring;
+var i,j:longint;
+    w:word;
+    u4c:longword;
+begin
+ result:='';
+ j:=0;
+ i:=1;
+ while i<=length(s) do begin
+  w:=word(s[i]);
+  if (w<=$d7ff) or (w>=$e000) then begin
+   u4c:=w;
+   inc(i);
+  end else if ((i+1)<=length(s)) and ((w>=$d800) and (w<=$dbff)) and ((word(s[i+1])>=$dc00) and (word(s[i+1])<=$dfff)) then begin
+   u4c:=(longword(longword(w and $3ff) shl 10) or longword(word(s[i+1]) and $3ff))+$10000;
+   inc(i,2);
+  end else begin
+   u4c:=$fffd;
+   inc(i);
+  end;
+  if u4c<=$7f then begin
+   inc(j);
+  end else if u4c<=$7ff then begin
+   inc(j,2);
+  end else if u4c<=$ffff then begin
+   inc(j,3);
+  end else if u4c<=$1fffff then begin
+   inc(j,4);
+{$ifndef StrictUTF8}
+  end else if u4c<=$3ffffff then begin
+   inc(j,5);
+  end else if u4c<=$7fffffff then begin
+   inc(j,6);
+{$endif}
+  end else begin
+   inc(j,3);
+  end;
+ end;
+ SetLength(result,j);
+ j:=1;
+ i:=1;
+ while i<=length(s) do begin
+  w:=word(s[i]);
+  if (w<=$d7ff) or (w>=$e000) then begin
+   u4c:=w;
+   inc(i);
+  end else if ((i+1)<=length(s)) and ((w>=$d800) and (w<=$dbff)) and ((word(s[i+1])>=$dc00) and (word(s[i+1])<=$dfff)) then begin
+   u4c:=(longword(longword(w and $3ff) shl 10) or longword(word(s[i+1]) and $3ff))+$10000;
+   inc(i,2);
+  end else begin
+   u4c:=$fffd;
+   inc(i);
+  end;
+  if u4c<=$7f then begin
+   result[j]:=ansichar(byte(u4c));
+   inc(j);
+  end else if u4c<=$7ff then begin
+   result[j]:=ansichar(byte($c0 or ((u4c shr 6) and $1f)));
+   result[j+1]:=ansichar(byte($80 or (u4c and $3f)));
+   inc(j,2);
+  end else if u4c<=$ffff then begin
+   result[j]:=ansichar(byte($e0 or ((u4c shr 12) and $0f)));
+   result[j+1]:=ansichar(byte($80 or ((u4c shr 6) and $3f)));
+   result[j+2]:=ansichar(byte($80 or (u4c and $3f)));
+   inc(j,3);
+  end else if u4c<=$1fffff then begin
+   result[j]:=ansichar(byte($f0 or ((u4c shr 18) and $07)));
+   result[j+1]:=ansichar(byte($80 or ((u4c shr 12) and $3f)));
+   result[j+2]:=ansichar(byte($80 or ((u4c shr 6) and $3f)));
+   result[j+3]:=ansichar(byte($80 or (u4c and $3f)));
+   inc(j,4);
+{$ifndef StrictUTF8}
+  end else if u4c<=$3ffffff then begin
+   result[j]:=ansichar(byte($f8 or ((u4c shr 24) and $03)));
+   result[j+1]:=ansichar(byte($80 or ((u4c shr 18) and $3f)));
+   result[j+2]:=ansichar(byte($80 or ((u4c shr 12) and $3f)));
+   result[j+3]:=ansichar(byte($80 or ((u4c shr 6) and $3f)));
+   result[j+4]:=ansichar(byte($80 or (u4c and $3f)));
+   inc(j,5);
+  end else if u4c<=$7fffffff then begin
+   result[j]:=ansichar(byte($fc or ((u4c shr 30) and $01)));
+   result[j+1]:=ansichar(byte($80 or ((u4c shr 24) and $3f)));
+   result[j+2]:=ansichar(byte($80 or ((u4c shr 18) and $3f)));
+   result[j+3]:=ansichar(byte($80 or ((u4c shr 12) and $3f)));
+   result[j+4]:=ansichar(byte($80 or ((u4c shr 6) and $3f)));
+   result[j+5]:=ansichar(byte($80 or (u4c and $3f)));
+   inc(j,6);
+{$endif}
+  end else begin
+   u4c:=$fffd;
+   result[j]:=ansichar(byte($e0 or (u4c shr 12)));
+   result[j+1]:=ansichar(byte($80 or ((u4c shr 6) and $3f)));
+   result[j+2]:=ansichar(byte($80 or (u4c and $3f)));
+   inc(j,3);
+  end;
+ end;
+end;
+
 procedure InitializeUTF8DFA;
 type TAnsicharset=set of ansichar;
 {$ifdef StrictUTF8}
@@ -1480,4 +1683,3 @@ end;
 initialization
  InitializeUTF8DFA;
 end.
- 
