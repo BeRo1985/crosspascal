@@ -49,7 +49,7 @@ type TCodeWriter = class
 
      TCodegenCPP = class(TCode)
       private
-       FHeader,FCode, FProcCode, FProcStruct: TCodeWriter;
+       FHeader,FCode, FProcCode, FModuleCode, FProcStruct: TCodeWriter;
        FDepth: Integer;
        FSelf: PSymbol;
        FVariantPrefix:boolean;
@@ -100,7 +100,7 @@ type TCodeWriter = class
        procedure FinalizeSymbolList(List: TSymbolList;Target: TCodeWriter);
 
        procedure TranslateConstants;
-       procedure TranslateModuleTypes(ModuleSymbol:PSymbol;Target:TCodeWriter);
+       procedure TranslateModuleTypes(ModuleSymbol:PSymbol;Target,CodeTarget:TCodeWriter);
       public
        LocalSwitches:PLocalSwitches;
        constructor Create(TheError:TError;TheSymbolManager:TSymbolManager;TheTreeManager:TTreeManager;TheOptions:POptions;TheLocalSwitches:PLocalSwitches);
@@ -269,6 +269,14 @@ begin
    end;
 
   Target.AddLn(';');
+
+  if(Sym.SymbolType=tstVariable) and not Sym.TypedConstant then
+   case Sym.TypeDefinition.TypeDefinition of
+    ttdOBJECT:begin
+     Target.AddLn(GetSymbolName(Sym)+'.INTERNAL_FIELD_VMT = (void*)&'+GetTypeName(Sym.TypeDefinition)+'_VMT;');
+    end;
+   end;
+
   sym := sym.Next;
  end;
 end;
@@ -397,6 +405,7 @@ begin
  FHeader := TCodeWriter.Create;
  FCode := TCodeWriter.Create;
  FProcCode := TCodeWriter.Create;
+ FModuleCode := TCodeWriter.Create;
  FProcStruct := TCodeWriter.Create;
 
  FVariantPrefix:=true;
@@ -412,6 +421,7 @@ begin
  FHeader.Free;
  FCode.Free;
  FProcCode.Free;
+ FModuleCode.Free;
  FProcStruct.Free;
  inherited;
 end;
@@ -591,7 +601,8 @@ begin
  FCode.AddHeader('#define __OBJPAS2CMAIN__');
  FCode.AddInclude('objpas2c.h');
  FSelf := ProgramSymbol;
- TranslateModuleTypes(FSelf, FHeader);
+
+ TranslateModuleTypes(FSelf, FHeader, FModuleCode);
  TranslateSymbolList(FSelf.SymbolList, true);
 
  FHeader.AddLn('extern int main(int argc, char **argv);');
@@ -661,7 +672,7 @@ begin
 // FCode.AddHeader('#include "'+UnitSymbol.Name+'.h";');
 
  FSelf := UnitSymbol;
- TranslateModuleTypes(FSelf, FHeader);
+ TranslateModuleTypes(FSelf, FHeader, FModuleCode);
  TranslateSymbolList(FSelf.SymbolList, true);
 
  FProcCode.AddLn('void '+UnitSymbol.Name+'_C_INITIALIZATION(){');
@@ -2126,6 +2137,7 @@ procedure TCodegenCPP.SaveToStreams(CodeStream, HeaderStream: TBeRoStream);
 begin
   FCode.ExportStream(CodeStream);
   CodeStream.Append(FProcCode.FData);
+  CodeStream.Append(FModuleCode.FData);
   FHeader.ExportStream(HeaderStream);
 end;
 
@@ -2206,7 +2218,7 @@ begin
  Result:=Result+'"';
 end;
 
-procedure TCodegenCPP.TranslateModuleTypes(ModuleSymbol:PSymbol;Target:TCodeWriter);
+procedure TCodegenCPP.TranslateModuleTypes(ModuleSymbol:PSymbol;Target,CodeTarget:TCodeWriter);
 type TTypeItems=array of PType;
 var TypeItems:TTypeItems;
  procedure SortTypes;
@@ -2479,6 +2491,7 @@ var i,j:longint;
     Symbol,OtherSymbol:PSymbol;
     CurrentVariantLevelIndex:longint;
     VariantLevelVariants:array of integer;
+    HasLast:boolean;
 begin
  TypeItems:=nil;
  VariantLevelVariants:=nil;
@@ -2726,6 +2739,49 @@ begin
        Target.DecTab;
        Target.AddLn('} '+Name+'_VMT_TYPE;');
        Target.AddLn('extern '+Name+'_VMT_TYPE '+Name+'_VMT;');
+       CodeTarget.AddLn('');
+       CodeTarget.AddLn(Name+'_VMT_TYPE '+Name+'_VMT={');
+       CodeTarget.IncTab;
+       CodeTarget.AddLn('{');
+       CodeTarget.IncTab;
+       CodeTarget.AddLn(IntToStr(Type_^.RecordSize)+',');
+       CodeTarget.AddLn('NULL,');
+       if assigned(Type_^.ChildOf) then begin
+        CodeTarget.AddLn('(void*)&'+GetSymbolName(Type_^.ChildOf)+'_VMT');
+       end else begin
+        CodeTarget.AddLn('NULL');
+       end;
+       CodeTarget.DecTab;
+       CodeTarget.AddLn('},');
+       CodeTarget.AddLn('{');
+       CodeTarget.IncTab;
+       HasLast:=false;
+       Symbol:=SymbolList.First;
+       while assigned(Symbol) do begin
+        case Symbol^.SymbolType of
+         Symbols.tstProcedure,Symbols.tstFunction:begin
+          if tpaVirtual in Symbol^.ProcedureAttributes then begin
+           if HasLast then begin
+            CodeTarget.AddLn(',');
+           end;
+           HasLast:=true;
+           if (tpaAbstract in Symbol^.ProcedureAttributes) and not (tsaMethodDefined in Symbol^.Attributes) then begin
+            CodeTarget.Add('NULL');
+           end else begin
+            CodeTarget.Add('(void*)&'+GetSymbolName(Symbol));
+           end;
+          end;
+         end;
+        end;
+        Symbol:=Symbol^.Next;
+       end;
+       if HasLast then begin
+        CodeTarget.AddLn('');
+       end;
+       CodeTarget.DecTab;
+       CodeTarget.AddLn('}');
+       CodeTarget.DecTab;
+       CodeTarget.AddLn('};');
       end;
       Symbol:=SymbolList.First;
       while assigned(Symbol) do begin
