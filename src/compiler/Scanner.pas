@@ -1102,11 +1102,9 @@ begin
           end else begin
            HugeStringConcatChar(CurrentString,ord(']'),Len);
            HugeStringConcatChar(CurrentString,ord(']'),Len);
-//           ReadChar;
           end;
          end else begin
           HugeStringConcatChar(CurrentString,ord(']'),Len);
-//          ReadChar;
          end;
         end else begin
          HugeStringConcatChar(CurrentString,CurrentChar,Len);
@@ -1203,11 +1201,9 @@ begin
           end else begin
            HugeStringConcatChar(CurrentString,ord('>'),Len);
            HugeStringConcatChar(CurrentString,ord('>'),Len);
-           ReadChar;
           end;
          end else begin
           HugeStringConcatChar(CurrentString,ord('>'),Len);
-          ReadChar;
          end;
         end else begin
          HugeStringConcatChar(CurrentString,CurrentChar,Len);
