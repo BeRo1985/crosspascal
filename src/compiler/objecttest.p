@@ -6,7 +6,7 @@ type TTestObject=object
        constructor Create;
        destructor Destroy;
        procedure Bla; virtual; abstract;
-       procedure Bluh; virtual;
+       procedure Bluh(b:longint); virtual;
      end;
 
 constructor TTestObject.Create;
@@ -18,13 +18,13 @@ destructor TTestObject.Destroy;
 begin
 end;
 
-procedure TTestObject.Bluh;
+procedure TTestObject.Bluh(b:longint);
 begin
- WriteLn(a);
+ WriteLn(a+b);
 end;
 
 var TestObject:TTestObject;
 begin
  TestObject.Create;
- TestObject.Bluh;
+ TestObject.Bluh(4);
 end.

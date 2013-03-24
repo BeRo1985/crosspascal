@@ -1581,10 +1581,10 @@ begin
           if assigned(TreeNode.MethodSymbol) and (tpaVirtual in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
            if assigned(TreeNode.Symbol^.TypeDefinition) and (TreeNode.Symbol^.TypeDefinition^.TypeDefinition=ttdOBJECT) then begin
             // OBJECT
-            FProcCode.Add('(('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')((*((('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'*)&'+GetSymbolName(TreeNode.Symbol)+'))->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
+            FProcCode.Add('(('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')(((('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'*)&'+GetSymbolName(TreeNode.Symbol)+')->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
            end else begin
             // CLASS
-            FProcCode.Add('(('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')((*((('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+')'+GetSymbolName(TreeNode.Symbol)+'))->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
+            FProcCode.Add('(('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')(((('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+')'+GetSymbolName(TreeNode.Symbol)+')->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
            end;
           end else if assigned(TreeNode.MethodSymbol) and (tpaDynamic in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
            if assigned(TreeNode.Symbol^.TypeDefinition) and (TreeNode.Symbol^.TypeDefinition^.TypeDefinition=ttdOBJECT) then begin
@@ -2476,7 +2476,7 @@ var i,j:longint;
     Type_:PType;
     Name:ansistring;
     SymbolList:TSymbolList;
-    Symbol:PSymbol;
+    Symbol,OtherSymbol:PSymbol;
     CurrentVariantLevelIndex:longint;
     VariantLevelVariants:array of integer;
 begin
@@ -2604,7 +2604,7 @@ begin
         end;
         Symbols.tstVariable:begin
          if tsaObjectVMT in Symbol^.Attributes then begin
-          Target.AddLn('pasObjectVirtualMethodTablePointer* '+GetSymbolName(Symbol)+';');
+          Target.AddLn('pasObjectVirtualMethodTable* '+GetSymbolName(Symbol)+';');
          end else if (Symbol^.TypeDefinition^.TypeDefinition=ttdPOINTER) and not assigned(Symbol^.TypeDefinition^.PointerTo) then begin
           Target.AddLn('void* '+GetSymbolName(Symbol)+';');
          end else if (Symbol^.TypeDefinition^.TypeDefinition=ttdPOINTER) and (Symbol^.TypeDefinition^.PointerTo=Type_^.Symbol) then begin
@@ -2679,17 +2679,20 @@ begin
      Target.Add('*',spacesRIGHT);
      Target.Add(Name);
      Target.Add('(');
-     Symbol:=Type_.Parameter.First;
-     while Assigned(Symbol) do
+     if assigned(Type_.Parameter) then
      begin
-      if Symbol<>Type_.Parameter.First then begin
-       Target.Add(',',spacesRIGHT);
-      end;
-      ProcessTypeOrName(Symbol.TypeDefinition, Target, Type_);
-      if IsSymbolReference(Symbol) then begin
-       Target.Add('*',spacesRIGHT);
-      end;
-      Symbol := Symbol.Next;
+       Symbol:=Type_.Parameter.First;
+       while Assigned(Symbol) do
+       begin
+        if Symbol<>Type_.Parameter.First then begin
+         Target.Add(',',spacesRIGHT);
+        end;
+        ProcessTypeOrName(Symbol.TypeDefinition, Target, Type_);
+        if IsSymbolReference(Symbol) then begin
+         Target.Add('*',spacesRIGHT);
+        end;
+        Symbol := Symbol.Next;
+       end;
      end;
      Target.Add(')',spacesRIGHT);
      Target.AddLn(';');
@@ -2702,6 +2705,74 @@ begin
      Target.AddLn('typedef '+ConvertStdType(Type_^.FloatType)+' '+Name+';');
     end;
     ttdCExpression:begin
+    end;
+   end;
+  end;
+  Target.AddLn('');
+
+  Target.AddLn('// VMT/DMT definitions');
+  for i:=0 to length(TypeItems)-1 do begin
+   Type_:=TypeItems[i];
+   Name:=GetTypeName(Type_);
+   case Type_.TypeDefinition of
+    ttdObject,ttdClass:begin
+     SymbolList:=Type_^.RecordTable;
+     if assigned(SymbolList) then begin
+      CurrentVariantLevelIndex:=0;
+      Symbol:=SymbolList.First;
+      while assigned(Symbol) do begin
+       case Symbol^.SymbolType of
+        Symbols.tstProcedure,Symbols.tstFunction:begin
+         if tpaVirtual in Symbol^.ProcedureAttributes then begin
+          Target.Add('typedef',spacesRIGHT);
+          ProcessTypeOrName(Symbol^.ReturnType, Target, nil);
+          Target.Add('*',spacesRIGHT);
+          Target.Add(Name+'_VMT_'+IntToStr(Symbol^.VirtualIndex));
+          Target.Add('(');
+          Target.Add(GetSymbolName(Symbol^.OwnerObjectClass^.Symbol)+' *instanceData');
+          if assigned(Symbol.Parameter) then
+          begin
+            OtherSymbol:=Symbol.Parameter.First;
+            while Assigned(OtherSymbol) do
+            begin
+             Target.Add(',',spacesRIGHT);
+             ProcessTypeOrName(OtherSymbol.TypeDefinition, Target, nil);
+             if IsSymbolReference(OtherSymbol) then begin
+              Target.Add('*',spacesRIGHT);
+             end;
+             OtherSymbol := OtherSymbol.Next;
+            end;
+          end;
+          Target.Add(')',spacesRIGHT);
+          Target.AddLn(';');
+         end else if tpaDynamic in Symbol^.ProcedureAttributes then begin
+          Target.Add('typedef',spacesRIGHT);
+          ProcessTypeOrName(Symbol^.ReturnType, Target, nil);
+          Target.Add('*',spacesRIGHT);
+          Target.Add(Name+'_DMT_'+IntToStr(Symbol^.VirtualIndex));
+          Target.Add('(');
+          Target.Add(GetSymbolName(Symbol^.OwnerObjectClass^.Symbol)+'*');
+          if assigned(Symbol.Parameter) then
+          begin
+            OtherSymbol:=Symbol.Parameter.First;
+            while Assigned(OtherSymbol) do
+            begin
+             Target.Add(',',spacesRIGHT);
+             ProcessTypeOrName(OtherSymbol.TypeDefinition, Target, nil);
+             if IsSymbolReference(OtherSymbol) then begin
+              Target.Add('*',spacesRIGHT);
+             end;
+             OtherSymbol := OtherSymbol.Next;
+            end;
+          end;
+          Target.Add(')',spacesRIGHT);
+          Target.AddLn(';');
+         end;
+        end;
+       end;
+       Symbol:=Symbol^.Next;
+      end;
+     end;
     end;
    end;
   end;
