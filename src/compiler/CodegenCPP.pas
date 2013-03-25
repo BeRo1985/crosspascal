@@ -1389,8 +1389,14 @@ begin
            end;
            ttdBoolean: FProcCode.Add('pasWriteBool(');
            ttdShortString: FProcCode.Add('pasWriteShortString(');
-           ttdLongString: FProcCode.Add('pasWriteLongString(');
+           ttdLongString:
+           begin
+            FProcCode.Add('pasWriteLongString(');
+            if SubTreeNode.Left.Return.LongStringType <> tstUnsignedChar then
+             FProcCode.Add('ConvertLongstring(65535, 1,');
+           end;
            ttdFloat: FProcCode.Add('pasWriteFloat(');
+           ttdPointer: FProcCode.Add('pasWritePChar(');
            else
             Error.InternalError(201303210020000);
           end
@@ -1402,11 +1408,15 @@ begin
           FProcCode.Add('((void*)(');
          end;
          TranslateCode(SubTreeNode.Left);
+         if Assigned(SubTreeNode.Left)and(Assigned(SubTreeNode.Left.Return)) then
+          if(SubTreeNode.Left.Return.TypeDefinition = ttdLongstring)and(SubTreeNode.Left.Return.LongStringType <> tstUnsignedChar) then
+           FProcCode.Add(')');
          if SubTreeNode.ReferenceParameter then begin
           FProcCode.Add(')))');
          end else if assigned(SubTreeNode.Left.Return) and (SubTreeNode.Left.Return^.TypeDefinition=ttdPointer) then begin
           FProcCode.Add('))');
          end;
+
          SubTreeNode:=SubTreeNode.Right;
          FProcCode.AddLn(');');
          if assigned(SubTreeNode) and (SubTreeNode.TreeNodeType=ttntParameter) then begin
@@ -1904,10 +1914,10 @@ var AStr: ansistring;
 
   function UIntToCString(const Value: Cardinal): ansistring;
   begin
-    result := '\x'+IntToHex(Byte(Value div $1000000), 2) +
-              '\x'+IntToHex(Byte(Value div $10000), 2) +
+    result := '\x'+IntToHex(Byte(Value div $1), 2) +
               '\x'+IntToHex(Byte(Value div $100), 2) +
-              '\x'+IntToHex(Byte(Value), 2);
+              '\x'+IntToHex(Byte(Value div $10000), 2) +
+              '\x'+IntToHex(Byte(Value div $1000000), 2);
   end;
 
 begin
@@ -1917,7 +1927,7 @@ begin
   AStr := HugeStringToAnsiString(ConstantStr);
 
   FProcCode.InsertAtMark('static const char '+result+'_DATA['+IntToStr(Length(AStr)+17)+'] = "' + UIntToCString(65535)+UIntToCSTring(1)
-                         +UIntToCString($FFFFFFFF)+UIntToCString(Length(AStr))+
+                         +UIntToCString($FFFFFFFF)+UIntToCString(Length(AStr))+'" "' +
                          AnsiStringEscape(AStr,False)+'\x00";');
   FProcCode.InsertAtMark('void* '+result+' = (void*)(&'+result+'_DATA[16]);');
 end;
@@ -2667,7 +2677,7 @@ begin
     end;
     ttdShortString:begin
      Type_^.Dumped:=true;
-     Target.AddLn('typedef pasShortstring '+Name+';');
+     Target.AddLn('typedef uint8_t '+Name+'['+IntToStr(Type_^.Length+1)+'];');
     end;
     ttdLongString:begin
      Type_^.Dumped:=true;

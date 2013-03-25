@@ -25,8 +25,10 @@ const CompilerInfoString:pchar='OBJPAS2C';
 
 var Input,Output:text;
 
-[[[
+[[[ // include in system.h
+
 #include "stdlib.h"
+#include "math.h"
 
 #ifdef _MSC_VER
 // MSVC
@@ -83,6 +85,13 @@ void UniqueLongstring(pasLongstring *target);
 #define pasWriteFloat(x) printf("%f", x);
 #define pasWriteBool(x) if(x) printf("TRUE"); else printf("FALSE");
 #define pasWriteLongString(x) printf(x); CheckRefLongstring(x);
+#define pasWritePChar(x) printf(x);
+
+#define pasTRUNC(x) floor(x);
+#define pasROUND(x) round(x);
+#define pasSQR(x) sqr(x);
+#define pasSQRT(x) sqrt(x);
+
 ]]]
 
 procedure Randomize;
@@ -314,7 +323,7 @@ uint32_t LengthLongstring(pasLongstring str) {
 		return 0;
 	header = (LongstringRefHeader*)((uint32_t)(str) - LongstringRefHeaderSize);
 	len = header->length;
-	CheckRefLongstring(&str);
+	CheckRefLongstring(str);
 	return len;
 }
 
@@ -325,40 +334,95 @@ void AssignLongstring(pasLongstring *target, pasLongstring newStr) {
 }
 
 void UniqueLongstring(pasLongstring *target) {
-	LongstringRefHeader* header;
-	pasLongstring newtarget;
-	
-	if(target == NULL)
-		return;
-    header = (LongstringRefHeader*)((uint32_t)(*target) - LongstringRefHeaderSize);
-	if(header->refCount == 1)
-		return;
+    LongstringRefHeader* header;
+    pasLongstring newtarget;
 
-	newtarget = CreateLongstring(header->codePage, header->elementSize, header->length, *target);
-	DecRefLongstring(target);
-	*target = newtarget;
+    if(target == NULL)
+    	return;
+    header = (LongstringRefHeader*)((uint32_t)(*target) - LongstringRefHeaderSize);
+    if(header->refCount == 1)
+    	return;
+
+    newtarget = CreateLongstring(header->codePage, header->elementSize, header->length, *target);
+    DecRefLongstring(target);
+    *target = newtarget;
+}
+
+pasLongstring ConvertLongstring(uint32_t codePage, uint32_t elementSize, pasLongstring strInput) {
+    LongstringRefHeader* header;
+    pasLongstring newtarget;
+    uint32_t i,v;
+    char* temp;
+
+    if(strInput == NULL)
+        return strInput;
+
+    header = (LongstringRefHeader*)((uint32_t)(strInput) - LongstringRefHeaderSize);
+
+    if((header->codePage == codePage)&(header->elementSize == elementSize))
+        return strInput;
+
+    newtarget = CreateLongstring(codePage, elementSize, header->length, NULL);
+
+    temp = newtarget;
+
+    for(i=0;i<header->length;i++) {
+        switch(header->elementSize){
+            case 1:{
+              v = ((uint8_t*)(strInput))[i];
+              break;
+            }
+            case 2:{
+              v = ((uint16_t*)(strInput))[i];
+              break;
+            }
+            case 4:{
+              v = ((uint32_t*)(strInput))[i];
+              break;
+            }
+        }
+
+        switch(elementSize){
+            case 1:{
+              *((uint8_t*)temp) = v;
+              break;
+            }
+            case 2:{
+              *((uint16_t*)temp) = v;
+              break;
+            }
+            case 4:{
+              *((uint32_t*)temp) = v;
+              break;
+            }
+          }
+          temp += elementSize;
+        }
+
+	CheckRefLongstring(strInput);
+    return newtarget;
 }
 
 pasLongstring AddLongstring(pasLongstring left, pasLongstring right) {
-	uint32_t a,b;
-	LongstringRefHeader* headerA;
+    uint32_t a,b;
+    LongstringRefHeader* headerA;
     LongstringRefHeader* headerB;
-	char* temp;
-	uint32_t elementSize;
+    char* temp;
+    uint32_t elementSize;
     uint32_t v;
     pasLongstring result;
-	
-	a = LengthLongstring(left);
-	b = LengthLongstring(right);
-	if(a + b == 0)
-		return NULL;
-	if(b == 0)
-		return left;
-	if(a == 0)
-		return right;
 
-	headerA = (LongstringRefHeader*)((uint32_t)(left) - LongstringRefHeaderSize);
-	headerB = (LongstringRefHeader*)((uint32_t)(right) - LongstringRefHeaderSize);
+    a = LengthLongstring(left);
+    b = LengthLongstring(right);
+    if(a + b == 0)
+    	return NULL;
+    if(b == 0)
+    	return left;
+    if(a == 0)
+    	return right;
+
+    headerA = (LongstringRefHeader*)((uint32_t)(left) - LongstringRefHeaderSize);
+    headerB = (LongstringRefHeader*)((uint32_t)(right) - LongstringRefHeaderSize);
 
     // TODO: Codepage handling
 
