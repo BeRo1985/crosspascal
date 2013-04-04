@@ -187,10 +187,10 @@ begin
         result:='result';
        end;
        tvtSelf:begin
-        if assigned(FProcSymbol) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
+        if assigned(FProcSymbol) and assigned(FProcSymbol^.OwnerObjectClass) then begin
          result:='instanceData';
         end else begin
-         result:='(*instanceData)';
+         Error.InternalError(201304050042000);
         end;
        end;
        else begin
@@ -274,24 +274,29 @@ begin
 
  while Assigned(sym) do
  begin
-  if(Sym.SymbolType=tstVariable)and(Sym.TypedConstant) then
-   case Sym.TypeDefinition.TypeDefinition of
-    ttdLongString:
-    begin
-     Target.Add(GetSymbolName(Sym)+' =',spacesRIGHT);
-     ProcessTypedConstant(Sym.Constant,Sym.TypeDefinition,Target);
+  if not (tsaMapped in Sym^.Attributes) then begin
+
+   if(Sym.SymbolType=tstVariable)and(Sym.TypedConstant) then begin
+    case Sym.TypeDefinition.TypeDefinition of
+     ttdLongString:
+     begin
+      Target.Add(GetSymbolName(Sym)+' =',spacesRIGHT);
+      ProcessTypedConstant(Sym.Constant,Sym.TypeDefinition,Target);
+     end;
     end;
    end;
 
-  Target.AddLn(';');
+   Target.AddLn(';');
 
-  if(Sym.SymbolType=tstVariable) and not Sym.TypedConstant then
-   case Sym.TypeDefinition.TypeDefinition of
-    ttdOBJECT:begin
-     Target.AddLn(GetSymbolName(Sym)+'.INTERNAL_FIELD_VMT = (void*)&'+GetTypeName(Sym.TypeDefinition)+'_VMT;');
+   if(Sym.SymbolType=tstVariable) and assigned(Sym.TypeDefinition) and not Sym.TypedConstant then begin
+    case Sym.TypeDefinition.TypeDefinition of
+     ttdOBJECT:begin
+      Target.AddLn(GetSymbolName(Sym)+'.INTERNAL_FIELD_VMT = (void*)&'+GetTypeName(Sym.TypeDefinition)+'_VMT;');
+     end;
     end;
    end;
-
+   
+  end;
   sym := sym.Next;
  end;
 end;
@@ -458,15 +463,16 @@ begin
 
  while Assigned(sym) do
  begin
-  if(Sym.SymbolType=tstVariable) then
-   case Sym.TypeDefinition.TypeDefinition of
-    ttdLongString:
-    begin
-     Target.Add('FreeLongstring(&'+GetSymbolName(Sym)+')');
+  if not (tsaMapped in Sym^.Attributes) then begin
+   if(Sym.SymbolType=tstVariable) then
+    case Sym.TypeDefinition.TypeDefinition of
+     ttdLongString:
+     begin
+      Target.Add('FreeLongstring(&'+GetSymbolName(Sym)+')');
+     end;
     end;
-   end;
-  Target.AddLn(';');
-
+   Target.AddLn(';');
+  end;
   sym := sym.Next;
  end;
 end;
@@ -2001,40 +2007,43 @@ begin
 
  while Assigned(sym) do
  begin
-  if Assigned(ATarget) then
-   Target := ATarget
-  else if (tsaPublicUnitSymbol in sym.Attributes) then
-   Target := FHeader
-  else
-   Target := FCode;
+  if not (tsaMapped in Sym^.Attributes) then begin
 
-  LastProcStruct:=false;
+   if Assigned(ATarget) then
+    Target := ATarget
+   else if (tsaPublicUnitSymbol in sym.Attributes) then
+    Target := FHeader
+   else
+    Target := FCode;
 
-  case Sym.SymbolType of
-   tstLabel: ; // labels dont need declarations
-   tstConstant: ; // TranslateConstant(Sym, Target);
-   tstVariable:begin
-    if FNeedNestedStack and assigned(FProcSymbol) and assigned(Sym^.LocalProcSymbol) and Sym^.LocalProcSymbolAccessedFromHigherNestedProc then begin
-     LastProcStruct:=true;
-     TranslateVariable(Sym, FProcStruct);
-     inc(FProcStructCount);
-    end else begin
-     TranslateVariable(Sym, Target);
+   LastProcStruct:=false;
+
+   case Sym.SymbolType of
+    tstLabel: ; // labels dont need declarations
+    tstConstant: ; // TranslateConstant(Sym, Target);
+    tstVariable:begin
+     if FNeedNestedStack and assigned(FProcSymbol) and assigned(Sym^.LocalProcSymbol) and Sym^.LocalProcSymbolAccessedFromHigherNestedProc then begin
+      LastProcStruct:=true;
+      TranslateVariable(Sym, FProcStruct);
+      inc(FProcStructCount);
+     end else begin
+      TranslateVariable(Sym, Target);
+     end;
     end;
+    tstType: ;
+    tstProcedure: TranslateProcedure(Sym, Target);
+    tstFunction: TranslateFunction(Sym, Target);
+    tstUnit: TranslateUnit(Sym, Target);
+    tstTemp: TranslateTemp(Sym, Target);
    end;
-   tstType: ;
-   tstProcedure: TranslateProcedure(Sym, Target);
-   tstFunction: TranslateFunction(Sym, Target);
-   tstUnit: TranslateUnit(Sym, Target);
-   tstTemp: TranslateTemp(Sym, Target);
+
+   if Sym.SymbolType<>tstUnit then
+     if LastProcStruct then
+       FProcStruct.AddLn(';')
+      else
+       Target.AddLn(';');
+       
   end;
-
-  if Sym.SymbolType<>tstUnit then
-    if LastProcStruct then
-      FProcStruct.AddLn(';')
-     else
-      Target.AddLn(';');
-
   sym := sym.Next;
  end;
 
