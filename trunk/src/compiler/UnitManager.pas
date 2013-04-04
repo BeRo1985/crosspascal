@@ -339,6 +339,7 @@ begin
    inc(Index);
   end;
  end;
+ SymbolManager.FixSymbolListChilds;
 end;
 
 function TUnitManager.RequireUnitRecompile(UnitSymbol:PSymbol;Stream:TBeRoStream;ModuleSymbol:PSymbol;AfterImplementation,LocalDefined:boolean):boolean;

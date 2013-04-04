@@ -1,56 +1,3 @@
-{$A8,B-,C+,D+,E-,F-,G+,H+,I+,J+,K-,L+,M-,N+,O+,P+,Q-,R-,S-,T-,U-,V+,W-,X+,Y+,Z1}
-{$MINSTACKSIZE $00004000}
-{$MAXSTACKSIZE $00100000}
-{$IMAGEBASE $00400000}
-{$APPTYPE GUI}
-{$WARN SYMBOL_DEPRECATED ON}
-{$WARN SYMBOL_LIBRARY ON}
-{$WARN SYMBOL_PLATFORM ON}
-{$WARN UNIT_LIBRARY ON}
-{$WARN UNIT_PLATFORM ON}
-{$WARN UNIT_DEPRECATED ON}
-{$WARN HRESULT_COMPAT ON}
-{$WARN HIDING_MEMBER ON}
-{$WARN HIDDEN_VIRTUAL ON}
-{$WARN GARBAGE ON}
-{$WARN BOUNDS_ERROR ON}
-{$WARN ZERO_NIL_COMPAT ON}
-{$WARN STRING_CONST_TRUNCED ON}
-{$WARN FOR_LOOP_VAR_VARPAR ON}
-{$WARN TYPED_CONST_VARPAR ON}
-{$WARN ASG_TO_TYPED_CONST ON}
-{$WARN CASE_LABEL_RANGE ON}
-{$WARN FOR_VARIABLE ON}
-{$WARN CONSTRUCTING_ABSTRACT ON}
-{$WARN COMPARISON_FALSE ON}
-{$WARN COMPARISON_TRUE ON}
-{$WARN COMPARING_SIGNED_UNSIGNED ON}
-{$WARN COMBINING_SIGNED_UNSIGNED ON}
-{$WARN UNSUPPORTED_CONSTRUCT ON}
-{$WARN FILE_OPEN ON}
-{$WARN FILE_OPEN_UNITSRC ON}
-{$WARN BAD_GLOBAL_SYMBOL ON}
-{$WARN DUPLICATE_CTOR_DTOR ON}
-{$WARN INVALID_DIRECTIVE ON}
-{$WARN PACKAGE_NO_LINK ON}
-{$WARN PACKAGED_THREADVAR ON}
-{$WARN IMPLICIT_IMPORT ON}
-{$WARN HPPEMIT_IGNORED ON}
-{$WARN NO_RETVAL ON}
-{$WARN USE_BEFORE_DEF ON}
-{$WARN FOR_LOOP_VAR_UNDEF ON}
-{$WARN UNIT_NAME_MISMATCH ON}
-{$WARN NO_CFG_FILE_FOUND ON}
-{$WARN MESSAGE_DIRECTIVE ON}
-{$WARN IMPLICIT_VARIANTS ON}
-{$WARN UNICODE_TO_LOCALE ON}
-{$WARN LOCALE_TO_UNICODE ON}
-{$WARN IMAGEBASE_MULTIPLE ON}
-{$WARN SUSPICIOUS_TYPECAST ON}
-{$WARN PRIVATE_PROPACCESSOR ON}
-{$WARN UNSAFE_TYPE OFF}
-{$WARN UNSAFE_CODE OFF}
-{$WARN UNSAFE_CAST OFF}
 unit Parser;
 {$i Compiler.inc}
 
@@ -101,6 +48,7 @@ type TParser=class
        MustHaveParens,MakeSymbolsPublic,IsSystemUnit,IsInExceptionHandler:boolean;
        ModuleSymbol,CurrentMethod,CurrentProcedureFunction:PSymbol;
        CurrentObjectClass:PType;
+       CurrentParseObjectClass:PType;
        DoBreak:boolean;
        ForEachVarCounter:longint;
        DefaultParameterCounter:longint;
@@ -173,6 +121,7 @@ begin
  CurrentMethod:=nil;
  CurrentProcedureFunction:=nil;
  CurrentObjectClass:=nil;
+ CurrentParseObjectClass:=nil;
  ParameterNumber:=0;
  UnitLevel:=TheUnitLevel;
  ForEachVarCounter:=0;
@@ -222,7 +171,7 @@ begin
   if assigned(AType) and (AType^.TypeDefinition in [ttdOBJECT,ttdCLASS]) and assigned(AType^.RecordTable) then begin
    Symbol:=AType^.RecordTable.First;
    while assigned(Symbol) do begin
-    if (Symbol^.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction]) and (Symbol^.OwnerObjectClass=AType) and not (tpaAbstract in Symbol^.ProcedureAttributes) then begin
+    if (Symbol^.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction]) and (Symbol^.MethodOfType=AType) and not (tpaAbstract in Symbol^.ProcedureAttributes) then begin
      if not (tsaMethodDefined in Symbol^.Attributes) then begin
       if assigned(AType^.Symbol) then begin
        Error.AddErrorCode(66,CorrectSymbolName(AType^.Symbol^.Name)+'.'+CorrectSymbolName(Symbol^.Name));
@@ -1260,8 +1209,12 @@ begin
        end;
        break;
       end else begin
-       Error.AbortCode(141,CorrectSymbolName(Name));
-       break;
+       if assigned(AType^.ChildOf) and assigned(AType^.ChildOf^.TypeDefinition) then begin
+        AType:=AType^.ChildOf^.TypeDefinition;
+       end else begin
+        Error.AbortCode(141,CorrectSymbolName(Name));
+        break;
+       end;
       end;
      end;
      if not assigned(MethodSymbol) then begin
@@ -1522,7 +1475,7 @@ begin
     end;
     tstPeriod:begin
      Scanner.Match(tstPeriod);
-     if AType^.TypeDefinition=ttdPOINTER then begin
+     while assigned(AType) and (AType^.TypeDefinition=ttdPOINTER) do begin
       if assigned(AType^.PointerTo) then begin
        AType:=AType^.PointerTo^.TypeDefinition;
       end else begin
@@ -1537,9 +1490,9 @@ begin
      case AType^.TypeDefinition of
       ttdRecord,ttdObject,ttdClass,ttdInterface:begin
        FieldName:=Scanner.ReadIdentifier;
-       Symbol:=SymbolManager.GetSymbol(Name,ModuleSymbol,CurrentObjectClass);
-       if assigned(Symbol^.TypeDefinition) then begin
-        FieldSymbol:=AType^.RecordTable.GetSymbol(FieldName,ModuleSymbol,CurrentObjectClass);
+//     Symbol:=SymbolManager.GetSymbol(Name,ModuleSymbol,CurrentObjectClass);
+       if assigned(AType) then begin
+        FieldSymbol:=AType^.RecordTable.GetSymbol(FieldName,ModuleSymbol,CurrentObjectClass,true);
         if assigned(FieldSymbol) then begin
          FieldType:=FieldSymbol^.TypeDefinition;
          case FieldSymbol^.SymbolType of
@@ -3509,7 +3462,7 @@ begin
  if Error.DoAbort then begin
   exit;
  end;
- ParentSymbol:=RecordType^.RecordTable.GetSymbol(SymbolName,ModuleSymbol,CurrentObjectClass);
+ ParentSymbol:=RecordType^.RecordTable.GetSymbol(SymbolName,ModuleSymbol,CurrentObjectClass,true);
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=SymbolName;
  Symbol^.SymbolType:=Symbols.tstProperty;
@@ -3592,7 +3545,7 @@ begin
      Scanner.Match(tstREAD);
      TempName:=Scanner.ReadIdentifier;
      Scanner.CheckForDirectives([tstREAD,tstWRITE,tstSTORED,tstDEFAULT,tstNODEFAULT,tstIMPLEMENTS,tstINDEX]);
-     TempSymbol:=RecordType^.RecordTable.GetSymbol(TempName,ModuleSymbol,CurrentObjectClass);
+     TempSymbol:=RecordType^.RecordTable.GetSymbol(TempName,ModuleSymbol,CurrentObjectClass,true);
      if (not (assigned(TempSymbol) and assigned(TempSymbol^.OwnerObjectClass))) or not (TempSymbol^.SymbolType in [Symbols.tstVariable,Symbols.tstFunction]) then begin
       Error.AbortCode(246);
      end else begin
@@ -3641,7 +3594,7 @@ begin
      Scanner.Match(tstWRITE);
      TempName:=Scanner.ReadIdentifier;
      Scanner.CheckForDirectives([tstREAD,tstWRITE,tstSTORED,tstDEFAULT,tstNODEFAULT,tstIMPLEMENTS,tstINDEX]);
-     TempSymbol:=RecordType^.RecordTable.GetSymbol(TempName,ModuleSymbol,CurrentObjectClass);
+     TempSymbol:=RecordType^.RecordTable.GetSymbol(TempName,ModuleSymbol,CurrentObjectClass,true);
      if (not (assigned(TempSymbol) and assigned(TempSymbol^.OwnerObjectClass))) or not (TempSymbol^.SymbolType in [Symbols.tstVariable,Symbols.tstProcedure]) then begin
       Error.AbortCode(246);
      end else begin
@@ -3696,7 +3649,7 @@ begin
      Scanner.AllowedDirectives:=Scanner.AllowedDirectives+[tstREAD,tstWRITE,tstSTORED,tstDEFAULT,tstNODEFAULT,tstIMPLEMENTS,tstINDEX];
      TempName:=Scanner.ReadIdentifier;
      Scanner.CheckForDirectives([tstREAD,tstWRITE,tstSTORED,tstDEFAULT,tstNODEFAULT,tstIMPLEMENTS,tstINDEX]);
-     TempSymbol:=RecordType^.RecordTable.GetSymbol(TempName,ModuleSymbol,CurrentObjectClass);
+     TempSymbol:=RecordType^.RecordTable.GetSymbol(TempName,ModuleSymbol,CurrentObjectClass,true);
      if assigned(TempSymbol) and assigned(TempSymbol^.OwnerObjectClass) then begin
       case TempSymbol^.SymbolType of
        Symbols.tstVariable:begin
@@ -3907,17 +3860,19 @@ begin
 end;
 
 function TParser.ParseObjectDeclaration(ObjectName:ansistring;IsPacked:boolean):PType;
-var Symbol,NewSymbol,Parent:PSymbol;
+var Symbol,NewSymbol,Parent,TestSymbol:PSymbol;
     OldList:TSymbolList;
     OldVariableType:TVariableType;
     ParentName:ansistring;
     SymbolAttributes:TSymbolAttributes;
-    OldCurrentObjectClass,CurrentObject:PType;
+    OldCurrentObjectClass,OldCurrentParseObjectClass,CurrentObject:PType;
     NewTreeNode:TTreeNode;
+    OK:boolean;
 begin
  if assigned(CurrentProcedureFunction) then begin
   Error.AbortCode(62);
  end;
+ writeln(ObjectName);
  Scanner.Match(tstOBJECT);
  OldList:=SymbolManager.CurrentList;
  Parent:=nil;
@@ -3944,7 +3899,9 @@ begin
  result^.RecordPacked:=IsPacked or (LocalSwitches^.Alignment=1);
  result^.ChildOf:=Parent;
  OldCurrentObjectClass:=CurrentObjectClass;
+ OldCurrentParseObjectClass:=CurrentParseObjectClass;
  CurrentObjectClass:=result;
+ CurrentParseObjectClass:=result;
  result^.HasVirtualTable:=false;
  result^.RecordTable:=TSymbolList.Create(SymbolManager);
  SymbolManager.CurrentList:=result^.RecordTable;
@@ -3952,13 +3909,14 @@ begin
  SymbolManager.VariableType:=tvtObjectField;
  SymbolAttributes:=[tsaOOPPublic];
  result^.VirtualIndexCount:=0;
+ CurrentObject:=nil;
  if assigned(result^.ChildOf) then begin
   CurrentObject:=result^.ChildOf^.TypeDefinition;
   result^.RecordPacked:=CurrentObject^.RecordPacked;
   result^.RecordSize:=CurrentObject^.RecordSize;
   result^.RecordAlignment:=CurrentObject^.RecordAlignment;
-  result^.VirtualIndexCount:=CurrentObject^.VirtualIndexCount;
-  Symbol:=CurrentObject^.RecordTable.First;
+  result^.VirtualIndexCount:=CurrentObject^.VirtualIndexCount;            
+{ Symbol:=CurrentObject^.RecordTable.First;
   while assigned(Symbol) do begin
    if Symbol^.SymbolType=Symbols.tstVariable then begin
     NewSymbol:=SymbolManager.NewSymbol(ModuleSymbol,result);
@@ -3978,14 +3936,17 @@ begin
     result^.RecordTable.AddSymbol(NewSymbol,ModuleSymbol,result,false);
    end;
    Symbol:=Symbol^.Next;
-  end;
+  end;}
+ end;
+ if assigned(result^.ChildOf) and assigned(result^.ChildOf^.TypeDefinition) then begin
+  result^.RecordTable.ChildOf:=result^.ChildOf^.TypeDefinition^.RecordTable;
  end;
  while not Scanner.IsEOFOrAbortError do begin
   Scanner.CheckForDirectives([tstSTRICT,tstPRIVATE,tstPUBLIC,tstPROTECTED,tstPUBLISHED]);
   case Scanner.CurrentToken of
    tstSTRICT:begin
     Scanner.Match(tstSTRICT);
-    Scanner.Match(tstPRIVATE);  
+    Scanner.Match(tstPRIVATE);
     SymbolAttributes:=(SymbolAttributes-OOPSymbolAttribute)+[tsaOOPStrictPrivate];
    end;
    tstPRIVATE:begin
@@ -4032,8 +3993,43 @@ begin
          Error.AbortCode(526);
         end;
        end else begin
-        Symbol^.VirtualIndex:=result^.VirtualIndexCount;
-        inc(result^.VirtualIndexCount);
+        if assigned(CurrentObject) then begin
+         TestSymbol:=CurrentObject^.RecordTable.GetSymbol(Symbol^.Name,ModuleSymbol,CurrentObjectClass,true);
+         if assigned(TestSymbol) then begin
+          OK:=true;
+          while assigned(TestSymbol) do begin
+           case CompareParameters(Error,SymbolManager,Symbol^.Parameter,TestSymbol^.Parameter,tcptNONE,[tcpoCOMPAREDEFAULTVALUE]) of
+            tcteExact,tcteEqual:begin
+             if assigned(Symbol^.ReturnType)<>assigned(TestSymbol^.ReturnType) then begin
+              OK:=false;
+             end else if assigned(Symbol^.ReturnType) and assigned(TestSymbol^.ReturnType) then begin
+              OK:=EqualTypes(Error,SymbolManager,Symbol^.ReturnType,TestSymbol^.ReturnType);
+             end else begin
+              OK:=true;
+             end;
+            end;
+            else begin
+             OK:=false;
+            end;
+           end;
+           if OK then begin
+            break;
+           end else begin
+            TestSymbol:=TestSymbol^.NextOverloaded;
+           end;
+          end;
+          if not assigned(TestSymbol) then begin
+           Error.AbortCode(265,CorrectSymbolName(Symbol^.Name));
+          end else begin
+           Symbol^.VirtualIndex:=TestSymbol^.VirtualIndex;
+          end;
+         end else begin
+          Error.AbortCode(265,CorrectSymbolName(Symbol^.Name));
+         end;
+        end else begin
+         Symbol^.VirtualIndex:=result^.VirtualIndexCount;
+         inc(result^.VirtualIndexCount);
+        end;
        end;
        Scanner.Match(tstSEPARATOR);
        result^.HasVirtualTable:=true;
@@ -4109,6 +4105,7 @@ begin
  SymbolManager.CurrentList:=OldList;
 
  CurrentObjectClass:=OldCurrentObjectClass;
+ CurrentParseObjectClass:=OldCurrentParseObjectClass;
 end;
 
 function TParser.ParseClassDeclaration(ObjectName:ansistring;IsPacked:boolean):PType;
@@ -4120,7 +4117,7 @@ var Symbol,Parent,NewSymbol,ForwardClass:PSymbol;
     SymbolAttributes:TSymbolAttributes;
     NewTreeNode:TTreeNode;
     InterfaceSymbols:array of PSymbol;
-    OldCurrentObjectClass:PType;
+    OldCurrentObjectClass,OldCurrentParseObjectClass:PType;
     IsClassOf,IsForward:boolean;
 begin
  if assigned(CurrentProcedureFunction) then begin
@@ -4247,9 +4244,14 @@ begin
  SetLength(InterfaceSymbols,0);
 
  OldCurrentObjectClass:=CurrentObjectClass;
+ OldCurrentParseObjectClass:=CurrentParseObjectClass;
  CurrentObjectClass:=result;
+ CurrentParseObjectClass:=result;
 
  result^.RecordTable:=TSymbolList.Create(SymbolManager);
+ if assigned(result^.ChildOf) and assigned(result^.ChildOf^.TypeDefinition) then begin
+  result^.RecordTable.ChildOf:=result^.ChildOf^.TypeDefinition^.RecordTable;
+ end;
  SymbolManager.CurrentList:=result^.RecordTable;
  OldVariableType:=SymbolManager.VariableType;
  SymbolManager.VariableType:=tvtClassField;
@@ -4357,6 +4359,7 @@ begin
  SymbolManager.CurrentList:=OldList;
 
  CurrentObjectClass:=OldCurrentObjectClass;
+ CurrentParseObjectClass:=OldCurrentParseObjectClass;
 end;
 
 function TParser.ParseInterfaceDeclaration(ObjectName:ansistring;IsPacked:boolean):PType;
@@ -4780,6 +4783,7 @@ end;
 function TParser.ParseProcedure(ParseHeader:boolean;ProcedureAttributes:TProcedureAttributes):PSymbol;
 var Parent:PSymbol;
     ObjectClassSymbolList:TSymbolList;
+    SymbolTypeList:TPointerList;
     OldObjectName,OldName,Name,ParameterSuffix,MethodName:ansistring;
     Method,MethodSymbol,SearchSymbol,Symbol,SymbolA,SymbolB,ResultSymbol,
     OldCurrentMethod,OldCurrentProcedureFunction:PSymbol;
@@ -4789,6 +4793,7 @@ var Parent:PSymbol;
     OldVariableType:TVariableType;
     OldList,OldProcList,LocalList:TSymbolList;
     OldAssemblerMode,ForwardProc,OK:boolean;
+    i:longint;
 begin
  result:=nil;
 
@@ -4846,7 +4851,7 @@ begin
  end;
 
  OldCurrentObjectClass:=CurrentObjectClass;
-
+ 
  OldName:=Scanner.ProcedureName;
  Name:=Scanner.ReadIdentifier;
  if length(Scanner.ProcedureName)>0 then begin
@@ -4869,10 +4874,19 @@ begin
    exit;
   end;
   ObjectClassSymbolList:=MethodSymbol^.TypeDefinition^.RecordTable;
-  Parent:=MethodSymbol^.TypeDefinition^.ChildOf;
-  while assigned(Parent) do begin
-   SymbolManager.PushSymbolList(Parent^.TypeDefinition^.RecordTable);
-   Parent:=Parent^.TypeDefinition^.ChildOf;
+  SymbolTypeList:=TPointerList.Create;
+  try
+   SymbolTypeList.Add(ObjectClassSymbolList);
+   Parent:=MethodSymbol^.TypeDefinition^.ChildOf;
+   while assigned(Parent) do begin
+    SymbolTypeList.Add(Parent^.TypeDefinition^.RecordTable);
+    Parent:=Parent^.TypeDefinition^.ChildOf;
+   end;
+   for i:=SymbolTypeList.Count-1 downto 0 do begin
+    SymbolManager.PushSymbolList(SymbolTypeList.Items[i]);
+   end;
+  finally
+   SymbolTypeList.Free;
   end;
   MethodName:=Scanner.ReadIdentifier;
   Method:=ObjectClassSymbolList.GetSymbol(MethodName,ModuleSymbol,CurrentObjectClass);
@@ -4882,7 +4896,6 @@ begin
   end;
   Method^.OverloadedName:=Scanner.ProcedureName+'_'+Method^.OverloadedName;
   HashSymbol(Method);
-  SymbolManager.PushSymbolList(ObjectClassSymbolList);
  end else begin
   MethodSymbol:=nil;
   Method:=nil;
@@ -4970,114 +4983,138 @@ begin
   exit;
  end;
 
- SearchSymbol:=SymbolManager.GetSymbol(Scanner.ProcedureName,ModuleSymbol,CurrentObjectClass);
- if (not assigned(SearchSymbol)) or
-    (SearchSymbol^.LexicalScopeLevel<>(SymbolManager.LexicalScopeLevel-1)) or
-    ((SearchSymbol^.OwnerModule<>ModuleSymbol) and not (tpaOverload in Symbol^.ProcedureAttributes)) then begin
+ if assigned(CurrentParseObjectClass) then begin
+  SearchSymbol:=CurrentParseObjectClass.RecordTable.GetSymbol(Scanner.ProcedureName,ModuleSymbol,CurrentObjectClass,true);
+  if assigned(SearchSymbol) then begin
+   while ((SearchSymbol^.OverloadedNameHash<>Symbol^.OverloadedNameHash) or (SearchSymbol^.OverloadedName<>Symbol^.OverloadedName)) and assigned(SearchSymbol^.NextOverloaded) do begin
+    SearchSymbol:=SearchSymbol^.NextOverloaded;
+   end;
+   if ((SearchSymbol^.OverloadedNameHash=Symbol^.OverloadedNameHash) and
+       (SearchSymbol^.OverloadedName=Symbol^.OverloadedName)) then begin
+   end else begin
+    if tpaOverload in Symbol.ProcedureAttributes then begin
+     SearchSymbol^.NextOverloaded:=Symbol;
+     Symbol^.NextOverloaded:=nil;
+    end else begin
+     Error.AbortCode(3,CorrectSymbolName(Symbol^.Name));
+    end;
+   end;
+  end;
   Symbol^.NextOverloaded:=nil;
   dec(SymbolManager.LexicalScopeLevel);
-  SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+  Symbol^.OwnerObjectClass:=CurrentParseObjectClass;
+  SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass,false,false);
   inc(SymbolManager.LexicalScopeLevel);
  end else begin
-  case SearchSymbol^.SymbolType of
-   Symbols.tstType:begin
-    if assigned(SearchSymbol^.TypeDefinition) and not (SearchSymbol^.TypeDefinition^.TypeDefinition in [ttdObject,ttdClass]) then begin
-     Error.AbortCode(3,CorrectSymbolName(SearchSymbol^.Name));
-    end;
-   end;
-   Symbols.tstProcedure,Symbols.tstFunction:begin
-    if (([tpaForward,tpaOverload]*SearchSymbol^.ProcedureAttributes)=[tpaForward]) and not
-       ((tpaOverload in Symbol^.ProcedureAttributes) or
-        (tpaOverload in SearchSymbol^.ProcedureAttributes)) then begin
-     ForwardProc:=true; //assigned(SearchSymbol^.Parameter) and not assigned(Symbol^.Parameter);
-    end else begin
-     ForwardProc:=false;
-    end;
-    if not ForwardProc then begin
-     while ((SearchSymbol^.OverloadedNameHash<>Symbol^.OverloadedNameHash) or (SearchSymbol^.OverloadedName<>Symbol^.OverloadedName)) and assigned(SearchSymbol^.NextOverloaded) do begin
-      SearchSymbol:=SearchSymbol^.NextOverloaded;
+  SearchSymbol:=SymbolManager.GetSymbol(Scanner.ProcedureName,ModuleSymbol,CurrentObjectClass);
+  if (not assigned(SearchSymbol)) or
+     (SearchSymbol^.LexicalScopeLevel<>(SymbolManager.LexicalScopeLevel-1)) or
+     ((SearchSymbol^.OwnerModule<>ModuleSymbol) and not (tpaOverload in Symbol^.ProcedureAttributes)) then begin
+   Symbol^.NextOverloaded:=nil;
+   dec(SymbolManager.LexicalScopeLevel);
+   SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+   inc(SymbolManager.LexicalScopeLevel);
+  end else begin
+   case SearchSymbol^.SymbolType of
+    Symbols.tstType:begin
+     if assigned(SearchSymbol^.TypeDefinition) and not (SearchSymbol^.TypeDefinition^.TypeDefinition in [ttdObject,ttdClass]) then begin
+      Error.AbortCode(3,CorrectSymbolName(SearchSymbol^.Name));
      end;
     end;
-    if ((SearchSymbol^.OverloadedNameHash=Symbol^.OverloadedNameHash) and
-        (SearchSymbol^.OverloadedName=Symbol^.OverloadedName)) or
-        ForwardProc then begin
-     if tpaForward in SearchSymbol^.ProcedureAttributes then begin
-      SearchSymbol^.ForwardSymbol:=Symbol;
-      Symbol^.ForwardSymbol:=SearchSymbol;
-      if tpaCALLCONV in Symbol^.ProcedureAttributes then begin
-       if (ProcedureCallingConventionAttributes*Symbol^.ProcedureAttributes)<>(ProcedureCallingConventionAttributes*SearchSymbol^.ProcedureAttributes) then begin
-        Error.AbortCode(513,CorrectSymbolName(Symbol^.Name));
-       end;
-      end else if (tpaCALLCONV in Symbol^.ProcedureAttributes) and not (tpaCALLCONV in SearchSymbol^.ProcedureAttributes) then begin
-       SearchSymbol^.ProcedureAttributes:=(SearchSymbol^.ProcedureAttributes-ProcedureCallingConventionAttributesEx)+(Symbol^.ProcedureAttributes*ProcedureCallingConventionAttributesEx);
-       CheckProcedureType(SearchSymbol);
-      end else begin
-       if (ProcedureCallingConventionAttributesEx*SearchSymbol^.ProcedureAttributes)<>[] then begin
-        Symbol^.ProcedureAttributes:=(Symbol^.ProcedureAttributes-ProcedureCallingConventionAttributesEx)+(SearchSymbol^.ProcedureAttributes*ProcedureCallingConventionAttributesEx);
-       end;
-      end;
-     end;
-     if (assigned(SearchSymbol^.Parameter) and not assigned(Symbol^.Parameter)) and not
+    Symbols.tstProcedure,Symbols.tstFunction:begin
+     if (([tpaForward,tpaOverload]*SearchSymbol^.ProcedureAttributes)=[tpaForward]) and not
         ((tpaOverload in Symbol^.ProcedureAttributes) or
          (tpaOverload in SearchSymbol^.ProcedureAttributes)) then begin
-      SymbolManager.PopSymbolList(Symbol^.Parameter);
-      Symbol^.Parameter:=SearchSymbol^.Parameter;
-      Symbol:=SearchSymbol;
-      if assigned(Symbol^.Parameter) then begin
-       SymbolManager.PushSymbolList(Symbol^.Parameter);
-      end;
+      ForwardProc:=true; //assigned(SearchSymbol^.Parameter) and not assigned(Symbol^.Parameter);
      end else begin
-      if not ((tpaOverload in Symbol^.ProcedureAttributes) or
-              (tpaOverload in SearchSymbol^.ProcedureAttributes)) then begin
-       if assigned(Symbol^.Parameter) and not assigned(SearchSymbol^.Parameter) then begin
-        Error.AbortCode(514,CorrectSymbolName(Symbol^.Name));
-       end else if assigned(Symbol^.Parameter) and assigned(SearchSymbol^.Parameter) then begin
-        SymbolA:=Symbol^.Parameter.First;
-        SymbolB:=SearchSymbol^.Parameter.First;
-        while assigned(SymbolA) and assigned(SymbolB) do begin
-         if (SymbolA^.Name<>SymbolB^.Name) or (SymbolA^.SymbolType<>SymbolB^.SymbolType) or
-            ((SymbolA^.SymbolType in [Symbols.tstVariable]) and
-             ((SymbolA^.VariableType<>SymbolB^.VariableType) or
-              (((SymbolA^.VariableType=SymbolB^.VariableType) and (SymbolA^.VariableType=tvtParameterValue)) and
-               (SymbolA^.TypeDefinition<>SymbolB^.TypeDefinition)) or
-              ((assigned(SymbolA^.TypeDefinition) and assigned(SymbolB^.TypeDefinition)) and
-               not SymbolManager.SameTypes(SymbolA^.TypeDefinition,SymbolB^.TypeDefinition)
-              )
-             )
-            ) then begin
-          Error.AbortCode(514,CorrectSymbolName(Symbol^.Name));
-          break;
-         end;
-         SymbolA:=SymbolA^.Next;
-         SymbolB:=SymbolB^.Next;
+      ForwardProc:=false;
+     end;
+     if not ForwardProc then begin
+      while ((SearchSymbol^.OverloadedNameHash<>Symbol^.OverloadedNameHash) or (SearchSymbol^.OverloadedName<>Symbol^.OverloadedName)) and assigned(SearchSymbol^.NextOverloaded) do begin
+       SearchSymbol:=SearchSymbol^.NextOverloaded;
+      end;
+     end;
+     if ((SearchSymbol^.OverloadedNameHash=Symbol^.OverloadedNameHash) and
+         (SearchSymbol^.OverloadedName=Symbol^.OverloadedName)) or
+         ForwardProc then begin
+      if tpaForward in SearchSymbol^.ProcedureAttributes then begin
+       SearchSymbol^.ForwardSymbol:=Symbol;
+       Symbol^.ForwardSymbol:=SearchSymbol;
+       if tpaCALLCONV in Symbol^.ProcedureAttributes then begin
+        if (ProcedureCallingConventionAttributes*Symbol^.ProcedureAttributes)<>(ProcedureCallingConventionAttributes*SearchSymbol^.ProcedureAttributes) then begin
+         Error.AbortCode(513,CorrectSymbolName(Symbol^.Name));
         end;
-        if assigned(SymbolA)<>assigned(SymbolB) then begin
-         Error.AbortCode(514,CorrectSymbolName(Symbol^.Name));
-        end;
-        if (Symbol^.OverloadedNameHash<>SearchSymbol^.OverloadedNameHash) or
-           (Symbol^.OverloadedName<>SearchSymbol^.OverloadedName) then begin
-         Error.AbortCode(514,CorrectSymbolName(Symbol^.Name));
+       end else if (tpaCALLCONV in Symbol^.ProcedureAttributes) and not (tpaCALLCONV in SearchSymbol^.ProcedureAttributes) then begin
+        SearchSymbol^.ProcedureAttributes:=(SearchSymbol^.ProcedureAttributes-ProcedureCallingConventionAttributesEx)+(Symbol^.ProcedureAttributes*ProcedureCallingConventionAttributesEx);
+        CheckProcedureType(SearchSymbol);
+       end else begin
+        if (ProcedureCallingConventionAttributesEx*SearchSymbol^.ProcedureAttributes)<>[] then begin
+         Symbol^.ProcedureAttributes:=(Symbol^.ProcedureAttributes-ProcedureCallingConventionAttributesEx)+(SearchSymbol^.ProcedureAttributes*ProcedureCallingConventionAttributesEx);
         end;
        end;
       end;
-      SymbolManager.PopSymbolList(Symbol^.Parameter);
-      FreeAndNil(Symbol^.Parameter);
-      Symbol:=SearchSymbol;
-      if assigned(Symbol^.Parameter) then begin
-       SymbolManager.PushSymbolList(Symbol^.Parameter);
+      if (assigned(SearchSymbol^.Parameter) and not assigned(Symbol^.Parameter)) and not
+         ((tpaOverload in Symbol^.ProcedureAttributes) or
+          (tpaOverload in SearchSymbol^.ProcedureAttributes)) then begin
+       SymbolManager.PopSymbolList(Symbol^.Parameter);
+       Symbol^.Parameter:=SearchSymbol^.Parameter;
+       Symbol:=SearchSymbol;
+       if assigned(Symbol^.Parameter) then begin
+        SymbolManager.PushSymbolList(Symbol^.Parameter);
+       end;
+      end else begin
+       if not ((tpaOverload in Symbol^.ProcedureAttributes) or
+               (tpaOverload in SearchSymbol^.ProcedureAttributes)) then begin
+        if assigned(Symbol^.Parameter) and not assigned(SearchSymbol^.Parameter) then begin
+         Error.AbortCode(514,CorrectSymbolName(Symbol^.Name));
+        end else if assigned(Symbol^.Parameter) and assigned(SearchSymbol^.Parameter) then begin
+         SymbolA:=Symbol^.Parameter.First;
+         SymbolB:=SearchSymbol^.Parameter.First;
+         while assigned(SymbolA) and assigned(SymbolB) do begin
+          if (SymbolA^.Name<>SymbolB^.Name) or (SymbolA^.SymbolType<>SymbolB^.SymbolType) or
+             ((SymbolA^.SymbolType in [Symbols.tstVariable]) and
+              ((SymbolA^.VariableType<>SymbolB^.VariableType) or
+               (((SymbolA^.VariableType=SymbolB^.VariableType) and (SymbolA^.VariableType=tvtParameterValue)) and
+                (SymbolA^.TypeDefinition<>SymbolB^.TypeDefinition)) or
+               ((assigned(SymbolA^.TypeDefinition) and assigned(SymbolB^.TypeDefinition)) and
+                not SymbolManager.SameTypes(SymbolA^.TypeDefinition,SymbolB^.TypeDefinition)
+               )
+              )
+             ) then begin
+           Error.AbortCode(514,CorrectSymbolName(Symbol^.Name));
+           break;
+          end;
+          SymbolA:=SymbolA^.Next;
+          SymbolB:=SymbolB^.Next;
+         end;
+         if assigned(SymbolA)<>assigned(SymbolB) then begin
+          Error.AbortCode(514,CorrectSymbolName(Symbol^.Name));
+         end;
+         if (Symbol^.OverloadedNameHash<>SearchSymbol^.OverloadedNameHash) or
+            (Symbol^.OverloadedName<>SearchSymbol^.OverloadedName) then begin
+          Error.AbortCode(514,CorrectSymbolName(Symbol^.Name));
+         end;
+        end;
+       end;
+       SymbolManager.PopSymbolList(Symbol^.Parameter);
+       FreeAndNil(Symbol^.Parameter);
+       Symbol:=SearchSymbol;
+       if assigned(Symbol^.Parameter) then begin
+        SymbolManager.PushSymbolList(Symbol^.Parameter);
+       end;
+      end;
+     end else begin
+      if tpaOverload in Symbol.ProcedureAttributes then begin
+       SearchSymbol^.NextOverloaded:=Symbol;
+       Symbol^.NextOverloaded:=nil;
+      end else begin
+       Error.AbortCode(3,CorrectSymbolName(Symbol^.Name));
       end;
      end;
-    end else begin
-     if tpaOverload in Symbol.ProcedureAttributes then begin
-      SearchSymbol^.NextOverloaded:=Symbol;
-      Symbol^.NextOverloaded:=nil;
-     end else begin
-      Error.AbortCode(3,CorrectSymbolName(Symbol^.Name));
-     end;
     end;
-   end;
-   else begin
-    Error.AbortCode(3,CorrectSymbolName(Symbol^.Name));
+    else begin
+     Error.AbortCode(3,CorrectSymbolName(Symbol^.Name));
+    end;
    end;
   end;
  end;
@@ -5239,11 +5276,19 @@ begin
  SymbolManager.VariableType:=OldVariableType;
 
  if assigned(Method) and not ParseHeader then begin
-  SymbolManager.PopSymbolList(ObjectClassSymbolList);
-  Parent:=Method^.TypeDefinition^.ChildOf;
-  while assigned(Parent) do begin
-   SymbolManager.PopSymbolList(Parent^.TypeDefinition^.RecordTable);
-   Parent:=Parent^.TypeDefinition^.ChildOf;
+  SymbolTypeList:=TPointerList.Create;
+  try
+   SymbolTypeList.Add(ObjectClassSymbolList);
+   Parent:=MethodSymbol^.TypeDefinition^.ChildOf;
+   while assigned(Parent) do begin
+    SymbolTypeList.Add(Parent^.TypeDefinition^.RecordTable);
+    Parent:=Parent^.TypeDefinition^.ChildOf;
+   end;
+   for i:=0 to SymbolTypeList.Count-1 do begin
+    SymbolManager.PopSymbolList(SymbolTypeList.Items[i]);
+   end;
+  finally
+   SymbolTypeList.Free;
   end;
  end;
 
@@ -6198,8 +6243,8 @@ begin
       break;
      end;
      Field:=Scanner.ReadIdentifier;
-     Scanner.Match(tstColon);
-     Symbol:=ConstantType^.RecordTable.GetSymbol(Field,ModuleSymbol,CurrentObjectClass);
+     Scanner.Match(tstColon);                                                              
+     Symbol:=ConstantType^.RecordTable.GetSymbol(Field,ModuleSymbol,CurrentObjectClass,true);
      if assigned(Symbol) then begin
       Found:=false;
       while assigned(RecordSymbol) do begin

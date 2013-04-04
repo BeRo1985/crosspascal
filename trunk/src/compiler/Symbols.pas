@@ -391,6 +391,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
        First:PSymbol;
        Last:PSymbol;
        ProcSymbol:PSymbol;
+       ChildOf:TSymbolList;
        Nested:TSymbolList;
        StringHashMap:TBeRoStringHashMap;
        constructor Create(TheSymbolManager:TSymbolManager);
@@ -398,9 +399,9 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
        procedure UnlistSymbol(var Symbol:PSymbol);
        procedure DeleteSymbol(var Symbol:PSymbol);
        procedure RemoveLastSymbol;
-       function GetSymbol(const Name:ansistring;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil):PSymbol;
-       function ContainsSymbol(Symbol:PSymbol):boolean;
-       procedure AddSymbol(Symbol:PSymbol;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;AtBegin:boolean=false);
+       function GetSymbol(const Name:ansistring;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;Childs:boolean=false):PSymbol;
+       function ContainsSymbol(Symbol:PSymbol;Childs:boolean=false):boolean;
+       procedure AddSymbol(Symbol:PSymbol;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;AtBegin:boolean=false;Childs:boolean=false);
      end;
 
      TTypeList=class
@@ -465,12 +466,13 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
        function SameTypes(A,B:PType):boolean;
        function CompatibleTypes(A,B:PType):boolean;
        function CompatibleEqualTypes(A,B:PType):boolean;
-       function GetSymbol(const Name:ansistring;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil):PSymbol;
+       function GetSymbol(const Name:ansistring;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;Childs:boolean=false):PSymbol;
        function CheckUnits(ModuleSymbol:PSymbol;ObjectClassType:PType;Symbol:PSymbol):boolean;
        function GetOverloadedProcedure(Start:PSymbol;Name:ansistring):PSymbol;
        procedure PushSymbolList(SymbolList:TSymbolList);
        procedure PopSymbolList(SymbolList:TSymbolList);
        procedure PopLastSymbolList;
+       procedure FixSymbolListChilds;
        function NewConstant(ModuleSymbol:PSymbol):PConstant;
        procedure AddConstant(AConstant:PConstant);
        function CloneType(FromType:PType;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;IsPublic:boolean=false):PType;
@@ -522,6 +524,7 @@ begin
  First:=nil;
  Last:=nil;
  ProcSymbol:=nil;
+ ChildOf:=nil;
  Nested:=nil;
  StringHashMap:=TBeRoStringHashMap.Create;
 end;
@@ -594,7 +597,7 @@ begin
  end;
 end;
 
-function TSymbolList.GetSymbol(const Name:ansistring;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil):PSymbol;
+function TSymbolList.GetSymbol(const Name:ansistring;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;Childs:boolean=false):PSymbol;
 var NextOverloadedSymbol,Symbol:PSymbol;
     StringHashMapEntity:PBeRoStringHashMapEntity;
     Found,IsVisible:boolean;
@@ -620,7 +623,11 @@ begin
    // If a symbol is found, check if this symbol is visible
    if Found then begin
     if not assigned(Symbol) then begin
-     result:=nil;
+     if Childs and assigned(ChildOf) then begin
+      result:=ChildOf.GetSymbol(Name,ModuleSymbol,ObjectClassType);
+     end else begin
+      result:=nil;
+     end;
      exit;
     end;
 
@@ -695,9 +702,12 @@ begin
    result:=Symbol;
   end;
  end;
+ if Childs and assigned(ChildOf) and not assigned(result) then begin
+  result:=ChildOf.GetSymbol(Name,ModuleSymbol,ObjectClassType);
+ end;
 end;
 
-function TSymbolList.ContainsSymbol(Symbol:PSymbol):boolean;
+function TSymbolList.ContainsSymbol(Symbol:PSymbol;Childs:boolean=false):boolean;
 var ListSymbol:PSymbol;
 begin
  result:=false;
@@ -709,9 +719,12 @@ begin
   end;
   ListSymbol:=ListSymbol^.Next;
  end;
+ if Childs and assigned(ChildOf) then begin
+  result:=ChildOf.ContainsSymbol(Symbol);
+ end;
 end;
 
-procedure TSymbolList.AddSymbol(Symbol:PSymbol;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;AtBegin:boolean=false);
+procedure TSymbolList.AddSymbol(Symbol:PSymbol;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;AtBegin:boolean=false;Childs:boolean=false);
 var TestSymbol,OurNewSymbol:PSymbol;
     StringHashMapEntity:PBeRoStringHashMapEntity;
 begin
@@ -719,12 +732,13 @@ begin
  if ([tsaInternalField,tsaHidden]*Symbol^.Attributes)<>[] then begin
   TestSymbol:=nil;
  end else begin
-  TestSymbol:=GetSymbol(Symbol^.Name,ModuleSymbol,ObjectClassType);
+  TestSymbol:=GetSymbol(Symbol^.Name,ModuleSymbol,ObjectClassType,Childs);
  end;
  if (not (Symbol^.SymbolType in [Symbols.tstCaseVariantLevelPush,Symbols.tstCaseVariantLevelPop,
                                  Symbols.tstCaseVariantPush,Symbols.tstCaseVariantPop])) and
     (assigned(TestSymbol) and
-     (TestSymbol^.LexicalScopeLevel=SymbolManager.LexicalScopeLevel)) then begin
+     (TestSymbol^.LexicalScopeLevel=SymbolManager.LexicalScopeLevel)) and
+     (assigned(TestSymbol^.OwnerObjectClass)=assigned(Symbol^.OwnerObjectClass)) then begin
   SymbolManager.Error.AddErrorCode(3,CorrectSymbolName(Symbol^.Name));
  end else begin
   if Symbol^.OwnerModule<>ModuleSymbol then begin
@@ -1571,13 +1585,13 @@ begin
  result:=TypeCheck.AreTypesEqualCompatible(Error,self,A,B);
 end;
 
-function TSymbolManager.GetSymbol(const Name:ansistring;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil):PSymbol;
+function TSymbolManager.GetSymbol(const Name:ansistring;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;Childs:boolean=false):PSymbol;
 var List:PSymbolListStack;
 begin
  List:=LastSymbolListStack;
  result:=nil;
  while assigned(List) do begin
-  result:=List^.List.GetSymbol(Name,ModuleSymbol,ObjectClassType);
+  result:=List^.List.GetSymbol(Name,ModuleSymbol,ObjectClassType,Childs);
   if assigned(result) then begin
    break;
   end;
@@ -1684,6 +1698,18 @@ begin
    LastSymbolListStack:=SymbolListStack^.Previous;
   end;
   FreeMem(SymbolListStack);
+ end;
+end;
+
+procedure TSymbolManager.FixSymbolListChilds;
+var AType:PType;
+begin
+ AType:=TypeList.First;
+ while assigned(AType) do begin
+  if (AType^.TypeDefinition in [ttdRecord,ttdObject,ttdClass,ttdInterface]) and assigned(AType^.ChildOf) and assigned(AType^.RecordTable) then begin
+   AType^.RecordTable.ChildOf:=AType^.ChildOf^.TypeDefinition^.RecordTable;
+  end;
+  AType:=AType^.Next;
  end;
 end;
 
@@ -1823,10 +1849,15 @@ begin
    SetLength(SizeStack,Allocated);
    SetLength(AlignmentStack,Allocated);
    StackPointer:=0;
-   SizeStack[StackPointer]:=0;
-   AlignmentStack[StackPointer]:=0;
-   RecordType^.RecordAlignment:=0;
-   RecordType^.RecordSize:=0;
+   if assigned(RecordType^.ChildOf) and assigned(RecordType^.ChildOf^.TypeDefinition) then begin
+    RecordType^.RecordAlignment:=RecordType^.ChildOf^.TypeDefinition^.RecordAlignment;
+    RecordType^.RecordSize:=RecordType^.ChildOf^.TypeDefinition^.RecordSize;
+   end else begin
+    RecordType^.RecordAlignment:=0;
+    RecordType^.RecordSize:=0;
+   end;
+   SizeStack[StackPointer]:=RecordType^.RecordSize;
+   AlignmentStack[StackPointer]:=RecordType^.RecordAlignment;
    Symbol:=RecordType^.RecordTable.First;
    while assigned(Symbol) do begin
     case Symbol^.SymbolType of
