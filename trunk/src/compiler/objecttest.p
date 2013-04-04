@@ -43,4 +43,9 @@ begin
  TestObject2.Create;
  TestObject2.aa:=TestObject2.a;
  TestObject2.Bluh(4);
+ if typeof(TestObject)=typeof(TestObject2) then begin
+  WriteLn('Same object types');
+ end else begin 
+  WriteLn('Different object types');
+ end;
 end.

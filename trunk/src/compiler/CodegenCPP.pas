@@ -1,4 +1,5 @@
 unit CodegenCPP;
+{$i Compiler.inc}
 
 interface
 
@@ -1643,6 +1644,19 @@ begin
         FProcCode.Add('))',spacesLEFT);
        end else begin
         Error.InternalError(201303130455002);
+       end;
+      end;
+      tipTYPEOF:begin
+       if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and not assigned(TreeNode.Left.Right) then begin
+        if (TreeNode.Left.Left.Return^.TypeDefinition=ttdOBJECT) and TreeNode.Left.Left.Return^.HasVirtualTable then begin
+         FProcCode.Add('((void*)((');
+         TranslateCode(TreeNode.Left.Left);
+         FProcCode.Add(').INTERNAL_FIELD_VMT))',spacesLEFT);
+        end else begin
+         Error.AddErrorCode(86);
+        end;
+       end else begin
+        Error.InternalError(201304050127000);
        end;
       end;
       else {tipNone:}begin

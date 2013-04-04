@@ -790,6 +790,13 @@ begin
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
 
+ Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+ Symbol^.Name:=tpsIdentifier+'TYPEOF';
+ Symbol^.SymbolType:=Symbols.tstFUNCTION;
+ Symbol^.InternalProcedure:=tipTYPEOF;
+ Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
+ SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+
 end;
 
 procedure TParser.GetDefaultTypes;
