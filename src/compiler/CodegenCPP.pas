@@ -2399,7 +2399,7 @@ var TypeItems:TTypeItems;
    end;
   end;
  var Counter,Index:longint;
-     Type_:PType;
+     Type_,CurrentType:PType;
      TypePointerList:TPointerList;
      SymbolList:TSymbolList;
      Symbol:PSymbol;
@@ -2442,21 +2442,29 @@ var TypeItems:TTypeItems;
         end;
        end;
        ttdRecord,ttdObject,ttdClass,ttdInterface:begin
-        SymbolList:=Type_^.RecordTable;
-        if assigned(SymbolList) then begin
-         Symbol:=SymbolList.First;
-         while assigned(Symbol) do begin
-          case Symbol^.SymbolType of
-           Symbols.tstVariable:begin
-            if assigned(Symbol^.TypeDefinition) and not (((Symbol^.TypeDefinition.TypeDefinition=ttdPointer) and assigned(Symbol^.TypeDefinition^.PointerTo)) and (Symbol^.TypeDefinition^.PointerTo^.TypeDefinition=Type_)) then begin
-             Index:=TypePointerList.IndexOf(Symbol^.TypeDefinition);
-             if (Index>=0) and (DependencyItems[Counter].Dependencies.IndexOf(Index)<0) then begin
-              DependencyItems[Counter].Dependencies.Add(Index);
+        CurrentType:=Type_;
+        while assigned(CurrentType) do begin
+         SymbolList:=CurrentType^.RecordTable;
+         if assigned(SymbolList) then begin
+          Symbol:=SymbolList.First;
+          while assigned(Symbol) do begin
+           case Symbol^.SymbolType of
+            Symbols.tstVariable:begin
+             if assigned(Symbol^.TypeDefinition) and not (((Symbol^.TypeDefinition.TypeDefinition=ttdPointer) and assigned(Symbol^.TypeDefinition^.PointerTo)) and ((Symbol^.TypeDefinition^.PointerTo^.TypeDefinition=Type_) {or (Symbol^.TypeDefinition^.PointerTo^.TypeDefinition=CurrentType)})) then begin
+              Index:=TypePointerList.IndexOf(Symbol^.TypeDefinition);
+              if (Index>=0) and (DependencyItems[Counter].Dependencies.IndexOf(Index)<0) then begin
+               DependencyItems[Counter].Dependencies.Add(Index);
+              end;
              end;
             end;
            end;
+           Symbol:=Symbol^.Next;
           end;
-          Symbol:=Symbol^.Next;
+          if assigned(CurrentType^.ChildOf) then begin
+           CurrentType:=CurrentType^.ChildOf^.TypeDefinition;
+          end else begin
+           break;
+          end;
          end;
         end;
        end;
@@ -2506,9 +2514,11 @@ var TypeItems:TTypeItems;
   end;
  end;
 var i,j:longint;
-    Type_:PType;
+    Type_,CurrentType:PType;
+    TypeChain:TPointerList;
     Name:ansistring;
     SymbolList:TSymbolList;
+    MethodList:TStringList;
     Symbol,OtherSymbol:PSymbol;
     CurrentVariantLevelIndex:longint;
     VariantLevelVariants:array of integer;
@@ -2607,60 +2617,77 @@ begin
       end;
      end;
      Target.IncTab;
-     SymbolList:=Type_^.RecordTable;
-     if assigned(SymbolList) then begin
-      CurrentVariantLevelIndex:=0;
-      Symbol:=SymbolList.First;
-      while assigned(Symbol) do begin
-       case Symbol^.SymbolType of
-        Symbols.tstCaseVariantLevelPush:begin
-         Target.AddLn('union {');
-         Target.IncTab;
-         inc(CurrentVariantLevelIndex);
-         if CurrentVariantLevelIndex>length(VariantLevelVariants) then begin
-          SetLength(VariantLevelVariants,CurrentVariantLevelIndex);
-         end;
-         VariantLevelVariants[CurrentVariantLevelIndex-1]:=0;
-        end;
-        Symbols.tstCaseVariantLevelPop:begin
-         Target.DecTab;
-         Target.AddLn('};');
-         dec(CurrentVariantLevelIndex);
-        end;
-        Symbols.tstCaseVariantPush:begin
-         Target.AddLn('struct {');
-         Target.IncTab;
-         inc(VariantLevelVariants[CurrentVariantLevelIndex-1]);
-        end;
-        Symbols.tstCaseVariantPop:begin
-         Target.DecTab;
-         Target.AddLn('} '+'L'+IntToStr(CurrentVariantLevelIndex)+'V'+IntToStr(VariantLevelVariants[CurrentVariantLevelIndex-1])+';');
-        end;
-        Symbols.tstVariable:begin
-         if tsaObjectVMT in Symbol^.Attributes then begin
-          Target.AddLn('pasObjectVirtualMethodTable* '+GetSymbolName(Symbol)+';');
-         end else if (Symbol^.TypeDefinition^.TypeDefinition=ttdPOINTER) and not assigned(Symbol^.TypeDefinition^.PointerTo) then begin
-          Target.AddLn('void* '+GetSymbolName(Symbol)+';');
-         end else if (Symbol^.TypeDefinition^.TypeDefinition=ttdPOINTER) and (Symbol^.TypeDefinition^.PointerTo=Type_^.Symbol) then begin
-          case Type_.TypeDefinition of
-           ttdCLASS:begin
-            Target.AddLn('struct '+Name+'_CLASS** '+GetSymbolName(Symbol)+';');
+     TypeChain:=TPointerList.Create;
+     try
+      CurrentType:=Type_;
+      while assigned(CurrentType) do begin
+       TypeChain.Add(CurrentType);
+       if assigned(CurrentType^.ChildOf) then begin
+        CurrentType:=CurrentType^.ChildOf^.TypeDefinition;
+       end else begin
+        break;
+       end;
+      end;
+      for j:=TypeChain.Count-1 downto 0 do begin
+       CurrentType:=TypeChain.Items[j];
+       SymbolList:=CurrentType^.RecordTable;
+       if assigned(SymbolList) then begin
+        CurrentVariantLevelIndex:=0;
+        Symbol:=SymbolList.First;
+        while assigned(Symbol) do begin
+         case Symbol^.SymbolType of
+          Symbols.tstCaseVariantLevelPush:begin
+           Target.AddLn('union {');
+           Target.IncTab;
+           inc(CurrentVariantLevelIndex);
+           if CurrentVariantLevelIndex>length(VariantLevelVariants) then begin
+            SetLength(VariantLevelVariants,CurrentVariantLevelIndex);
            end;
-           else begin
-            Target.AddLn('struct '+Name+'* '+GetSymbolName(Symbol)+';');
+           VariantLevelVariants[CurrentVariantLevelIndex-1]:=0;
+          end;
+          Symbols.tstCaseVariantLevelPop:begin
+           Target.DecTab;
+           Target.AddLn('};');
+           dec(CurrentVariantLevelIndex);
+          end;
+          Symbols.tstCaseVariantPush:begin
+           Target.AddLn('struct {');
+           Target.IncTab;
+           inc(VariantLevelVariants[CurrentVariantLevelIndex-1]);
+          end;
+          Symbols.tstCaseVariantPop:begin
+           Target.DecTab;
+           Target.AddLn('} '+'L'+IntToStr(CurrentVariantLevelIndex)+'V'+IntToStr(VariantLevelVariants[CurrentVariantLevelIndex-1])+';');
+          end;
+          Symbols.tstVariable:begin
+           if tsaObjectVMT in Symbol^.Attributes then begin
+            Target.AddLn('pasObjectVirtualMethodTable* '+GetSymbolName(Symbol)+';');
+           end else if (Symbol^.TypeDefinition^.TypeDefinition=ttdPOINTER) and not assigned(Symbol^.TypeDefinition^.PointerTo) then begin
+            Target.AddLn('void* '+GetSymbolName(Symbol)+';');
+           end else if (Symbol^.TypeDefinition^.TypeDefinition=ttdPOINTER) and (Symbol^.TypeDefinition^.PointerTo=Type_^.Symbol) then begin
+            case Type_.TypeDefinition of
+             ttdCLASS:begin
+              Target.AddLn('struct '+Name+'_CLASS** '+GetSymbolName(Symbol)+';');
+             end;
+             else begin
+              Target.AddLn('struct '+Name+'* '+GetSymbolName(Symbol)+';');
+             end;
+            end;
+           end else begin
+            if assigned(Symbol^.TypeDefinition) and ((Symbol^.TypeDefinition^.TypeDefinition=ttdPointer) and assigned(Symbol^.TypeDefinition^.PointerTo)) and (Symbol^.TypeDefinition^.Definition^.PointerTo^.TypeDefinition=Symbol^.TypeDefinition) then begin
+             Target.AddLn('void* '+GetSymbolName(Symbol)+';');
+            end else begin
+             Target.AddLn(GetTypeName(Symbol^.TypeDefinition)+' '+GetSymbolName(Symbol)+';');
+            end;
            end;
           end;
-         end else begin
-          if assigned(Symbol^.TypeDefinition) and ((Symbol^.TypeDefinition^.TypeDefinition=ttdPointer) and assigned(Symbol^.TypeDefinition^.PointerTo)) and (Symbol^.TypeDefinition^.Definition^.PointerTo^.TypeDefinition=Symbol^.TypeDefinition) then begin
-           Target.AddLn('void* '+GetSymbolName(Symbol)+';');
-          end else begin
-           Target.AddLn(GetTypeName(Symbol^.TypeDefinition)+' '+GetSymbolName(Symbol)+';');
-          end;
          end;
+         Symbol:=Symbol^.Next;
         end;
        end;
-       Symbol:=Symbol^.Next;
       end;
+     finally
+      TypeChain.Free;
      end;
      Target.DecTab;
      case Type_.TypeDefinition of
@@ -2777,24 +2804,54 @@ begin
        CodeTarget.AddLn('{');
        CodeTarget.IncTab;
        HasLast:=false;
-       Symbol:=SymbolList.First;
-       while assigned(Symbol) do begin
-        case Symbol^.SymbolType of
-         Symbols.tstProcedure,Symbols.tstFunction:begin
-          if tpaVirtual in Symbol^.ProcedureAttributes then begin
-           if HasLast then begin
-            CodeTarget.AddLn(',');
-           end;
-           HasLast:=true;
-           if (tpaAbstract in Symbol^.ProcedureAttributes) and not (tsaMethodDefined in Symbol^.Attributes) then begin
-            CodeTarget.Add('NULL');
-           end else begin
-            CodeTarget.Add('(void*)&'+GetSymbolName(Symbol));
+       MethodList:=TStringList.Create;
+       try
+        TypeChain:=TPointerList.Create;
+        try
+         for j:=0 to Type_^.VirtualIndexCount-1 do begin
+          MethodList.Add('NULL');
+         end;
+         CurrentType:=Type_;
+         while assigned(CurrentType) do begin
+          TypeChain.Add(CurrentType);
+          if assigned(CurrentType^.ChildOf) then begin
+           CurrentType:=CurrentType^.ChildOf^.TypeDefinition;
+          end else begin
+           break;
+          end;
+         end;
+         for j:=TypeChain.Count-1 downto 0 do begin
+          CurrentType:=TypeChain.Items[j];
+          if assigned(CurrentType^.RecordTable) then begin
+           Symbol:=CurrentType^.RecordTable.First;
+           while assigned(Symbol) do begin
+            case Symbol^.SymbolType of
+             Symbols.tstProcedure,Symbols.tstFunction:begin
+              if tpaVirtual in Symbol^.ProcedureAttributes then begin
+               if (tpaAbstract in Symbol^.ProcedureAttributes) and not (tsaMethodDefined in Symbol^.Attributes) then begin
+                MethodList[Symbol^.VirtualIndex]:='NULL';
+               end else begin
+                MethodList[Symbol^.VirtualIndex]:='(void*)&'+GetSymbolName(Symbol);
+               end;
+              end;
+             end;
+            end;
+            Symbol:=Symbol^.Next;
            end;
           end;
          end;
+         for j:=0 to MethodList.Count-1 do begin
+          if HasLast then begin
+           CodeTarget.AddLn(',');
+          end;
+          HasLast:=true;
+          CodeTarget.Add(MethodList[j]);
+         end;
+        finally
+         TypeChain.Free;
         end;
-        Symbol:=Symbol^.Next;
+       finally
+        MethodList.Free;
        end;
        if HasLast then begin
         CodeTarget.AddLn('');
