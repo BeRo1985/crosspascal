@@ -76,7 +76,7 @@ type TCodeWriter = class
 
        procedure ProcessTypeOrName(AType: PType; Target: TCodeWriter; OwnType: PType = nil);
        procedure ProcessTypedConstant(var Constant: PConstant; AType: PType; Target: TCodeWriter);
-       procedure ProcessFunctionType(ReturnType: PType; Parameter: TSymbolList; const funcName: ansistring; Target: TCodeWriter);
+       procedure ProcessFunctionType(Symbol:PSymbol; ReturnType: PType; Parameter: TSymbolList; const funcName: ansistring; Target: TCodeWriter);
 
        function TranslateStringConstant(ConstantStr: THugeString): ansistring;
 
@@ -182,12 +182,24 @@ begin
        result:=GetModuleName(Sym.OwnerModule)+'_VARIABLE_'+Sym.Name;
       end;
      end else begin
-      if Sym^.VariableType=tvtResult then begin
-       result:='result';
-      end else if Sym^.TypedConstant then begin
-       result:='LOCAL_TYPEDCONSTANT_'+Sym.Name;
-      end else begin
-       result:='LOCAL_VARIABLE_'+Sym.Name;
+      case Sym^.VariableType of
+       tvtResult:begin
+        result:='result';
+       end;
+       tvtSelf:begin
+        if assigned(FProcSymbol) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
+         result:='instanceData';
+        end else begin
+         result:='(*instanceData)';
+        end;
+       end;
+       else begin
+        if Sym^.TypedConstant then begin
+         result:='LOCAL_TYPEDCONSTANT_'+Sym.Name;
+        end else begin
+         result:='LOCAL_VARIABLE_'+Sym.Name;
+        end;
+       end;
       end;
       if FInProc then begin
        if assigned(Sym^.LocalProcSymbol) and Sym^.LocalProcSymbolAccessedFromHigherNestedProc then begin
@@ -319,7 +331,16 @@ var sym: PSymbol;
     HaveParameters: boolean;
 begin
  if Symbol.SymbolType = tstProcedure then
-  Target.Add('void',spacesRIGHT)
+ begin
+  if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then
+  begin
+    Target.Add('int',spacesRIGHT);
+  end
+  else
+  begin
+    Target.Add('void',spacesRIGHT);
+  end;
+ end
  else if Symbol.SymbolType = tstFunction then
  begin
   ProcessTypeOrName(Symbol.ReturnType, Target);
@@ -563,6 +584,8 @@ begin
 
  if Assigned(ProcSymbol.ReturnType) then begin
    FProcCode.AddLn('return '+GetSymbolName(ProcSymbol.ResultSymbol)+';');
+ end else if (tpaConstructor in ProcSymbol^.ProcedureAttributes) and assigned(ProcSymbol^.OwnerObjectClass) and (ProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
+   FProcCode.AddLn('return 0;');
  end;
 
  FProcCode.DecTab;
@@ -686,11 +709,15 @@ begin
 
 end;
 
-procedure TCodegenCPP.ProcessFunctionType(ReturnType: PType; Parameter: TSymbolList; const funcName: ansistring; Target: TCodeWriter);
+procedure TCodegenCPP.ProcessFunctionType(Symbol:PSymbol; ReturnType: PType; Parameter: TSymbolList; const funcName: ansistring; Target: TCodeWriter);
 var i: integer;
     Sym: PSymbol;
 begin
- ProcessTypeOrName(ReturnType, Target);
+ if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
+  Target.Add('int',spacesRIGHT);
+ end else begin
+  ProcessTypeOrName(ReturnType, Target);
+ end;
  Target.Add('(*'+funcName+')(',spacesLEFT);
  Sym:=Parameter.First;
  while Assigned(sym) do
@@ -1294,7 +1321,7 @@ begin
      Error.InternalError(20130324000201)
     end else begin
      if(FContinueLabelNeeded[FNestedBreakCount-1] = -1) then begin
-      FContinueLabelNeeded[FNestedBreakCount-1] := FBreakCount;
+      FContinueLabelNeeded[FNestedBreakCount-1] := FBreakCount;                                
       Inc(FBreakCount);
      end;
      FProcCode.AddLn('goto '+GetSymbolName(FSelf)+'_CONTINUELABEL'+IntToStr(FContinueLabelNeeded[FNestedBreakCount-1])+';');
@@ -1303,15 +1330,32 @@ begin
    ttntEXIT:begin
     if assigned(FSelf.ReturnType) then begin
      FProcCode.Add('return '+GetSymbolName(FSelf.ResultSymbol),spacesBOTH);
+    end else if assigned(FProcSymbol) and (tpaConstructor in FProcSymbol^.ProcedureAttributes) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
+     FProcCode.AddLn('return 0;');
     end else begin
      FProcCode.Add('return',spacesBOTH);
+    end;
+   end;
+   ttntFAIL:begin
+    if assigned(FProcSymbol) and (tpaConstructor in FProcSymbol^.ProcedureAttributes) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition in [ttdOBJECT,ttdCLASS]) then begin
+     case FProcSymbol^.OwnerObjectClass^.TypeDefinition of
+      ttdOBJECT:begin
+       FProcCode.AddLn('return 1;');
+      end;
+      else {ttdCLASS:}begin
+       // TODO: implement me!
+       Error.InternalError(201304050029001); // and kill this line then! :-) 
+      end;
+     end;
+    end else begin
+     Error.InternalError(201304050029000);
     end;
    end;
    ttntLABEL:begin
     FProcCode.AddLn('LABEL_'+GetSymbolName(FSelf)+'_'+TreeNode.LabelName+':')
    end;
    ttntGOTO:begin
-     FProcCode.Add('goto LABEL_'+GetSymbolName(FSelf)+'_'+TreeNode.LabelName);
+    FProcCode.Add('goto LABEL_'+GetSymbolName(FSelf)+'_'+TreeNode.LabelName);
    end;
    ttntTRY:begin
    end;
@@ -1841,8 +1885,12 @@ begin
    Target.AddInclude(Symbol.LibraryName);
 
    // Target.Add('__inline ');
-   ProcessTypeOrName(Symbol.ReturnType, Target);
-   Target.Add(' '+GetSymbolName(Symbol)+'(');
+   if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
+    Target.Add('int',spacesRIGHT);
+   end else begin
+    ProcessTypeOrName(Symbol.ReturnType, Target);
+   end;
+   Target.Add(GetSymbolName(Symbol)+'(',spacesLEFT);
    s:='';
 
    if not Assigned(Symbol.Parameter) then
@@ -1880,7 +1928,7 @@ begin
    Exit;
   end;
   Target.Add('typedef ');
-  ProcessFunctionType(Symbol.ReturnType, Symbol.Parameter, 'PROC_'+Symbol.OverloadedName, Target);
+  ProcessFunctionType(Symbol, Symbol.ReturnType, Symbol.Parameter, 'PROC_'+Symbol.OverloadedName, Target);
   Target.AddLn(';');
   if Target = FHeader then
   begin
@@ -2877,7 +2925,11 @@ begin
         Symbols.tstProcedure,Symbols.tstFunction:begin
          if tpaVirtual in Symbol^.ProcedureAttributes then begin
           Target.Add('typedef',spacesRIGHT);
-          ProcessTypeOrName(Symbol^.ReturnType, Target, nil);
+          if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
+           Target.Add('int',spacesRIGHT);
+          end else begin
+           ProcessTypeOrName(Symbol^.ReturnType, Target, nil);
+          end;
           Target.Add('(*',spacesLEFT);
           Target.Add(Name+'_VMT_'+IntToStr(Symbol^.VirtualIndex));
           Target.Add(')(');
@@ -2899,7 +2951,11 @@ begin
           Target.AddLn(';');
          end else if tpaDynamic in Symbol^.ProcedureAttributes then begin
           Target.Add('typedef',spacesRIGHT);
-          ProcessTypeOrName(Symbol^.ReturnType, Target, nil);
+          if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
+           Target.Add('int',spacesRIGHT);
+          end else begin
+           ProcessTypeOrName(Symbol^.ReturnType, Target, nil);
+          end;
           Target.Add('*',spacesRIGHT);
           Target.Add(Name+'_DMT_'+IntToStr(Symbol^.VirtualIndex));
           Target.Add('(');

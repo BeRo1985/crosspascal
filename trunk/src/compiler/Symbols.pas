@@ -62,7 +62,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
                     tctAlign,
                     tctStop);
 
-     TVariableType=(tvtGlobal,tvtLocal,tvtResult,
+     TVariableType=(tvtGlobal,tvtLocal,tvtResult,tvtSelf,
                     tvtParameterVariable,tvtParameterResult,
                     tvtParameterConstant,tvtParameterValue,
                     tvtObjectField,tvtClassField,
@@ -300,6 +300,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
         NextOverloaded:PSymbol;
         Parameter:TSymbolList;
         ResultSymbol:PSymbol;
+        SelfSymbol:PSymbol;
         ReturnType:PType;
         ProcedureLevel:longint;
         ProcedureAttributes:TProcedureAttributes;
