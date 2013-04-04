@@ -1802,6 +1802,16 @@ begin
     Error.AbortCode(10004);
    end;
   end;
+  tipTYPEOF:begin
+   if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and not assigned(TreeNode.Left.Right) then begin
+    TreeNode.Return:=TypePointer;
+    if not ((TreeNode.Left.Left.Return^.TypeDefinition=ttdOBJECT) and TreeNode.Left.Left.Return^.HasVirtualTable) then begin
+     Error.AddErrorCode(86);
+    end;
+   end else begin
+    Error.AbortCode(10004);
+   end;
+  end;
   else begin
    Error.InternalError(200605180941000);
   end;

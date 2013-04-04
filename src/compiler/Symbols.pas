@@ -33,7 +33,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
                          tipSIZEOF,tipDEC,tipINC,tipSUCC,tipPRED,tipORD,
                          tipCHR,tipNEW,tipDISPOSE,tipSETLENGTH,
                          tipLENGTH,tipASSIGNED,tipTRUNC,tipROUND,
-                         tipSQR,tipSQRT);
+                         tipSQR,tipSQRT,tipTYPEOF);
 
      TStandardType=(tstSigned8Bit,tstSigned16Bit,tstSigned32Bit,
                     tstSigned64Bit,tstUnsigned8Bit,tstUnsigned16Bit,
