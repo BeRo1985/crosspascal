@@ -70,6 +70,7 @@ type TParser=class
        function ParseBREAKStatement:TTreeNode;
        function ParseCONTINUEStatement:TTreeNode;
        function ParseEXITStatement:TTreeNode;
+       function ParseFAILStatement:TTreeNode;
        function ParseRAISEStatement:TTreeNode;
        function ParseGOTOStatement:TTreeNode;
        function ParseCASEStatement:TTreeNode;
@@ -2343,6 +2344,15 @@ begin
  result:=TreeManager.GenerateExitNode;
 end;
 
+function TParser.ParseFAILStatement:TTreeNode;
+begin
+ if assigned(CurrentProcedureFunction) and not (tpaCONSTRUCTOR in CurrentProcedureFunction^.ProcedureAttributes) then begin 
+  Error.AddErrorCode(81);
+ end;
+ Scanner.Match(tstFAIL);
+ result:=TreeManager.GenerateFAILNode;
+end;
+
 function TParser.ParseRAISEStatement:TTreeNode;
 var Left,Right:TTreeNode;
     AType:PType;
@@ -3147,6 +3157,7 @@ end;
 function TParser.ParseStatement:TTreeNode;
 var Symbol:PSymbol;
 begin
+ Scanner.CheckForDirectives([tstFAIL]);
  case Scanner.CurrentToken of
   tstCCODE:begin
    result:=ParseCCodeStatement;
@@ -3183,6 +3194,9 @@ begin
   end;
   tstEXIT:begin
    result:=ParseEXITStatement;
+  end;
+  tstFAIL:begin
+   result:=ParseFAILStatement;
   end;
   tstRAISE:begin
    result:=ParseRAISEStatement;
@@ -3863,7 +3877,7 @@ begin
 end;
 
 function TParser.ParseObjectDeclaration(ObjectName:ansistring;IsPacked:boolean):PType;
-var Symbol,NewSymbol,Parent,TestSymbol:PSymbol;
+var Symbol,{NewSymbol,}Parent,TestSymbol:PSymbol;
     OldList:TSymbolList;
     OldVariableType:TVariableType;
     ParentName:ansistring;
@@ -4776,7 +4790,7 @@ var Parent:PSymbol;
     ObjectClassSymbolList:TSymbolList;
     SymbolTypeList:TPointerList;
     OldObjectName,OldName,Name,ParameterSuffix,MethodName,s:ansistring;
-    Method,MethodSymbol,SearchSymbol,Symbol,SymbolA,SymbolB,ResultSymbol,
+    Method,MethodSymbol,SearchSymbol,Symbol,SymbolA,SymbolB,ResultSymbol,SelfSymbol,
     OldCurrentMethod,OldCurrentProcedureFunction:PSymbol;
     OldCurrentObjectClass:PType;
     AType:PType;
@@ -5172,6 +5186,29 @@ begin
      SymbolManager.CurrentList.AddSymbol(ResultSymbol,ModuleSymbol,CurrentObjectClass);
     end else begin
      Symbol^.ResultSymbol:=nil;
+    end;
+    if assigned(Symbol^.ReturnType) then begin
+     SelfSymbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+     SelfSymbol^.Name:='SELF';
+     SelfSymbol^.OverloadedName:=SelfSymbol^.Name;
+     HashSymbol(SelfSymbol);
+     SelfSymbol^.DeclarationUsed:=true;
+     SelfSymbol^.SymbolType:=Symbols.tstVariable;
+     SelfSymbol^.TypeDefinition:=Symbol^.ReturnType;
+     SelfSymbol^.VariableLevel:=SymbolManager.LexicalScopeLevel;
+     SelfSymbol^.VariableType:=tvtSelf;
+     SelfSymbol^.LocalProcSymbol:=CurrentProcedureFunction;
+     SelfSymbol^.LocalProcSymbolAccessedFromHigherNestedProc:=false;
+     SelfSymbol^.Alias:=nil;
+     SelfSymbol^.AbsoluteReference:=false;
+     SelfSymbol^.TypedConstant:=false;
+     SelfSymbol^.TypedTrueConstant:=false;
+     SelfSymbol^.TypedConstantReadOnly:=false;
+     SelfSymbol^.PortabilityDirectives:=[];
+     Symbol^.SelfSymbol:=SelfSymbol;
+     SymbolManager.CurrentList.AddSymbol(SelfSymbol,ModuleSymbol,CurrentObjectClass);
+    end else begin
+     Symbol^.SelfSymbol:=nil;
     end;
     ParseHeadBlock(false,false);
     case Scanner.CurrentToken of

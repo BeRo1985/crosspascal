@@ -24,8 +24,8 @@ type TScannerToken=(tstNone,
                     tstPROTECTED,tstPUBLISHED,tstCONSTRUCTOR,tstDESTRUCTOR,
                     tstOVERRIDE,tstOVERLOAD,tstVIRTUAL,tstDYNAMIC,
                     tstABSTRACT,tstPROPERTY,tstINDEX,tstREAD,tstWRITE,
-                    tstINHERITED,tstSTRING,tstBREAK,tstCONTINUE,
-                    tstEXIT,tstCASE,tstOF,tstWITH,tstARRAY,tstFILE,tstSET,
+                    tstINHERITED,tstSTRING,tstBREAK,tstCONTINUE,tstEXIT,
+                    tstFAIL,tstCASE,tstOF,tstWITH,tstARRAY,tstFILE,tstSET,
                     tstFAR,tstNEAR,tstINTERRUPT,tstOUT,tstINLINE,tstREGISTER,
                     tstSTDCALL,tstPASCAL,tstCDECL,tstSAFECALL,tstFASTCALL,
                     tstEXPORT,tstSHORTSTRING,tstWIDESTRING,tstLONGSTRING,
@@ -124,7 +124,8 @@ const Directives:TScannerTokens=[tstAT_,tstABSOLUTE,tstABSTRACT,tstASSEMBLER,tst
                                  tstOVERLOAD,tstOVERRIDE,tstPASCAL,tstPLATFORM,tstPRIVATE,
                                  tstPROTECTED,tstPUBLIC,tstPUBLISHED,tstREAD,tstREGISTER,
                                  tstREINTRODUCE,tstSAFECALL,tstSTDCALL,tstSTRICT,
-                                 tstSTORED,tstVARARGS,tstVIRTUAL,tstWRITE];
+                                 tstSTORED,tstVARARGS,tstVIRTUAL,tstWRITE,
+                                 tstFAIL];
 
 implementation
 
@@ -142,8 +143,8 @@ const TokenNames:array[TScannerToken] of ansistring=('',
        'IMPLEMENTATION','USES','ASSEMBLER','ASM','CLASS','OBJECT',
        'PUBLIC','PRIVATE','PROTECTED','PUBLISHED','CONSTRUCTOR',
        'DESTRUCTOR','OVERRIDE','OVERLOAD','VIRTUAL','DYNAMIC','ABSTRACT',
-       'PROPERTY','INDEX','READ','WRITE','INHERITED','STRING',
-       'BREAK','CONTINUE','EXIT','CASE','OF','WITH','ARRAY','FILE','SET',
+       'PROPERTY','INDEX','READ','WRITE','INHERITED','STRING','BREAK',
+       'CONTINUE','EXIT','FAIL','CASE','OF','WITH','ARRAY','FILE','SET',
        'FAR','NEAR','INTERRUPT','OUT','INLINE','REGISTER','STDCALL',
        'PASCAL','CDECL','SAFECALL','FASTCALL','EXPORT','SHORTSTRING',
        'WIDESTRING','LONGSTRING','ANSISTRING','MESSAGE','INITIALIZATION',

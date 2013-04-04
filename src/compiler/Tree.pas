@@ -16,7 +16,7 @@ type TTreeNodeType=(ttntEmpty,
                     ttntVAR,ttntTYPE,ttntTYPECONV,ttntTYPECHECK,
                     ttntFOR,ttntWHILE,ttntREPEAT,ttntIF,ttntWITH,
                     ttntCASE,ttntCASEBLOCK,ttntCASEValue,
-                    ttntBREAK,ttntCONTINUE,ttntEXIT,
+                    ttntBREAK,ttntCONTINUE,ttntEXIT,ttntFAIL,
                     ttntLABEL,ttntGOTO,
                     ttntTRY,ttntTRYONELSE,ttntRAISE,
                     ttntPROCEDURE,ttntCALL,ttntParameter,ttntIndex,ttntPointer,
@@ -106,6 +106,7 @@ type TTreeNodeType=(ttntEmpty,
        function GenerateBreakNode:TTreeNode;
        function GenerateContinueNode:TTreeNode;
        function GenerateExitNode:TTreeNode;
+       function GenerateFailNode:TTreeNode;
        function GenerateGotoNode(Symbol:PSymbol):TTreeNode;
        function GenerateLabelNode(Symbol:PSymbol):TTreeNode;
        function GenerateForNode(Left,Right,Block:TTreeNode;IsDownTo:boolean):TTreeNode;
@@ -455,6 +456,9 @@ begin
    end;
    ttntEXIT:begin
     WriteType('EXIT');
+   end;
+   ttntFAIL:begin
+    WriteType('FAIL');
    end;
    ttntLABEL:begin
     WriteType('LABEL');
@@ -836,8 +840,7 @@ function TTreeManager.GenerateBreakNode:TTreeNode;
 begin
  result:=NewNode;
  result.TreeNodeType:=ttntBREAK;
-end;
-
+end;             
 
 function TTreeManager.GenerateContinueNode:TTreeNode;
 begin
@@ -849,6 +852,12 @@ function TTreeManager.GenerateExitNode:TTreeNode;
 begin
  result:=NewNode;
  result.TreeNodeType:=ttntEXIT;
+end;
+
+function TTreeManager.GenerateFailNode:TTreeNode;
+begin
+ result:=NewNode;
+ result.TreeNodeType:=ttntFAIL;
 end;
 
 function TTreeManager.GenerateGotoNode(Symbol:PSymbol):TTreeNode;
