@@ -479,6 +479,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
        function CloneSymbol(FromSymbol:PSymbol;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;IsPublic:boolean=false):PSymbol;
        function AreConstSymbolEqual(SymbolA,SymbolB:PSymbol):boolean;
        procedure AlignRecord(RecordType:PType;DefaultAlignment:longint);
+       function SearchProcedureSymbol(Symbol,FirstSymbol:PSymbol;var OK:boolean):PSymbol;
      end;
 
 const ProcedureCallingConventionAttributes:TProcedureAttributes=[tpaSTDCALL,tpaPASCAL,tpaCDECL,tpaSAFECALL,tpaFASTCALL,tpaRegister];
@@ -1918,6 +1919,34 @@ begin
   SetLength(SizeStack,0);
   SetLength(AlignmentStack,0);
  end;
+end;
+
+function TSymbolManager.SearchProcedureSymbol(Symbol,FirstSymbol:PSymbol;var OK:boolean):PSymbol;
+begin
+ result:=FirstSymbol;
+ OK:=true;
+ while assigned(result) do begin
+  case CompareParameters(Error,self,Symbol^.Parameter,result^.Parameter,tcptNONE,[tcpoCOMPAREDEFAULTVALUE]) of
+   tcteExact,tcteEqual:begin
+    if assigned(Symbol^.ReturnType)<>assigned(result^.ReturnType) then begin
+     OK:=false;
+    end else if assigned(Symbol^.ReturnType) and assigned(result^.ReturnType) then begin
+     OK:=EqualTypes(Error,self,Symbol^.ReturnType,result^.ReturnType);
+    end else begin
+     OK:=true;
+    end;
+   end;
+   else begin
+    OK:=false;
+   end;
+  end;
+  if OK then begin
+   break;
+  end else begin
+   result:=result^.NextOverloaded;
+  end;
+ end;
+ OK:=OK and assigned(result);
 end;
 
 end.

@@ -166,6 +166,9 @@ var Symbol:PSymbol;
     AType:PType;
     i:longint;
 begin
+ if Error.DoAbort then begin
+  exit;
+ end;
  for i:=0 to ModuleSymbol^.TypePointerList.Count-1 do begin
   AType:=ModuleSymbol^.TypePointerList[i];
   if assigned(AType) and (AType^.TypeDefinition in [ttdOBJECT,ttdCLASS]) and assigned(AType^.RecordTable) then begin
@@ -1198,7 +1201,7 @@ begin
      while assigned(AType) and not Scanner.IsEOFOrAbortError do begin
       MethodSymbol:=AType^.RecordTable.GetSymbol(Name,ModuleSymbol,CurrentObjectClass);
       if assigned(MethodSymbol) then begin
-       NewTreeNode:=TreeManager.GenerateMethodCallNode(Symbol,MethodSymbol,nil);
+       NewTreeNode:=TreeManager.GenerateMethodCallNode(Symbol,MethodSymbol,nil,AType);
        if (Scanner.CurrentToken=tstLeftParen) or MustHaveParens then begin
         Scanner.Match(tstLeftParen);
         NewTreeNode.Left:=ParseCallParameter;
@@ -1513,7 +1516,7 @@ begin
           Symbols.tstFunction,Symbols.tstProcedure:begin
            case AType^.TypeDefinition of
             ttdObject,ttdClass,ttdInterface:begin
-             NewTreeNode:=TreeManager.GenerateMethodCallNode(Symbol,FieldSymbol,NewTreeNode);
+             NewTreeNode:=TreeManager.GenerateMethodCallNode(Symbol,FieldSymbol,NewTreeNode,nil);
              if (Scanner.CurrentToken=tstLeftParen) or MustHaveParens then begin
               Scanner.Match(tstLeftParen);
               NewTreeNode.Left:=ParseCallParameter;
@@ -3872,7 +3875,6 @@ begin
  if assigned(CurrentProcedureFunction) then begin
   Error.AbortCode(62);
  end;
- writeln(ObjectName);
  Scanner.Match(tstOBJECT);
  OldList:=SymbolManager.CurrentList;
  Parent:=nil;
@@ -3973,6 +3975,9 @@ begin
    end;
    tstCONSTRUCTOR,tstDESTRUCTOR,tstFUNCTION,tstPROCEDURE:begin
     Symbol:=ParseProcedure(true,[tpaObject]);
+    if Error.DoAbort then begin
+     exit;
+    end;
     Symbol^.MethodOfType:=result;
     Symbol^.Attributes:=(Symbol^.Attributes-OOPSymbolAttribute)+SymbolAttributes;
     Scanner.CheckForDirectives([tstABSTRACT,tstVIRTUAL]);
@@ -3996,29 +4001,9 @@ begin
         if assigned(CurrentObject) then begin
          TestSymbol:=CurrentObject^.RecordTable.GetSymbol(Symbol^.Name,ModuleSymbol,CurrentObjectClass,true);
          if assigned(TestSymbol) then begin
-          OK:=true;
-          while assigned(TestSymbol) do begin
-           case CompareParameters(Error,SymbolManager,Symbol^.Parameter,TestSymbol^.Parameter,tcptNONE,[tcpoCOMPAREDEFAULTVALUE]) of
-            tcteExact,tcteEqual:begin
-             if assigned(Symbol^.ReturnType)<>assigned(TestSymbol^.ReturnType) then begin
-              OK:=false;
-             end else if assigned(Symbol^.ReturnType) and assigned(TestSymbol^.ReturnType) then begin
-              OK:=EqualTypes(Error,SymbolManager,Symbol^.ReturnType,TestSymbol^.ReturnType);
-             end else begin
-              OK:=true;
-             end;
-            end;
-            else begin
-             OK:=false;
-            end;
-           end;
-           if OK then begin
-            break;
-           end else begin
-            TestSymbol:=TestSymbol^.NextOverloaded;
-           end;
-          end;
-          if not assigned(TestSymbol) then begin
+          OK:=false;
+          TestSymbol:=SymbolManager.SearchProcedureSymbol(Symbol,TestSymbol,OK);
+          if not OK then begin
            Error.AbortCode(265,CorrectSymbolName(Symbol^.Name));
           end else begin
            Symbol^.VirtualIndex:=TestSymbol^.VirtualIndex;
@@ -4290,6 +4275,9 @@ begin
     end;
     tstCLASS,tstCONSTRUCTOR,tstDESTRUCTOR,tstFUNCTION,tstPROCEDURE:begin
      Symbol:=ParseProcedure(true,[tpaClass]);
+     if Error.DoAbort then begin
+      exit;
+     end;
      Symbol^.MethodOfType:=result;
      Symbol^.Attributes:=(Symbol^.Attributes-OOPSymbolAttribute)+SymbolAttributes;
      Scanner.CheckForDirectives([tstABSTRACT,tstVIRTUAL,tstDYNAMIC,tstOVERRIDE,tstMESSAGE]);
@@ -4449,6 +4437,9 @@ begin
    end;
    tstFUNCTION,tstPROCEDURE:begin
     Symbol:=ParseProcedure(true,[tpaInterface]);
+    if Error.DoAbort then begin
+     exit;
+    end;
     Symbol^.MethodOfType:=result;
     Symbol^.Attributes:=(Symbol^.Attributes-OOPSymbolAttribute)+SymbolAttributes;
     Scanner.CheckForDirectives([tstABSTRACT,tstVIRTUAL,tstDYNAMIC,tstOVERRIDE]);
@@ -4784,7 +4775,7 @@ function TParser.ParseProcedure(ParseHeader:boolean;ProcedureAttributes:TProcedu
 var Parent:PSymbol;
     ObjectClassSymbolList:TSymbolList;
     SymbolTypeList:TPointerList;
-    OldObjectName,OldName,Name,ParameterSuffix,MethodName:ansistring;
+    OldObjectName,OldName,Name,ParameterSuffix,MethodName,s:ansistring;
     Method,MethodSymbol,SearchSymbol,Symbol,SymbolA,SymbolB,ResultSymbol,
     OldCurrentMethod,OldCurrentProcedureFunction:PSymbol;
     OldCurrentObjectClass:PType;
@@ -4928,29 +4919,11 @@ begin
  end;
 
  if assigned(Method) then begin
-  while assigned(Method) do begin
-   case CompareParameters(Error,SymbolManager,Symbol^.Parameter,Method.Parameter,tcptNONE,[tcpoCOMPAREDEFAULTVALUE]) of
-    tcteExact,tcteEqual:begin
-     if assigned(Symbol^.ReturnType)<>assigned(Method^.ReturnType) then begin
-      OK:=false;
-     end else if assigned(Symbol^.ReturnType) and assigned(Method^.ReturnType) then begin
-      OK:=EqualTypes(Error,SymbolManager,Symbol^.ReturnType,Method^.ReturnType);
-     end else begin
-      OK:=true;
-     end;
-    end;
-    else begin
-     OK:=false;
-    end;
-   end;
-   if OK then begin
-    break;
-   end else begin
-    Method:=Method^.NextOverloaded;
-   end;
-  end;
-  if not assigned(Method) then begin
-   Error.AbortCode(265,CorrectSymbolName(Symbol^.Name));
+  OK:=false;
+  s:=Method^.Name;
+  Method:=SymbolManager.SearchProcedureSymbol(Symbol,Method,OK);
+  if (not (OK and assigned(Method))) or (Method^.OwnerObjectClass<>MethodSymbol^.TypeDefinition) then begin
+   Error.AbortCode(265,CorrectSymbolName(s));
    exit;
   end;
   Method^.Attributes:=Method^.Attributes+[tsaMethodDefined];
@@ -4986,17 +4959,14 @@ begin
  if assigned(CurrentParseObjectClass) then begin
   SearchSymbol:=CurrentParseObjectClass.RecordTable.GetSymbol(Scanner.ProcedureName,ModuleSymbol,CurrentObjectClass,true);
   if assigned(SearchSymbol) then begin
-   while ((SearchSymbol^.OverloadedNameHash<>Symbol^.OverloadedNameHash) or (SearchSymbol^.OverloadedName<>Symbol^.OverloadedName)) and assigned(SearchSymbol^.NextOverloaded) do begin
-    SearchSymbol:=SearchSymbol^.NextOverloaded;
-   end;
-   if ((SearchSymbol^.OverloadedNameHash=Symbol^.OverloadedNameHash) and
-       (SearchSymbol^.OverloadedName=Symbol^.OverloadedName)) then begin
-   end else begin
-    if tpaOverload in Symbol.ProcedureAttributes then begin
+   OK:=false;
+   SearchSymbol:=SymbolManager.SearchProcedureSymbol(Symbol,SearchSymbol,OK);
+   if not OK then begin
+    if assigned(SearchSymbol) and (tpaOverload in Symbol^.ProcedureAttributes) then begin
      SearchSymbol^.NextOverloaded:=Symbol;
      Symbol^.NextOverloaded:=nil;
     end else begin
-     Error.AbortCode(3,CorrectSymbolName(Symbol^.Name));
+     Error.AbortCode(265,CorrectSymbolName(Symbol^.Name));
     end;
    end;
   end;
