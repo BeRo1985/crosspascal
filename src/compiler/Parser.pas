@@ -5187,14 +5187,15 @@ begin
     end else begin
      Symbol^.ResultSymbol:=nil;
     end;
-    if assigned(Symbol^.ReturnType) then begin
+    if assigned(Symbol^.OwnerObjectClass) then begin
      SelfSymbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
      SelfSymbol^.Name:='SELF';
      SelfSymbol^.OverloadedName:=SelfSymbol^.Name;
+     SelfSymbol^.Attributes:=SelfSymbol^.Attributes+[tsaMapped];
      HashSymbol(SelfSymbol);
      SelfSymbol^.DeclarationUsed:=true;
      SelfSymbol^.SymbolType:=Symbols.tstVariable;
-     SelfSymbol^.TypeDefinition:=Symbol^.ReturnType;
+     SelfSymbol^.TypeDefinition:=Symbol^.OwnerObjectClass;
      SelfSymbol^.VariableLevel:=SymbolManager.LexicalScopeLevel;
      SelfSymbol^.VariableType:=tvtSelf;
      SelfSymbol^.LocalProcSymbol:=CurrentProcedureFunction;
