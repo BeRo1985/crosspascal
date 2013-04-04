@@ -711,6 +711,7 @@ procedure TCodegenCPP.TranslateCode(TreeNode:TTreeNode);
 var SubTreeNode,SubTreeNode2:TTreeNode;
     s:ansistring;
     HaveParameters:boolean;
+    InheritedType:PType;
 begin
  if assigned(TreeNode) then begin
   case TreeNode.TreeNodeType of
@@ -1596,25 +1597,34 @@ begin
       end;
       else {tipNone:}begin
        if assigned(TreeNode.Symbol.OwnerObjectClass) then begin
-        FProcCode.Add(GetSymbolName(TreeNode.Symbol));
+        if assigned(TreeNode.MethodSymbol) then begin
+         FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol));
+        end else begin
+         FProcCode.Add(GetSymbolName(TreeNode.Symbol));
+        end;
        end else begin
         if assigned(TreeNode.Symbol.OwnerModule) then begin
          if assigned(TreeNode.MethodSymbol) then begin
+          if assigned(TreeNode.InheritedType) then begin
+           InheritedType:=TreeNode.InheritedType;
+          end else begin
+           InheritedType:=TreeNode.Symbol^.TypeDefinition;
+          end;
           if assigned(TreeNode.MethodSymbol) and (tpaVirtual in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
-           if assigned(TreeNode.Symbol^.TypeDefinition) and (TreeNode.Symbol^.TypeDefinition^.TypeDefinition=ttdOBJECT) then begin
+           if assigned(InheritedType) and (InheritedType^.TypeDefinition=ttdOBJECT) then begin
             // OBJECT
-            FProcCode.Add('(('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')(((('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'*)&'+GetSymbolName(TreeNode.Symbol)+')->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
+            FProcCode.Add('(('+GetTypeName(InheritedType)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')(((('+GetTypeName(InheritedType)+'*)&'+GetSymbolName(TreeNode.Symbol)+')->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
            end else begin
             // CLASS
-            FProcCode.Add('(('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')(((('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+')'+GetSymbolName(TreeNode.Symbol)+')->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
+            FProcCode.Add('(('+GetTypeName(InheritedType)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')(((('+GetTypeName(InheritedType)+')'+GetSymbolName(TreeNode.Symbol)+')->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
            end;
           end else if assigned(TreeNode.MethodSymbol) and (tpaDynamic in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
-           if assigned(TreeNode.Symbol^.TypeDefinition) and (TreeNode.Symbol^.TypeDefinition^.TypeDefinition=ttdOBJECT) then begin
+           if assigned(InheritedType) and (InheritedType^.TypeDefinition=ttdOBJECT) then begin
             // OBJECT
-            FProcCode.Add('(('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasObjectDMTDispatch((void*)&('+GetSymbolName(TreeNode.Symbol)+','+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')))');
+            FProcCode.Add('(('+GetTypeName(InheritedType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasObjectDMTDispatch((void*)&('+GetSymbolName(TreeNode.Symbol)+','+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')))');
            end else begin
             // CLASS
-            FProcCode.Add('(('+GetTypeName(TreeNode.Symbol^.TypeDefinition)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasClassDMTDispatch((void*)('+GetSymbolName(TreeNode.Symbol)+','+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')))');
+            FProcCode.Add('(('+GetTypeName(InheritedType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasClassDMTDispatch((void*)('+GetSymbolName(TreeNode.Symbol)+','+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')))');
            end;
           end else begin
            FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol));
@@ -1637,8 +1647,8 @@ begin
       end;
       if assigned(FProcSymbol) and
          assigned(TreeNode.Symbol^.OwnerObjectClass) and
-         (TreeNode.Symbol.OwnerObjectClass=FProcSymbol.OwnerObjectClass) and
-         not assigned(TreeNode.MethodSymbol) then begin
+         (((TreeNode.Symbol.OwnerObjectClass=FProcSymbol.OwnerObjectClass) and
+          not assigned(TreeNode.MethodSymbol)) or assigned(TreeNode.InheritedType)) then begin
        if HaveParameters then
        begin
         FProcCode.Add(',',spacesRIGHT);

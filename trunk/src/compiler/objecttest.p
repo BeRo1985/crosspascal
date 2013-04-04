@@ -26,12 +26,13 @@ end;
 
 procedure TTestObject.Bluh(b:longint);
 begin
- WriteLn(a+b);
+ WriteLn(' TTestObject.Bluh: ',a+b);
 end;
 
 procedure TTestObject2.Bluh(b:longint);
 begin
- WriteLn((a+b)*aa);
+ WriteLn('TTestObject2.Bluh: ',(a+b)*aa);
+ inherited Bluh(b);
 end;
 
 var TestObject:TTestObject;

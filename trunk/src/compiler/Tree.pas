@@ -40,7 +40,7 @@ type TTreeNodeType=(ttntEmpty,
        FileName:ansistring;
        TreeNodeType:TTreeNodeType;
        Symbol,MethodSymbol,SymbolField:PSymbol;
-       Return,CheckType,CompareType:PType;
+       Return,CheckType,CompareType,InheritedType:PType;
        ItemType:TTreeNodeItemType;
        ItemValue:int64;
        Signed,Forced,Colon,IsDownTo,ReferenceParameter,DoNotOptimize,Warning500:boolean;
@@ -82,7 +82,7 @@ type TTreeNodeType=(ttntEmpty,
        function GenerateIndexNode(Symbol:PSymbol;Left:TTreeNode):TTreeNode;
        function GenerateFieldNode(Symbol,SymbolField:PSymbol;Left:TTreeNode):TTreeNode;
        function GenerateCallNode(Symbol:PSymbol):TTreeNode;
-       function GenerateMethodCallNode(Symbol,MethodSymbol:PSymbol;Right:TTreeNode):TTreeNode;
+       function GenerateMethodCallNode(Symbol,MethodSymbol:PSymbol;Right:TTreeNode;InheritedType:PType):TTreeNode;
        function GenerateOrdConstNode(Value:int64;AType:PType):TTreeNode;
        function GenerateCharConstNode(C:THugeChar;AType:PType):TTreeNode;
        function GenerateFloatConstNode(FloatValue:extended;AType:PType):TTreeNode;
@@ -173,6 +173,7 @@ begin
 //CastedType:=NIL;
  CheckType:=nil;
  CompareType:=nil;
+ InheritedType:=nil;
  ItemType:=ttnitUndefined;
  ItemValue:=0;
  Signed:=false;
@@ -220,6 +221,7 @@ begin
 //CastedType:=From.CastedType;
   CheckType:=From.CheckType;
   CompareType:=From.CompareType;
+  InheritedType:=From.InheritedType;
   ItemType:=From.ItemType;
   ItemValue:=From.ItemValue;
   Signed:=From.Signed;
@@ -653,12 +655,13 @@ begin
  end;
 end;
 
-function TTreeManager.GenerateMethodCallNode(Symbol,MethodSymbol:PSymbol;Right:TTreeNode):TTreeNode;
+function TTreeManager.GenerateMethodCallNode(Symbol,MethodSymbol:PSymbol;Right:TTreeNode;InheritedType:PType):TTreeNode;
 begin
  result:=NewNode;
  result.TreeNodeType:=ttntCall;
  result.Symbol:=Symbol;
  result.MethodSymbol:=MethodSymbol;
+ result.InheritedType:=InheritedType;
  result.Right:=Right;
  if assigned(MethodSymbol) then begin
   result.Return:=MethodSymbol^.TypeDefinition;
