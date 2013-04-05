@@ -71,7 +71,7 @@ constructor TCompiler.Create;
 begin
  inherited Create;
  FillChar(Options,SizeOf(TOptions),#0);
- Options.Bits:=32;
+ Options.TargetArchitecture:=taX86WIN32;
  GlobalSwitches:=DefaultGlobalSwitches;
  LocalSwitches:=DefaultLocalSwitches;
  Error:=TError.Create(@Options);

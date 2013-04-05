@@ -76,11 +76,13 @@ type PSetArray=^TSetArray;
       TypedAddress:boolean;
      end;
 
+     TTargetArchitecture=(taARM,taARMEABI,taX86,taX86WIN32,taX64,taX64WIN64);
+
      POptions=^TOptions;
      TOptions=record
       Dummy:byte;
       TargetCompiler:ansistring;
-      Bits:longint;
+      TargetArchitecture:TTargetArchitecture;
      end;
 
 {$ifdef fpc}

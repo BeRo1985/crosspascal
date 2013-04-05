@@ -447,8 +447,8 @@ begin
  AType^.UpperLimit:=127;
  SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
 
- case Options.Bits of
-  64:begin
+ case Options^.TargetArchitecture of
+  taX64,taX64WIN64:begin
    Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
    Symbol^.Name:=tpsIdentifier+'PTRINT';
    Symbol^.SymbolType:=Symbols.tstType;
@@ -477,7 +477,7 @@ begin
    Symbol^.TypeDefinition:=QWordType;
    SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
   end;
-  else {32:}begin
+  else {taARM,taARMEABI,taX86,taX86WIN32:}begin
    Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
    Symbol^.Name:=tpsIdentifier+'PTRINT';
    Symbol^.SymbolType:=Symbols.tstType;
