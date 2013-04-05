@@ -82,7 +82,7 @@ type TParser=class
        procedure ParseUSESStatement(AfterImplementation,AllowIN,IsContains:boolean);
        procedure ParseHeadBlock(ParseHeader,IsGlobal:boolean);
        function ParseMainBlock:TTreeNode;
-       function ParseStatement:TTreeNode;
+       function ParseStatement(AllowExpression:boolean):TTreeNode;
        function ParseBlockStatement(EndTokens:TScannerTokens):TTreeNode;
        function ParseBEGINBlockStatement:TTreeNode;
        function ParseCCodeStatement:TTreeNode;
@@ -1078,7 +1078,7 @@ begin
 end;
 
 function TParser.ParseFactor:TTreeNode;
-var NewTreeNode,LastTreeNode:TTreeNode;
+var NewTreeNode,FirstTreeNode,LastTreeNode:TTreeNode;
     CanHaveQualifiers,Overloaded:boolean;
     AType,FieldType:PType;
     MethodSymbol,FieldSymbol,Symbol,TempSymbol:PSymbol;
@@ -1395,8 +1395,35 @@ begin
    NewTreeNode:=TreeManager.GenerateNilNode(SymbolManager.TypePointer);
   end;
   tstCEXPR:begin
-   NewTreeNode:=TreeManager.GenerateCExpressionNode(Scanner.CurrentString);
    Scanner.Match(tstCEXPR);
+   NewTreeNode:=nil;
+   FirstTreeNode:=nil;
+   LastTreeNode:=nil;
+   while not Scanner.IsEOFOrAbortError do begin
+    case Scanner.CurrentToken of
+     tstCBLOCK:begin
+      NewTreeNode:=TreeManager.GenerateCBlockNode(Scanner.CurrentString);
+      Scanner.ReadNext;
+     end;
+     tstCEND:begin
+      Scanner.ReadNext;
+      break;
+     end;
+     tstCSKIP:begin
+      Scanner.ReadNext;
+     end;
+     else begin
+      NewTreeNode:=TreeManager.GeneratePascalBlockNode(ParseStatement(true));
+     end;
+    end;
+    if assigned(LastTreeNode) then begin
+     LastTreeNode.Left:=NewTreeNode;
+    end else begin
+     FirstTreeNode:=NewTreeNode;
+    end;
+    LastTreeNode:=NewTreeNode;
+   end;
+   NewTreeNode:=TreeManager.GenerateCExpressionNode(FirstTreeNode);
   end;
   else begin
    Error.AbortCode(504);
@@ -1911,7 +1938,7 @@ begin
    end;
    if Scanner.CurrentToken<>tstSeparator then begin
     ToSymbol^.Attributes:=ToSymbol^.Attributes+[tsaFORControlVariable];
-    Block:=ParseStatement;
+    Block:=ParseStatement(false);
     ToSymbol^.Attributes:=ToSymbol^.Attributes-[tsaFORControlVariable];
    end else begin
     Block:=nil;
@@ -2066,7 +2093,7 @@ begin
    end;
    if Scanner.CurrentToken<>tstSeparator then begin
     ToSymbol^.Attributes:=ToSymbol^.Attributes+[tsaFORControlVariable];
-    Block:=ParseStatement;
+    Block:=ParseStatement(false);
     ToSymbol^.Attributes:=ToSymbol^.Attributes-[tsaFORControlVariable];
    end else begin
     Block:=nil;
@@ -2123,7 +2150,7 @@ begin
  BooleanExpression:=ParseExpression(false);
  Scanner.Match(tstDO);
  if Scanner.CurrentToken<>tstSeparator then begin
-  Block:=ParseStatement;
+  Block:=ParseStatement(false);
  end else begin
   Block:=nil;
  end;
@@ -2137,7 +2164,7 @@ begin
  NewTreeNode:=nil;
  Scanner.Match(tstREPEAT);
  while (Scanner.CurrentToken<>tstUNTIL) and not Scanner.IsEOFOrAbortError do begin
-  NewStatementTree:=TreeManager.GenerateLeftRightNode(ttntStatement,nil,ParseStatement);
+  NewStatementTree:=TreeManager.GenerateLeftRightNode(ttntStatement,nil,ParseStatement(false));
   if assigned(LastTreeNode) then begin
    NewTreeNode.Left:=NewStatementTree;
    NewTreeNode:=NewTreeNode.Left;
@@ -2174,7 +2201,7 @@ begin
  FinallyTree:=nil;
  Scanner.Match(tstTRY);
  while not ((Scanner.CurrentToken in [tstEXCEPT,tstFINALLY]) or Scanner.IsEOFOrAbortError) do begin
-  NewStatementTree:=TreeManager.GenerateLeftRightNode(ttntStatement,nil,ParseStatement);
+  NewStatementTree:=TreeManager.GenerateLeftRightNode(ttntStatement,nil,ParseStatement(false));
   if assigned(LastTreeNode) then begin
    NewTreeNode.Left:=NewStatementTree;
    NewTreeNode:=NewTreeNode.Left;
@@ -2235,13 +2262,13 @@ begin
        Symbol^.TypeDefinition:=AType;
        ExceptionSymbolList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
        SymbolManager.PushSymbolList(ExceptionSymbolList);
-       NewStatementTree:=TreeManager.GenerateLeftRightNode(ttntStatement,nil,ParseStatement);
+       NewStatementTree:=TreeManager.GenerateLeftRightNode(ttntStatement,nil,ParseStatement(false));
        SymbolManager.PopSymbolList(ExceptionSymbolList);
        ExceptionSymbolList.UnlistSymbol(Symbol);
        FreeAndNil(ExceptionSymbolList);
       end else begin
        Symbol:=nil;
-       NewStatementTree:=TreeManager.GenerateLeftRightNode(ttntStatement,nil,ParseStatement);
+       NewStatementTree:=TreeManager.GenerateLeftRightNode(ttntStatement,nil,ParseStatement(false));
       end;
       NewStatementTree:=TreeManager.GenerateTryOnElseNode(Symbol,AType,NewStatementTree,nil);
       if assigned(OnElseTree) then begin
@@ -2261,7 +2288,7 @@ begin
    LastTreeNode:=nil;
    NewTreeNode:=nil;
    while not ((Scanner.CurrentToken=tstEND) or Scanner.IsEOFOrAbortError) do begin
-    NewStatementTree:=TreeManager.GenerateLeftRightNode(ttntStatement,nil,ParseStatement);
+    NewStatementTree:=TreeManager.GenerateLeftRightNode(ttntStatement,nil,ParseStatement(false));
     if assigned(LastTreeNode) then begin
      NewTreeNode.Left:=NewStatementTree;
      NewTreeNode:=NewTreeNode.Left;
@@ -2287,7 +2314,7 @@ begin
    LastTreeNode:=nil;
    NewTreeNode:=nil;
    while not ((Scanner.CurrentToken=tstEND) or Scanner.IsEOFOrAbortError) do begin
-    NewStatementTree:=TreeManager.GenerateLeftRightNode(ttntStatement,nil,ParseStatement);
+    NewStatementTree:=TreeManager.GenerateLeftRightNode(ttntStatement,nil,ParseStatement(false));
     if assigned(LastTreeNode) then begin
      NewTreeNode.Left:=NewStatementTree;
      NewTreeNode:=NewTreeNode.Left;
@@ -2322,11 +2349,11 @@ begin
  if Scanner.CurrentToken=tstELSE then begin
   Block:=nil;
  end else begin
-  Block:=ParseStatement;
+  Block:=ParseStatement(false);
  end;
  if Scanner.CurrentToken=tstELSE then begin
   Scanner.Match(tstELSE);
-  ElseBlock:=ParseStatement;
+  ElseBlock:=ParseStatement(false);
  end else begin
   ElseBlock:=nil;
  end;
@@ -2482,15 +2509,17 @@ begin
    CaseBlock:=TreeManager.GenerateCaseBlockNode(CaseBlock,CaseValueExpression,nil);
   end;
   Scanner.Match(tstColon);
-  CaseBlock:=TreeManager.GenerateCaseBlockNode(CaseBlock,CaseValueExpression,ParseStatement);
+  CaseBlock:=TreeManager.GenerateCaseBlockNode(CaseBlock,CaseValueExpression,ParseStatement(false));
   if not (Scanner.CurrentToken in [tstELSE,tstEND]) then begin
    Scanner.Match(tstSeparator);
   end;
  until (Scanner.CurrentToken in [tstELSE,tstEND]) or Scanner.IsEOFOrAbortError;
  if Scanner.CurrentToken=tstELSE then begin
   Scanner.Match(tstELSE);
-  CaseElse:=ParseStatement;
-  if Scanner.CurrentToken=tstSeparator then Scanner.Match(tstSeparator);
+  CaseElse:=ParseStatement(false);
+  if Scanner.CurrentToken=tstSeparator then begin
+   Scanner.Match(tstSeparator);
+  end;
  end;
  Scanner.Match(tstEnd);
  result:=TreeManager.GenerateCaseNode(CaseExpression,CaseBlock,CaseElse);
@@ -2510,7 +2539,7 @@ begin
   SymbolManager.PushSymbolList(WithTable);
   Scanner.Match(tstDO);
   if Scanner.CurrentToken<>tstSeparator then begin
-   Block:=ParseStatement;
+   Block:=ParseStatement(false);
   end else begin
    Block:=nil;
   end;
@@ -3117,12 +3146,31 @@ begin
  while not Scanner.IsEOFOrAbortError do begin
   case Scanner.CurrentToken of
    tstCCODE:begin
-    if ParseHeader then
-     TCodegenCPP(CodeGenerator).AddHeader(HugeStringToAnsiString(Scanner.CurrentString))
-    else
-     TCodegenCPP(CodeGenerator).AddCode(HugeStringToAnsiString(Scanner.CurrentString));
     Scanner.ReadNext;
-    Scanner.ReadNext;
+    while not Scanner.IsEOFOrAbortError do begin
+     case Scanner.CurrentToken of
+      tstCBLOCK:begin
+       if ParseHeader then begin
+        TCodegenCPP(CodeGenerator).AddHeader(HugeStringToAnsiString(Scanner.CurrentString));
+       end else begin
+        TCodegenCPP(CodeGenerator).AddCode(HugeStringToAnsiString(Scanner.CurrentString));
+       end;
+       Scanner.ReadNext;
+      end;
+      tstCEND:begin
+       Scanner.ReadNext;
+       break;
+      end;
+      tstCSKIP:begin
+       Scanner.ReadNext;
+      end;
+      else begin
+       Error.InternalError(201304050301000);
+       Scanner.ReadNext;
+       break;
+      end;
+     end;
+    end;
    end;
    tstRESOURCESTRING:begin
     ParseRESOURCESTRINGDeclartion;
@@ -3161,7 +3209,7 @@ begin
  result:=ParseBEGINBlockStatement;
 end;
 
-function TParser.ParseStatement:TTreeNode;
+function TParser.ParseStatement(AllowExpression:boolean):TTreeNode;
 var Symbol:PSymbol;
 begin
  Scanner.CheckForDirectives([tstFAIL]);
@@ -3241,17 +3289,19 @@ begin
    if Scanner.CurrentToken in [tstIdentifier,tstINHERITED] then begin
     result:=ParseExpression(true);
     if assigned(result) then begin
-     if (not GlobalSwitches^.ExtendedSyntax) and (result.TreeNodeType=ttntCALL) and assigned(result.Symbol) and assigned(result.Symbol^.ReturnType) then begin
-      if Error.Errors then begin
-       Error.DoAbort:=true;
-      end else begin
-       Error.AbortCode(504);
-      end;
-     end else if not (result.TreeNodeType in [ttntAssign,ttntCALL,ttntASM]) then begin
-      if Error.Errors then begin
-       Error.DoAbort:=true;
-      end else begin
-       Error.AbortCode(504);
+     if not AllowExpression then begin
+      if (not GlobalSwitches^.ExtendedSyntax) and (result.TreeNodeType=ttntCALL) and assigned(result.Symbol) and assigned(result.Symbol^.ReturnType) then begin
+       if Error.Errors then begin
+        Error.DoAbort:=true;
+       end else begin
+        Error.AbortCode(504);
+       end;
+      end else if not (result.TreeNodeType in [ttntAssign,ttntCALL,ttntASM]) then begin
+       if Error.Errors then begin
+        Error.DoAbort:=true;
+       end else begin
+        Error.AbortCode(504);
+       end;
       end;
      end;
     end else begin
@@ -3263,8 +3313,15 @@ begin
    end;
   end;
   else begin
-   Error.AbortCode(507);
-   result:=nil;
+   if AllowExpression then begin
+    result:=ParseExpression(true);
+    if not assigned(result) then begin
+     result:=nil;
+    end;
+   end else begin
+    Error.AbortCode(507);
+    result:=nil;
+   end;
   end;
  end;
  OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
@@ -3278,7 +3335,7 @@ begin
  LastTreeNode:=nil;
  NewTreeNode:=nil;
  while (not (Scanner.CurrentToken in EndTokens)) and not Scanner.IsEOFOrAbortError do begin
-  NewStatementNode:=TreeManager.GenerateLeftRightNode(ttntStatement,nil,ParseStatement);
+  NewStatementNode:=TreeManager.GenerateLeftRightNode(ttntStatement,nil,ParseStatement(false));
   if assigned(LastTreeNode) then begin
    NewTreeNode.Left:=NewStatementNode;
    NewTreeNode:=NewTreeNode.Left;
@@ -3311,10 +3368,38 @@ begin
 end;
 
 function TParser.ParseCCodeStatement:TTreeNode;
+var NewTreeNode,FirstTreeNode,LastTreeNode:TTreeNode;
 begin
  if Scanner.CurrentToken=tstCCODE then begin
-  result:=TreeManager.GenerateCCodeNode(Scanner.CurrentString);
   Scanner.Match(tstCCODE);
+  NewTreeNode:=nil;
+  FirstTreeNode:=nil;
+  LastTreeNode:=nil;
+  while not Scanner.IsEOFOrAbortError do begin
+   case Scanner.CurrentToken of
+    tstCBLOCK:begin
+     NewTreeNode:=TreeManager.GenerateCBlockNode(Scanner.CurrentString);
+     Scanner.ReadNext;
+    end;
+    tstCEND:begin
+     Scanner.ReadNext;
+     break;
+    end;
+    tstCSKIP:begin
+     Scanner.ReadNext;
+    end;
+    else begin
+     NewTreeNode:=TreeManager.GeneratePascalBlockNode(ParseStatement(true));
+    end;
+   end;
+   if assigned(LastTreeNode) then begin
+    LastTreeNode.Left:=NewTreeNode;
+   end else begin
+    FirstTreeNode:=NewTreeNode;
+   end;
+   LastTreeNode:=NewTreeNode;
+  end;
+  result:=TreeManager.GenerateCCodeNode(FirstTreeNode);
  end else begin
   result:=nil;
   Scanner.Match(tstCCODE);

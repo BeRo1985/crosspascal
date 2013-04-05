@@ -13,7 +13,9 @@ type TScannerToken=(tstNone,
                     tstLessOrEqual,tstNotEqual,tstColon,tstDoublePeriod,
                     tstLeftBracket,tstRightBracket,tstAt,tstPointer,
                     tstStringValue,tstValue,tstFloatValue,tstCharValue,
-                    tstCCODE,tstCEXPR,tstPROGRAM,tstLABEL,tstGOTO,tstVAR,
+                    tstCCODE,tstCEXPR,tstCBLOCK,tstCEND,tstCSKIP,
+                    tstPROGRAM,
+                    tstLABEL,tstGOTO,tstVAR,
                     tstBEGIN,tstEND,tstAND,tstOR,tstXOR,tstNOT,tstSHL,
                     tstSHR,tstDIV,tstMOD,tstIN,tstAS,tstIS,tstIF,tstTHEN,
                     tstELSE,tstWHILE,tstREPEAT,tstUNTIL,tstFOR,tstTO,
@@ -56,6 +58,8 @@ type TScannerToken=(tstNone,
 
      TScannerFileStack=array of TScannerFileStackItem;
 
+     TScannerMode=(smPASCAL,smC);
+
      TScanner=class
       private
        Options:POptions;
@@ -95,6 +99,8 @@ type TScannerToken=(tstNone,
        ProcedureName:ansistring;
        AllowedDirectives:TScannerTokens;
        UseNextToken:boolean;
+       ModeStack:array of TScannerMode;
+       ModeStackPointer:longint;
        constructor Create(TheInputStream:TBeRoStream;TheFileName:ansistring;TheError:TError;TheSymbolManager:TSymbolManager;TheOptions:POptions;TheGlobalSwitches:PGlobalSwitches;TheLocalSwitches:PLocalSwitches);
        destructor Destroy; override;
        procedure Reset;
@@ -134,7 +140,7 @@ uses BeRoUtils;
 const TokenNames:array[TScannerToken] of ansistring=('',
        '.',',','+','-','*','/','(',')',';',':=','=','>','<','>=','<=','<>',
        ':','..','[',']','@','^','''','numberic value','float value',
-       'char value','c code','c expression',
+       'char value','c code','c expression','c block','c end','c skip',
        'PROGRAM','LABEL','GOTO','VAR','BEGIN',
        'END','AND','OR','XOR','NOT','SHL','SHR','DIV','MOD','IN','AS',
        'IS','IF','THEN','ELSE','WHILE','REPEAT','UNTIL','FOR','TO',
@@ -386,6 +392,10 @@ begin
  CurrentDirectiveToken:=tstNone;
  UseNextToken:=false;
  AllowedDirectives:=[];
+ ModeStack:=nil;
+ SetLength(ModeStack,4096);
+ ModeStack[0]:=smPASCAL;
+ ModeStackPointer:=0;
  Reset;
 end;
 
@@ -398,6 +408,7 @@ begin
    FileStack[Counter].InputStream:=nil;
   end;
  end;
+ SetLength(ModeStack,0);
  setlength(FileStack,0);
  setlength(FileNames,0);
  KeywordStringTree.Destroy;
@@ -774,493 +785,529 @@ begin
  if InputStream.Position=0 then begin
   ReadChar;
  end;
- while (CurrentChar<=32) and not IsEOFOrAbortError do begin
-  ReadChar;
- end;
- result:=not IsEOFOrAbortError;
- LastToken:=CurrentToken;
- CurrentToken:=tstNone;
- CurrentDirectiveToken:=tstNone;
- if result then begin
-  while not IsEOFOrAbortError do begin
+ case ModeStack[ModeStackPointer] of
+  smPASCAL:begin
    while (CurrentChar<=32) and not IsEOFOrAbortError do begin
     ReadChar;
    end;
-   if CurrentChar<256 then begin
-    case CurrentChar of
-     ord('('):begin
+   result:=not IsEOFOrAbortError;
+   LastToken:=CurrentToken;
+   CurrentToken:=tstNone;
+   CurrentDirectiveToken:=tstNone;
+   if result then begin
+    while not IsEOFOrAbortError do begin
+     while (CurrentChar<=32) and not IsEOFOrAbortError do begin
       ReadChar;
-      if CurrentChar=ord('.') then begin
-       ReadChar;
-       CurrentToken:=tstLeftBracket;
-       exit;
-      end else if CurrentChar=ord('*') then begin
-       ReadChar;
-       LastChar:=0;
-       if CurrentChar=ord('$') then begin
+     end;
+     if CurrentChar<256 then begin
+      case CurrentChar of
+       ord('('):begin
         ReadChar;
-        Comment:=nil;
-        Len:=0;
-        InString:=false;
-        while not ((((CurrentChar=ord(')')) and (LastChar=ord('*'))) and not InString) or IsEOFOrAbortError) do begin
-         HugeStringConcatChar(Comment,CurrentChar,Len);
-         if CurrentChar=ord('''') then begin
-          InString:=not InString;
+        if CurrentChar=ord('.') then begin
+         ReadChar;
+         CurrentToken:=tstLeftBracket;
+         exit;
+        end else if CurrentChar=ord('*') then begin
+         ReadChar;
+         LastChar:=0;
+         if CurrentChar=ord('$') then begin
+          ReadChar;
+          Comment:=nil;
+          Len:=0;
+          InString:=false;
+          while not ((((CurrentChar=ord(')')) and (LastChar=ord('*'))) and not InString) or IsEOFOrAbortError) do begin
+           HugeStringConcatChar(Comment,CurrentChar,Len);
+           if CurrentChar=ord('''') then begin
+            InString:=not InString;
+           end;
+           LastChar:=CurrentChar;
+           ReadChar;
+          end;
+          SetLength(Comment,Len);
+          if length(Comment)>0 then begin
+           Comment:=COPY(Comment,0,length(Comment)-1);
+          end;
+          ReadChar;
+          Preprocessor.ProcessComment(Comment);
+         end else begin
+          while not (((CurrentChar=ord(')')) and (LastChar=ord('*'))) or IsEOFOrAbortError) do begin
+           LastChar:=CurrentChar;
+           ReadChar;
+          end;
+          ReadChar;
          end;
-         LastChar:=CurrentChar;
+         continue;
+        end else if not Preprocessor.SkippingFalseIf then begin
+         CurrentToken:=tstLeftParen;
+         exit;
+        end;
+       end;
+       ord('{'):begin
+        ReadChar;
+        if CurrentChar=ord('$') then begin
+         ReadChar;
+         InString:=false;
+         Comment:=nil;
+         Len:=0;
+         while not (((CurrentChar=ord('}')) and not InString) or IsEOFOrAbortError) do begin
+          HugeStringConcatChar(Comment,CurrentChar,Len);
+          if CurrentChar=ord('''') then begin
+           InString:=not InString;
+          end;
+          ReadChar;
+         end;
+         ReadChar;
+         SetLength(Comment,Len);
+         Preprocessor.ProcessComment(Comment);
+        end else begin
+         while (CurrentChar<>ord('}')) and not IsEOFOrAbortError do begin
+          ReadChar;
+         end;
          ReadChar;
         end;
-        SetLength(Comment,Len);
-        if length(Comment)>0 then begin
-         Comment:=COPY(Comment,0,length(Comment)-1);
+        continue;
+       end;
+       ord('/'):begin
+        ReadChar;
+        if CurrentChar=ord('/') then begin
+         ReadChar;
+         if CurrentChar=ord('$') then begin
+          ReadChar;
+          Comment:=nil;
+          Len:=0;
+          while not ((CurrentChar in [13,10]) or IsEOFOrAbortError) do begin
+           HugeStringConcatChar(Comment,CurrentChar,Len);
+           ReadChar;
+          end;
+          SetLength(Comment,Len);
+          Preprocessor.ProcessComment(Comment);
+         end else begin
+          while not ((CurrentChar in [13,10]) or IsEOFOrAbortError) do begin
+           ReadChar;
+          end;
+         end;
+         continue;
+        end else if not Preprocessor.SkippingFalseIf then begin
+         CurrentToken:=tstSlash;
+         exit;
+        end;
+       end;
+       else begin
+        if Preprocessor.SkippingFalseIf and not IsEOFOrAbortError then begin
+         ReadChar;
+        end;
+       end;
+      end;
+     end else begin
+      if Preprocessor.SkippingFalseIf and not IsEOFOrAbortError then begin
+       ReadChar;
+      end;
+     end;
+     if Preprocessor.SkippingFalseIf and not IsEOFOrAbortError then begin
+      continue;
+     end;
+     break;
+    end;
+    if IsEOFOrAbortError then begin
+     result:=false;
+     exit;
+    end;
+    if CurrentChar<256 then begin
+     case CurrentChar of
+      ord('a')..ord('z'),ord('A')..ord('Z'):begin
+   //  CurrentReadNextString:=ReadString(['a'..'z','A'..'Z','0'..'9','_']);
+       CurrentReadNextString:='';
+       SetLength(CurrentReadNextString,16);
+       Len:=0;
+       while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
+        case ansichar(byte(CurrentChar)) of
+         'A'..'Z','a'..'z','0'..'9','_':begin
+          if (Len+1)>=length(CurrentReadNextString) then begin
+           SetLength(CurrentReadNextString,RoundUpToPowerOfTwo(Len+1));
+          end;
+          CurrentReadNextString[Len+1]:=upcase(ansichar(byte(CurrentChar)));
+          inc(Len);
+          ReadChar;
+         end;
+  {      '_':begin
+          if (Len+3)>=length(CurrentReadNextString) then begin
+           SetLength(CurrentReadNextString,RoundUpToPowerOfTwo(Len+3));
+          end;
+          CurrentReadNextString[Len+1]:='_';
+          CurrentReadNextString[Len+2]:='U';
+          CurrentReadNextString[Len+3]:='_';
+          inc(Len,3);
+          ReadChar;
+         end;}
+         else begin
+          break;
+         end;
+        end;
+       end;
+       SetLength(CurrentReadNextString,Len);
+       if KeywordStringTree.Find(CurrentReadNextString,Link) then begin
+        CurrentToken:=TScannerToken(Link);
+        if (CurrentToken in Directives) and not (CurrentToken in AllowedDirectives) then begin
+         CurrentDirectiveToken:=CurrentToken;
+         CurrentToken:=tstNone;
+        end;
+       end;
+       if CurrentToken=tstNone then begin
+        CurrentToken:=tstIdentifier;
+        CurrentIdentifier:=CurrentReadNextString;
+       end;
+      end;
+      ord('0')..ord('9'):begin
+       CurrentReadNextString:='';
+       Count:=0;
+       CurrentValue:=0;
+       while not IsEOFOrAbortError do begin
+        case CurrentChar of
+         ord('0')..ord('9'):begin
+          CurrentReadNextString:=CurrentReadNextString+ansichar(byte(CurrentChar));
+          CurrentValue:=(CurrentValue*10)+(CurrentChar-byte(ansichar('0')));
+         end;
+         else begin
+          break;
+         end;
         end;
         ReadChar;
-        Preprocessor.ProcessComment(Comment);
+        inc(Count);
+       end;
+       OldPos:=InputStream.Position;
+       if CurrentChar=ord('.') then begin
+        ReadChar;
+        if CurrentChar in [ord('0')..ord('9')] then begin
+         CurrentReadNextString:=CurrentReadNextString+'.';
+         while not IsEOFOrAbortError do begin
+          case CurrentChar of
+           ord('0')..ord('9'):begin
+            CurrentReadNextString:=CurrentReadNextString+ansichar(byte(CurrentChar));
+           end;
+           else begin
+            break;
+           end;
+          end;
+          ReadChar;
+         end;
+         if CurrentChar in [ord('e'),ord('E')] then begin
+          ReadChar;
+          CurrentReadNextString:=CurrentReadNextString+'E';
+          if CurrentChar in [ord('-'),ord('+')] then begin
+           CurrentReadNextString:=CurrentReadNextString+ansichar(byte(CurrentChar));
+           ReadChar;
+          end;
+          while not IsEOFOrAbortError do begin
+           case CurrentChar of
+            ord('0')..ord('9'):begin
+             CurrentReadNextString:=CurrentReadNextString+ansichar(byte(CurrentChar));
+            end;
+            else begin
+             break;
+            end;
+           end;
+           ReadChar;
+          end;
+         end;
+         OK:=false;
+         CurrentFloatValue:=StringToFloat(CurrentReadNextString,@OK);
+         if OK then begin
+          CurrentToken:=tstFloatValue;
+         end;
+        end else begin
+         InputStream.Seek(OldPos);
+         CurrentChar:=ord('.');
+         if Count>0 then begin
+          CurrentToken:=tstValue;
+         end;
+        end;
        end else begin
+        if CurrentChar in [ord('e'),ord('E')] then begin
+         ReadChar;
+         CurrentReadNextString:=CurrentReadNextString+'E';
+         if CurrentChar in [ord('-'),ord('+')] then begin
+          CurrentReadNextString:=CurrentReadNextString+ansichar(byte(CurrentChar));
+          ReadChar;
+         end;
+         while not IsEOFOrAbortError do begin
+          case CurrentChar of
+           ord('0')..ord('9'):begin
+            CurrentReadNextString:=CurrentReadNextString+ansichar(byte(CurrentChar));
+           end;
+           else begin
+            break;
+           end;
+          end;
+          ReadChar;
+         end;
+         OK:=false;
+         CurrentFloatValue:=StringToFloat(CurrentReadNextString,@OK);
+         if OK then begin
+          CurrentToken:=tstFloatValue;
+         end;
+        end else begin
+         if Count>0 then begin
+          CurrentToken:=tstValue;
+         end;
+        end;
+       end;
+      end;
+      ord('$'):begin
+       ReadChar;
+       Count:=0;
+       CurrentValue:=0;
+       while not IsEOFOrAbortError do begin
+        case CurrentChar of
+         ord('0')..ord('9'):begin
+          CurrentValue:=(CurrentValue shl 4) or (CurrentChar-byte(ansichar('0')));
+         end;
+         ord('a')..ord('f'):begin
+          CurrentValue:=(CurrentValue shl 4) or ((CurrentChar-byte(ansichar('a')))+$a);
+         end;
+         ord('A')..ord('F'):begin
+          CurrentValue:=(CurrentValue shl 4) or ((CurrentChar-byte(ansichar('A')))+$a);
+         end;
+         else begin
+          break;
+         end;
+        end;
+        ReadChar;
+        inc(Count);
+       end;
+       if Count>0 then begin
+        CurrentToken:=tstValue;
+       end;
+      end;
+      ord('#'),ord(''''):begin
+       CurrentString:=ReadPascalString;
+       if length(CurrentString)=1 then begin
+        CurrentCharValue:=CurrentString[0];
+        CurrentToken:=tstCharValue;
+       end else begin
+        CurrentToken:=tstStringValue;
+       end;
+      end;
+      ord('='):begin
+       ReadChar;
+       CurrentToken:=tstEqual;
+      end;
+      ord(')'):begin
+       ReadChar;
+       CurrentToken:=tstRightParen;
+      end;
+      ord('['):begin
+       ReadChar;
+       if CurrentChar=ord('[') then begin
+        ReadChar;
+        if CurrentChar=ord('[') then begin
+         ReadChar;
+         CurrentToken:=tstCCODE;
+         inc(ModeStackPointer);
+         if ModeStackPointer>=length(ModeStack) then begin
+          SetLength(ModeStack,ModeStackPointer+4096);
+         end;
+         ModeStack[ModeStackPointer]:=smC;
+        end;
+       end else begin
+        CurrentToken:=tstLeftBracket;
+       end;
+      end;
+      ord(']'):begin
+       ReadChar;
+       CurrentToken:=tstRightBracket;
+      end;
+      ord('*'):begin
+       ReadChar;
+       CurrentToken:=tstMul;
+      end;
+      ord('+'):begin
+       ReadChar;
+       CurrentToken:=tstPlus;
+      end;
+      ord('-'):begin
+       ReadChar;
+       CurrentToken:=tstMinus;
+      end;
+      ord(';'):begin
+       ReadChar;
+       CurrentToken:=tstSeparator;
+      end;
+      ord('@'):begin
+       ReadChar;
+       CurrentToken:=tstAt;
+      end;
+      ord('^'):begin
+       ReadChar;
+       CurrentToken:=tstPointer;
+      end;
+      ord(':'):begin
+       ReadChar;
+       if CurrentChar=ord('=') then begin
+        ReadChar;
+        CurrentToken:=tstAssign;
+       end else begin
+        CurrentToken:=tstColon;
+       end;
+      end;
+      ord('.'):begin
+       ReadChar;
+       if CurrentChar=ord('.') then begin
+        ReadChar;
+        CurrentToken:=tstDoublePeriod;
+       end else if CurrentChar=ord(')') then begin
+        ReadChar;
+        CurrentToken:=tstRightBracket;
+       end else begin
+        CurrentToken:=tstPeriod;
+       end;
+      end;
+      ord('>'):begin
+       ReadChar;
+       if CurrentChar=ord('>') then begin
+        ReadChar;
+        if CurrentChar=ord('>') then begin
+         ReadChar;
+         if ModeStackPointer>0 then begin
+          CurrentToken:=tstCSKIP;
+          dec(ModeStackPointer);
+         end else begin
+          Error.InternalError(201304050322000);
+         end;
+        end;
+       end else if CurrentChar=ord('=') then begin
+        ReadChar;
+        CurrentToken:=tstGreaterOrEqual;
+       end else begin
+        CurrentToken:=tstGreater;
+       end;
+      end;
+      ord('<'):begin
+       ReadChar;
+       if CurrentChar=ord('=') then begin
+        ReadChar;
+        CurrentToken:=tstLessOrEqual;
+       end else if CurrentChar=ord('>') then begin
+        ReadChar;
+        CurrentToken:=tstNotEqual;
+       end else if CurrentChar=ord('<') then begin
+        ReadChar;
+        if CurrentChar=ord('<') then begin
+         ReadChar;
+         CurrentToken:=tstCEXPR;
+         inc(ModeStackPointer);
+         if ModeStackPointer>=length(ModeStack) then begin
+          SetLength(ModeStack,ModeStackPointer+4096);
+         end;
+         ModeStack[ModeStackPointer]:=smC;
+        end;
+       end else begin
+        CurrentToken:=tstLess;
+       end;
+      end;
+      ord('('):begin
+       ReadChar;
+       if CurrentChar=ord('*') then begin
+        ReadChar;
+        LastChar:=0;
         while not (((CurrentChar=ord(')')) and (LastChar=ord('*'))) or IsEOFOrAbortError) do begin
          LastChar:=CurrentChar;
          ReadChar;
         end;
         ReadChar;
+        result:=ReadNext;
+       end else begin
+        CurrentToken:=tstLeftParen;
        end;
-       continue;
-      end else if not Preprocessor.SkippingFalseIf then begin
-       CurrentToken:=tstLeftParen;
-       exit;
       end;
-     end;
-     ord('{'):begin
-      ReadChar;
-      if CurrentChar=ord('$') then begin
-       ReadChar;
-       InString:=false;
-       Comment:=nil;
-       Len:=0;
-       while not (((CurrentChar=ord('}')) and not InString) or IsEOFOrAbortError) do begin
-        HugeStringConcatChar(Comment,CurrentChar,Len);
-        if CurrentChar=ord('''') then begin
-         InString:=not InString;
-        end;
-        ReadChar;
-       end;
-       ReadChar;
-       SetLength(Comment,Len);
-       Preprocessor.ProcessComment(Comment);
-      end else begin
+      ord('{'):begin
        while (CurrentChar<>ord('}')) and not IsEOFOrAbortError do begin
         ReadChar;
        end;
        ReadChar;
+       result:=ReadNext;
       end;
-      continue;
-     end;
-     ord('/'):begin
-      ReadChar;
-      if CurrentChar=ord('/') then begin
+      ord('/'):begin
        ReadChar;
-       if CurrentChar=ord('$') then begin
-        ReadChar;
-        Comment:=nil;
-        Len:=0;
-        while not ((CurrentChar in [13,10]) or IsEOFOrAbortError) do begin
-         HugeStringConcatChar(Comment,CurrentChar,Len);
+       if CurrentChar=ord('/') then begin
+        while not ((CurrentChar in [ord(13),ord(10)]) or IsEOFOrAbortError) do begin
          ReadChar;
         end;
-        SetLength(Comment,Len);
-        Preprocessor.ProcessComment(Comment);
+        result:=ReadNext;
        end else begin
-        while not ((CurrentChar in [13,10]) or IsEOFOrAbortError) do begin
-         ReadChar;
-        end;
+        CurrentToken:=tstSlash;
        end;
-       continue;
-      end else if not Preprocessor.SkippingFalseIf then begin
-       CurrentToken:=tstSlash;
-       exit;
       end;
-     end;
-     else begin
-      if Preprocessor.SkippingFalseIf and not IsEOFOrAbortError then begin
+      ord(','):begin
        ReadChar;
+       CurrentToken:=tstComma;
       end;
      end;
     end;
-   end else begin
-    if Preprocessor.SkippingFalseIf and not IsEOFOrAbortError then begin
-     ReadChar;
-    end;
    end;
-   if Preprocessor.SkippingFalseIf and not IsEOFOrAbortError then begin
-    continue;
-   end;
-   break;
+   Comment:=nil;
   end;
-  if IsEOFOrAbortError then begin
+  smC:begin
    result:=false;
-   exit;
-  end;
-  if CurrentChar<256 then begin
-   case CurrentChar of
-    ord('a')..ord('z'),ord('A')..ord('Z'):begin
- //  CurrentReadNextString:=ReadString(['a'..'z','A'..'Z','0'..'9','_']);
-     CurrentReadNextString:='';
-     SetLength(CurrentReadNextString,16);
-     Len:=0;
-     while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
-      case ansichar(byte(CurrentChar)) of
-       'A'..'Z','a'..'z','0'..'9','_':begin
-        if (Len+1)>=length(CurrentReadNextString) then begin
-         SetLength(CurrentReadNextString,RoundUpToPowerOfTwo(Len+1));
-        end;
-        CurrentReadNextString[Len+1]:=upcase(ansichar(byte(CurrentChar)));
-        inc(Len);
-        ReadChar;
-       end;
-{      '_':begin
-        if (Len+3)>=length(CurrentReadNextString) then begin
-         SetLength(CurrentReadNextString,RoundUpToPowerOfTwo(Len+3));
-        end;
-        CurrentReadNextString[Len+1]:='_';
-        CurrentReadNextString[Len+2]:='U';
-        CurrentReadNextString[Len+3]:='_';
-        inc(Len,3);
-        ReadChar;
-       end;}
-       else begin
-        break;
-       end;
-      end;
-     end;
-     SetLength(CurrentReadNextString,Len);
-     if KeywordStringTree.Find(CurrentReadNextString,Link) then begin
-      CurrentToken:=TScannerToken(Link);
-      if (CurrentToken in Directives) and not (CurrentToken in AllowedDirectives) then begin
-       CurrentDirectiveToken:=CurrentToken;
-       CurrentToken:=tstNone;
-      end;
-     end;
-     if CurrentToken=tstNone then begin
-      CurrentToken:=tstIdentifier;
-      CurrentIdentifier:=CurrentReadNextString;
-     end;
-    end;
-    ord('0')..ord('9'):begin
-     CurrentReadNextString:='';
-     Count:=0;
-     CurrentValue:=0;
-     while not IsEOFOrAbortError do begin
-      case CurrentChar of
-       ord('0')..ord('9'):begin
-        CurrentReadNextString:=CurrentReadNextString+ansichar(byte(CurrentChar));
-        CurrentValue:=(CurrentValue*10)+(CurrentChar-byte(ansichar('0')));
-       end;
-       else begin
-        break;
-       end;
-      end;
+   CurrentToken:=tstCBLOCK;
+   CurrentString:=nil;
+   Len:=0;
+   while not IsEOFOrAbortError do begin
+    case CurrentChar of
+     ord(']'):begin
       ReadChar;
-      inc(Count);
-     end;
-     OldPos:=InputStream.Position;
-     if CurrentChar=ord('.') then begin
-      ReadChar;
-      if CurrentChar in [ord('0')..ord('9')] then begin
-       CurrentReadNextString:=CurrentReadNextString+'.';
-       while not IsEOFOrAbortError do begin
-        case CurrentChar of
-         ord('0')..ord('9'):begin
-          CurrentReadNextString:=CurrentReadNextString+ansichar(byte(CurrentChar));
-         end;
-         else begin
-          break;
-         end;
-        end;
-        ReadChar;
-       end;
-       if CurrentChar in [ord('e'),ord('E')] then begin
-        ReadChar;
-        CurrentReadNextString:=CurrentReadNextString+'E';
-        if CurrentChar in [ord('-'),ord('+')] then begin
-         CurrentReadNextString:=CurrentReadNextString+ansichar(byte(CurrentChar));
-         ReadChar;
-        end;
-        while not IsEOFOrAbortError do begin
-         case CurrentChar of
-          ord('0')..ord('9'):begin
-           CurrentReadNextString:=CurrentReadNextString+ansichar(byte(CurrentChar));
-          end;
-          else begin
-           break;
-          end;
-         end;
-         ReadChar;
-        end;
-       end;
-       OK:=false;
-       CurrentFloatValue:=StringToFloat(CurrentReadNextString,@OK);
-       if OK then begin
-        CurrentToken:=tstFloatValue;
-       end;
-      end else begin
-       InputStream.Seek(OldPos);
-       CurrentChar:=ord('.');
-       if Count>0 then begin
-        CurrentToken:=tstValue;
-       end;
-      end;
-     end else begin
-      if CurrentChar in [ord('e'),ord('E')] then begin
+      if CurrentChar=ord(']') then begin
        ReadChar;
-       CurrentReadNextString:=CurrentReadNextString+'E';
-       if CurrentChar in [ord('-'),ord('+')] then begin
-        CurrentReadNextString:=CurrentReadNextString+ansichar(byte(CurrentChar));
+       if CurrentChar=ord(']') then begin
         ReadChar;
-       end;
-       while not IsEOFOrAbortError do begin
-        case CurrentChar of
-         ord('0')..ord('9'):begin
-          CurrentReadNextString:=CurrentReadNextString+ansichar(byte(CurrentChar));
-         end;
-         else begin
-          break;
-         end;
-        end;
-        ReadChar;
-       end;
-       OK:=false;
-       CurrentFloatValue:=StringToFloat(CurrentReadNextString,@OK);
-       if OK then begin
-        CurrentToken:=tstFloatValue;
-       end;
-      end else begin
-       if Count>0 then begin
-        CurrentToken:=tstValue;
-       end;
-      end;
-     end;
-    end;
-    ord('$'):begin
-     ReadChar;
-     Count:=0;
-     CurrentValue:=0;
-     while not IsEOFOrAbortError do begin
-      case CurrentChar of
-       ord('0')..ord('9'):begin
-        CurrentValue:=(CurrentValue shl 4) or (CurrentChar-byte(ansichar('0')));
-       end;
-       ord('a')..ord('f'):begin
-        CurrentValue:=(CurrentValue shl 4) or ((CurrentChar-byte(ansichar('a')))+$a);
-       end;
-       ord('A')..ord('F'):begin
-        CurrentValue:=(CurrentValue shl 4) or ((CurrentChar-byte(ansichar('A')))+$a);
-       end;
-       else begin
-        break;
-       end;
-      end;
-      ReadChar;
-      inc(Count);
-     end;
-     if Count>0 then begin
-      CurrentToken:=tstValue;
-     end;
-    end;
-    ord('#'),ord(''''):begin
-     CurrentString:=ReadPascalString;
-     if length(CurrentString)=1 then begin
-      CurrentCharValue:=CurrentString[0];
-      CurrentToken:=tstCharValue;
-     end else begin
-      CurrentToken:=tstStringValue;
-     end;
-    end;
-    ord('='):begin
-     ReadChar;
-     CurrentToken:=tstEqual;
-    end;
-    ord(')'):begin
-     ReadChar;
-     CurrentToken:=tstRightParen;
-    end;
-    ord('['):begin
-     ReadChar;
-     if CurrentChar=ord('[') then begin
-      ReadChar;
-      if CurrentChar=ord('[') then begin
-       ReadChar;
-       CurrentToken:=tstCCODE;
-       ToInjectToken:=tstSeparator;
-       CurrentString:=nil;
-       Len:=0;
-       while not IsEOFOrAbortError do begin
-        if CurrentChar=ord(']') then begin
-         ReadChar;
-         if CurrentChar=ord(']') then begin
-          ReadChar;
-          if CurrentChar=ord(']') then begin
-           ReadChar;
-           break;
-          end else begin
-           HugeStringConcatChar(CurrentString,ord(']'),Len);
-           HugeStringConcatChar(CurrentString,ord(']'),Len);
-          end;
-         end else begin
-          HugeStringConcatChar(CurrentString,ord(']'),Len);
-         end;
+        if ModeStackPointer>0 then begin
+         dec(ModeStackPointer);
         end else begin
-         HugeStringConcatChar(CurrentString,CurrentChar,Len);
-         ReadChar;
+         Error.InternalError(201304050322000);
         end;
+        ToInjectToken:=tstCEND;
+        break;
+       end else begin
+        HugeStringConcatChar(CurrentString,ord(']'),Len);
+        HugeStringConcatChar(CurrentString,ord(']'),Len);
        end;
-       SetLength(CurrentString,Len);
+      end else begin
+       HugeStringConcatChar(CurrentString,ord(']'),Len);
       end;
-     end else begin
-      CurrentToken:=tstLeftBracket;
      end;
-    end;
-    ord(']'):begin
-     ReadChar;
-     CurrentToken:=tstRightBracket;
-    end;
-    ord('*'):begin
-     ReadChar;
-     CurrentToken:=tstMul;
-    end;
-    ord('+'):begin
-     ReadChar;
-     CurrentToken:=tstPlus;
-    end;
-    ord('-'):begin
-     ReadChar;
-     CurrentToken:=tstMinus;
-    end;
-    ord(';'):begin
-     ReadChar;
-     CurrentToken:=tstSeparator;
-    end;
-    ord('@'):begin
-     ReadChar;
-     CurrentToken:=tstAt;
-    end;
-    ord('^'):begin
-     ReadChar;
-     CurrentToken:=tstPointer;
-    end;
-    ord(':'):begin
-     ReadChar;
-     if CurrentChar=ord('=') then begin
-      ReadChar;
-      CurrentToken:=tstAssign;
-     end else begin
-      CurrentToken:=tstColon;
-     end;
-    end;
-    ord('.'):begin
-     ReadChar;
-     if CurrentChar=ord('.') then begin
-      ReadChar;
-      CurrentToken:=tstDoublePeriod;
-     end else if CurrentChar=ord(')') then begin
-      ReadChar;
-      CurrentToken:=tstRightBracket;
-     end else begin
-      CurrentToken:=tstPeriod;
-     end;
-    end;
-    ord('>'):begin
-     ReadChar;
-     if CurrentChar=ord('=') then begin
-      ReadChar;
-      CurrentToken:=tstGreaterOrEqual;
-     end else begin
-      CurrentToken:=tstGreater;
-     end;
-    end;
-    ord('<'):begin
-     ReadChar;
-     if CurrentChar=ord('=') then begin
-      ReadChar;
-      CurrentToken:=tstLessOrEqual;
-     end else if CurrentChar=ord('>') then begin
-      ReadChar;
-      CurrentToken:=tstNotEqual;
-     end else if CurrentChar=ord('<') then begin
+     ord('<'):begin
       ReadChar;
       if CurrentChar=ord('<') then begin
        ReadChar;
-       CurrentToken:=tstCEXPR;
-       CurrentString:=nil;
-       Len:=0;
-       while not IsEOFOrAbortError do begin
-        if CurrentChar=ord('>') then begin
-         ReadChar;
-         if CurrentChar=ord('>') then begin
-          ReadChar;
-          if CurrentChar=ord('>') then begin
-           ReadChar;
-           break;
-          end else begin
-           HugeStringConcatChar(CurrentString,ord('>'),Len);
-           HugeStringConcatChar(CurrentString,ord('>'),Len);
-          end;
-         end else begin
-          HugeStringConcatChar(CurrentString,ord('>'),Len);
-         end;
-        end else begin
-         HugeStringConcatChar(CurrentString,CurrentChar,Len);
-         ReadChar;
+       if CurrentChar=ord('<') then begin
+        ReadChar;
+        inc(ModeStackPointer);
+        if ModeStackPointer>=length(ModeStack) then begin
+         SetLength(ModeStack,ModeStackPointer+4096);
         end;
+        ModeStack[ModeStackPointer]:=smPASCAL;
+        break;
+       end else begin
+        HugeStringConcatChar(CurrentString,ord('<'),Len);
+        HugeStringConcatChar(CurrentString,ord('<'),Len);
        end;
-       SetLength(CurrentString,Len);
+      end else begin
+       HugeStringConcatChar(CurrentString,ord('<'),Len);
       end;
-     end else begin
-      CurrentToken:=tstLess;
      end;
-    end;
-    ord('('):begin
-     ReadChar;
-     if CurrentChar=ord('*') then begin
-      ReadChar;
-      LastChar:=0;
-      while not (((CurrentChar=ord(')')) and (LastChar=ord('*'))) or IsEOFOrAbortError) do begin
-       LastChar:=CurrentChar;
-       ReadChar;
-      end;
-      ReadChar;
-      result:=ReadNext;
-     end else begin
-      CurrentToken:=tstLeftParen;
-     end;
-    end;
-    ord('{'):begin
-     while (CurrentChar<>ord('}')) and not IsEOFOrAbortError do begin
+     else begin
+      HugeStringConcatChar(CurrentString,CurrentChar,Len);
       ReadChar;
      end;
-     ReadChar;
-     result:=ReadNext;
-    end;
-    ord('/'):begin
-     ReadChar;
-     if CurrentChar=ord('/') then begin
-      while not ((CurrentChar in [ord(13),ord(10)]) or IsEOFOrAbortError) do begin
-       ReadChar;
-      end;
-      result:=ReadNext;
-     end else begin
-      CurrentToken:=tstSlash;
-     end;
-    end;
-    ord(','):begin
-     ReadChar;
-     CurrentToken:=tstComma;
     end;
    end;
+   SetLength(CurrentString,Len);
+  end;
+  else begin
+   result:=false;
+   CurrentToken:=tstNone;
+   ReadChar;
   end;
  end;
- if CurrentToken=tstNone then begin
-  CurrentToken:=tstNone;
- end;
- Comment:=nil;
 end;
 
 function TScanner.ReadIdentifier:ansistring;

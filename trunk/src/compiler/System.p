@@ -73,6 +73,10 @@ typedef struct {
 	uint32_t dummy;
 } pasFile;
 
+void* pasGetMem(size_t size);
+void pasReallocMem(void** ptr,size_t size);
+void pasFreeMem(void* ptr);
+
 void* pasObjectDMTDispatch(void* object,size_t index);
 
 void CheckRefLongstring(pasLongstring str);
@@ -163,7 +167,10 @@ begin
 end;
 
 procedure GetMem(var p;Size:longint);
+var ptr:pointer;
 begin
+ ptr := @p;
+[[[ *((void**)<<<ptr>>>) = pasGetMem(<<<Size>>>); ]]]
 end;
 
 procedure FreeMem(var p);
@@ -248,6 +255,18 @@ end;
 #include "string.h"
 #include "stdlib.h"
 #include "stdio.h"
+
+void* pasGetMem(size_t size){
+ return malloc(size);
+}
+
+void pasReallocMem(void** ptr,size_t size){
+ *ptr = realloc(*ptr, size);
+}
+
+void pasFreeMem(void* ptr){
+ free(ptr);
+}
 
 void* pasObjectDMTDispatch(void* object,size_t index){
   pasObjectVirtualMethodTable* VMT = (void*)*object;
