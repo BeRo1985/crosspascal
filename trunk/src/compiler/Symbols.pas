@@ -227,6 +227,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
 
       OwnerModule:PSymbol;
       OwnerObjectClass:PType;
+      OwnerType:PType;
 
       ID:longword;
 

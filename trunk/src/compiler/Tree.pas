@@ -37,11 +37,11 @@ type TTreeNodeType=(ttntEmpty,
       public
        Left,Right,Block,ElseTree,ExceptTree,FinallyTree:TTreeNode;
        TreeManager:TTreeManager;
-       LineNumber:longint;
+       LineNumber,WithLevel:longint;
        FileName:ansistring;
        TreeNodeType:TTreeNodeType;
        Symbol,MethodSymbol,SymbolField:PSymbol;
-       Return,CheckType,CompareType,InheritedType:PType;
+       Return,CheckType,CompareType,InheritedType,WithType:PType;
        ItemType:TTreeNodeItemType;
        ItemValue:int64;
        Signed,Forced,Colon,IsDownTo,ReferenceParameter,DoNotOptimize,Warning500:boolean;
@@ -170,6 +170,7 @@ begin
  ExceptTree:=nil;
  FinallyTree:=nil;
  LineNumber:=-1;
+ WithLevel:=-1;
  FileName:='';
  TreeNodeType:=ttntEmpty;
  Symbol:=nil;
@@ -180,6 +181,7 @@ begin
  CheckType:=nil;
  CompareType:=nil;
  InheritedType:=nil;
+ WithType:=nil;
  ItemType:=ttnitUndefined;
  ItemValue:=0;
  Signed:=false;
@@ -218,6 +220,7 @@ begin
    ElseTree:=TTreeNode.CreateFrom(From.ElseTree);
   end;
   LineNumber:=From.LineNumber;
+  WithLevel:=From.WithLevel;
   FileName:=From.FileName;
   TreeNodeType:=From.TreeNodeType;
   Symbol:=From.Symbol;
@@ -228,6 +231,7 @@ begin
   CheckType:=From.CheckType;
   CompareType:=From.CompareType;
   InheritedType:=From.InheritedType;
+  WithType:=From.WithType;
   ItemType:=From.ItemType;
   ItemValue:=From.ItemValue;
   Signed:=From.Signed;

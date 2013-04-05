@@ -18,6 +18,7 @@ type TParser=class
        OptimizerHighLevel:TOptimizerHighLevel;
        UnitManager:TUnitManager;
        CodeGenerator:TCode;
+       WithStack:TPointerList;
        ACompiler:pointer;
        ParameterNumber:longint;
        UnitLevel:longint;
@@ -115,6 +116,7 @@ begin
  OptimizerHighLevel:=TOptimizerHighLevel.Create(Error,SymbolManager,TreeManager,@Options,TheLocalSwitches);
  Error.LocalSwitches:=TheLocalSwitches;
  UnitManager:=TheUnitManager;
+ WithStack:=TPointerList.Create;
  MustHaveParens:=false;
  MakeSymbolsPublic:=true;
  IsSystemUnit:=false;
@@ -131,6 +133,7 @@ end;
 
 destructor TParser.Destroy;
 begin
+ WithStack.Free;
  Scanner.Free;
  OptimizerHighLevel.Free;
  CodeGenerator.Free;
@@ -1192,7 +1195,7 @@ end;
 
 function TParser.ParseFactor:TTreeNode;
 var NewTreeNode,FirstTreeNode,LastTreeNode:TTreeNode;
-    CanHaveQualifiers,Overloaded:boolean;
+    CanHaveQualifiers,Overloaded,OK:boolean;
     AType,FieldType:PType;
     MethodSymbol,FieldSymbol,Symbol,TempSymbol:PSymbol;
     FieldName,Name:ansistring;
@@ -1221,6 +1224,20 @@ begin
     case Symbol^.SymbolType of
      Symbols.tstVariable:begin
       NewTreeNode:=TreeManager.GenerateVarNode(Symbol);
+      if (tsaFIELD in Symbol^.Attributes) or (tsaINTERNALFIELD in Symbol^.Attributes) then begin
+       OK:=false;
+       for Counter:=WithStack.Count-1 downto 0 do begin
+        if Symbol^.OwnerType=WithStack.Items[Counter] then begin
+         NewTreeNode.WithType:=Symbol^.OwnerType;
+         NewTreeNode.WithLevel:=Counter;
+         OK:=true;
+         break;
+        end;
+       end;
+       if not OK then begin
+        Error.InternalError(201304051619000);
+       end;
+      end;
      end;
      Symbols.tstProperty:begin
       // TODO PROPERTY
@@ -2651,17 +2668,22 @@ begin
  OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
  OptimizerHighLevel.CurrentObjectClass:=CurrentObjectClass;
  OptimizerHighLevel.OptimizeTree(NewTreeNode);
- if NewTreeNode.Return^.TypeDefinition=ttdRecord then begin
-  WithTable:=NewTreeNode.Return^.RecordTable;
-  SymbolManager.PushSymbolList(WithTable);
-  Scanner.Match(tstDO);
-  if Scanner.CurrentToken<>tstSeparator then begin
-   Block:=ParseStatement(false);
-  end else begin
-   Block:=nil;
+ if NewTreeNode.Return^.TypeDefinition in [ttdRECORD,ttdCLASS,ttdOBJECT] then begin
+  WithStack.Add(NewTreeNode.Return);
+  try
+   WithTable:=NewTreeNode.Return^.RecordTable;
+   SymbolManager.PushSymbolList(WithTable);
+   Scanner.Match(tstDO);
+   if Scanner.CurrentToken<>tstSeparator then begin
+    Block:=ParseStatement(false);
+   end else begin
+    Block:=nil;
+   end;
+   SymbolManager.PopSymbolList(WithTable);
+   result:=TreeManager.GenerateWithNode(NewTreeNode,Block);
+  finally
+   WithStack.Delete(WithStack.Count-1);
   end;
-  SymbolManager.PopSymbolList(WithTable);
-  result:=TreeManager.GenerateWithNode(NewTreeNode,Block);
  end else begin
   result:=nil;
   Error.AbortCode(17);
@@ -3582,6 +3604,7 @@ begin
     Symbol^.Attributes:=Symbol^.Attributes+[tsaPublic,tsaPublicUnitSymbol];
    end;
    Symbol^.PortabilityDirectives:=PortabilityDirectives;
+   Symbol^.OwnerType:=RecordType;
    RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
    Symbol:=NextSymbol;
   end;
@@ -3623,12 +3646,14 @@ begin
    if MakeSymbolsPublic then begin
     Symbol^.Attributes:=Symbol^.Attributes+[tsaPublic,tsaPublicUnitSymbol];
    end;
+   Symbol^.OwnerType:=RecordType;
    RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
   end;
   Scanner.Match(tstOF);
   Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
   Symbol^.Name:='';
   Symbol^.SymbolType:=Symbols.tstCaseVariantLevelPush;
+  Symbol^.OwnerType:=RecordType;
   RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
   inc(CaseOfLevel);
   while not Scanner.IsEOFOrAbortError do begin
@@ -3655,11 +3680,13 @@ begin
     Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
     Symbol^.Name:='';
     Symbol^.SymbolType:=Symbols.tstCaseVariantPush;
+    Symbol^.OwnerType:=RecordType;
     RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
     ParseRecordField(RecordType,IsRecord,SymbolAttributes,[],CaseOfLevel,CaseOfVariant,VariantPrefix+VariantStr+'.');
     Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
     Symbol^.Name:='';
     Symbol^.SymbolType:=Symbols.tstCaseVariantPop;
+    Symbol^.OwnerType:=RecordType;
     RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
    end;
    Scanner.Match(tstRightParen);
@@ -3675,6 +3702,7 @@ begin
   Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
   Symbol^.Name:='';
   Symbol^.SymbolType:=Symbols.tstCaseVariantLevelPop;
+  Symbol^.OwnerType:=RecordType;
   RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
  end;
 end;
@@ -4071,6 +4099,7 @@ begin
  end;
  Scanner.Match(tstSEPARATOR);
  Symbol^.PortabilityDirectives:=PortabilityDirectives;
+ Symbol^.OwnerType:=RecordType;
  RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
 end;
 
@@ -4162,6 +4191,7 @@ begin
     NewSymbol^.TypedConstant:=Symbol^.TypedConstant;
     NewSymbol^.TypedTrueConstant:=Symbol^.TypedTrueConstant;
     NewSymbol^.TypedConstantReadOnly:=Symbol^.TypedConstantReadOnly;
+    NewSymbol^.OwnerType:=RecordType;
     result^.RecordTable.AddSymbol(NewSymbol,ModuleSymbol,result,false);
    end;
    Symbol:=Symbol^.Next;
@@ -4305,6 +4335,7 @@ begin
    Symbol^.TypedConstant:=false;
    Symbol^.TypedTrueConstant:=false;
    Symbol^.TypedConstantReadOnly:=false;
+   Symbol^.OwnerType:=result;
    result^.RecordTable.AddSymbol(Symbol,ModuleSymbol,result,true);
   end;
  end;
@@ -5200,6 +5231,7 @@ begin
   Symbol^.NextOverloaded:=nil;
   dec(SymbolManager.LexicalScopeLevel);
   Symbol^.OwnerObjectClass:=CurrentParseObjectClass;
+  Symbol^.OwnerType:=CurrentParseObjectClass;
   SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass,false,false);
   inc(SymbolManager.LexicalScopeLevel);
  end else begin
