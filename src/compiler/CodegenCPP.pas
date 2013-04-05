@@ -169,9 +169,9 @@ begin
       result:='INTERNAL_FIELD_'+Sym.Name;
      end else begin
       if FVariantPrefix then begin
-       result:=Sym.VariantPrefix+'FIELD_'+Sym.Name;
+       result:=GetTypeName(Sym.OwnerType)+'_'+Sym.VariantPrefix+'FIELD_'+Sym.Name;
       end else begin
-       result:='FIELD_'+Sym.Name;
+       result:=GetTypeName(Sym.OwnerType)+'_'+'FIELD_'+Sym.Name;
       end;
       if FInProc and assigned(Sym^.TypeDefinition) and (Sym^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
        result:='(('+GetTypeName(Sym^.TypeDefinition)+')((void*)'+result+'))';
