@@ -192,7 +192,7 @@ end;
 
 procedure TParser.AddDefaultSymbols;
 var Symbol,LastSymbol:PSymbol;
-    AType,BooleanType,LongIntType:PType;
+    AType,BooleanType,LongIntType,LongWordType,Int64Type,QWordType:PType;
     //Constant:PConstant;
 begin
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -308,6 +308,29 @@ begin
  AType^.SubRangeType:=Symbols.tstSigned64Bit;
  AType^.LowerLimit:=low(int64);
  AType^.UpperLimit:=high(int64);
+ Int64Type:=AType;
+ SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+
+ Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+ Symbol^.Name:=tpsIdentifier+'QWORD';
+ Symbol^.SymbolType:=Symbols.tstType;
+ Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
+ AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+ AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
+ Symbol^.TypeDefinition:=AType;
+ AType^.Symbol:=Symbol;
+ AType^.TypeDefinition:=ttdSubRange;
+ AType^.SubRangeType:=Symbols.tstUnsigned64Bit;
+ AType^.LowerLimit:=int64(0);
+ AType^.UpperLimit:=int64($ffffffffffffffff);
+ QWordType:=AType;
+ SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+
+ Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+ Symbol^.Name:=tpsIdentifier+'UINT64';
+ Symbol^.SymbolType:=Symbols.tstType;
+ Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
+ Symbol^.TypeDefinition:=AType;
  SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -322,6 +345,7 @@ begin
  AType^.SubRangeType:=Symbols.tstUnsigned32Bit;
  AType^.LowerLimit:=0;
  AType^.UpperLimit:=$ffffffff;
+ LongWordType:=AType;
  SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -342,9 +366,9 @@ begin
  Symbol^.Name:=tpsIdentifier+'LONGINT';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
+ Symbol^.TypeDefinition:=AType;
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
- Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdSubRange;
  AType^.SubRangeType:=Symbols.tstSigned32Bit;
@@ -422,6 +446,67 @@ begin
  AType^.LowerLimit:=-128;
  AType^.UpperLimit:=127;
  SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+
+ case Options.Bits of
+  64:begin
+   Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+   Symbol^.Name:=tpsIdentifier+'PTRINT';
+   Symbol^.SymbolType:=Symbols.tstType;
+   Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
+   Symbol^.TypeDefinition:=Int64Type;
+   SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+
+   Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+   Symbol^.Name:=tpsIdentifier+'PTRUINT';
+   Symbol^.SymbolType:=Symbols.tstType;
+   Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
+   Symbol^.TypeDefinition:=QWordType;
+   SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+
+   Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+   Symbol^.Name:=tpsIdentifier+'NATIVEINT';
+   Symbol^.SymbolType:=Symbols.tstType;
+   Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
+   Symbol^.TypeDefinition:=Int64Type;
+   SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+
+   Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+   Symbol^.Name:=tpsIdentifier+'NATIVEUINT';
+   Symbol^.SymbolType:=Symbols.tstType;
+   Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
+   Symbol^.TypeDefinition:=QWordType;
+   SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+  end;
+  else {32:}begin
+   Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+   Symbol^.Name:=tpsIdentifier+'PTRINT';
+   Symbol^.SymbolType:=Symbols.tstType;
+   Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
+   Symbol^.TypeDefinition:=LongIntType;
+   SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+
+   Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+   Symbol^.Name:=tpsIdentifier+'PTRUINT';
+   Symbol^.SymbolType:=Symbols.tstType;
+   Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
+   Symbol^.TypeDefinition:=LongWordType;
+   SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+
+   Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+   Symbol^.Name:=tpsIdentifier+'NATIVEINT';
+   Symbol^.SymbolType:=Symbols.tstType;
+   Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
+   Symbol^.TypeDefinition:=LongIntType;
+   SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+
+   Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+   Symbol^.Name:=tpsIdentifier+'NATIVEUINT';
+   Symbol^.SymbolType:=Symbols.tstType;
+   Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
+   Symbol^.TypeDefinition:=LongWordType;
+   SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+  end;
+ end;
 
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
