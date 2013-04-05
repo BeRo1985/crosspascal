@@ -1202,7 +1202,7 @@ var NewTreeNode,FirstTreeNode,LastTreeNode:TTreeNode;
     SetConstant:TSetArray;
     CounterValue,LowValue,HighValue:byte;
     Value:int64;
-    ParameterImbalance,Counter:longint;
+    ParameterImbalance,Counter,WhichWithLevel:longint;
 begin
  NewTreeNode:=nil;
  AType:=nil;
@@ -1211,7 +1211,8 @@ begin
   tstIdentifier:begin
    Error.Push;
    Name:=Scanner.ReadIdentifier;
-   Symbol:=SymbolManager.GetSymbol(Name,ModuleSymbol,CurrentObjectClass);
+   WhichWithLevel:=-1;
+   Symbol:=SymbolManager.GetSymbol(Name,ModuleSymbol,CurrentObjectClass,@WhichWithLevel);
    if assigned(Symbol) and (Symbol^.SymbolType=Symbols.tstUnit) then begin
     Error.Pop;
     Error.Push;
@@ -1224,19 +1225,9 @@ begin
     case Symbol^.SymbolType of
      Symbols.tstVariable:begin
       NewTreeNode:=TreeManager.GenerateVarNode(Symbol);
-      if (tsaFIELD in Symbol^.Attributes) or (tsaINTERNALFIELD in Symbol^.Attributes) then begin
-       OK:=false;
-       for Counter:=WithStack.Count-1 downto 0 do begin
-        if Symbol^.OwnerType=WithStack.Items[Counter] then begin
-         NewTreeNode.WithType:=Symbol^.OwnerType;
-         NewTreeNode.WithLevel:=Counter;
-         OK:=true;
-         break;
-        end;
-       end;
-{      if (not OK) and not assigned(CurrentObjectClass) then begin
-        Error.InternalError(201304051619000);
-       end;}
+      if (WhichWithLevel>=0) and (WhichWithLevel<WithStack.Count) then begin
+       NewTreeNode.WithType:=WithStack.Items[WhichWithLevel];
+       NewTreeNode.WithLevel:=WhichWithLevel;
       end;
      end;
      Symbols.tstProperty:begin
@@ -2672,7 +2663,7 @@ begin
   WithStack.Add(NewTreeNode.Return);
   try
    WithTable:=NewTreeNode.Return^.RecordTable;
-   SymbolManager.PushSymbolList(WithTable);
+   SymbolManager.PushSymbolList(WithTable,WithStack.Count-1);
    Scanner.Match(tstDO);
    if Scanner.CurrentToken<>tstSeparator then begin
     Block:=ParseStatement(false);
@@ -5032,7 +5023,6 @@ end;
 function TParser.ParseProcedure(ParseHeader:boolean;ProcedureAttributes:TProcedureAttributes):PSymbol;
 var Parent:PSymbol;
     ObjectClassSymbolList:TSymbolList;
-    SymbolTypeList:TPointerList;
     OldObjectName,OldName,Name,ParameterSuffix,MethodName,s:ansistring;
     Method,MethodSymbol,SearchSymbol,Symbol,SymbolA,SymbolB,ResultSymbol,SelfSymbol,
     OldCurrentMethod,OldCurrentProcedureFunction:PSymbol;
@@ -5123,20 +5113,7 @@ begin
    exit;
   end;
   ObjectClassSymbolList:=MethodSymbol^.TypeDefinition^.RecordTable;
-  SymbolTypeList:=TPointerList.Create;
-  try
-   SymbolTypeList.Add(ObjectClassSymbolList);
-   Parent:=MethodSymbol^.TypeDefinition^.ChildOf;
-   while assigned(Parent) do begin
-    SymbolTypeList.Add(Parent^.TypeDefinition^.RecordTable);
-    Parent:=Parent^.TypeDefinition^.ChildOf;
-   end;
-   for i:=SymbolTypeList.Count-1 downto 0 do begin
-    SymbolManager.PushSymbolList(SymbolTypeList.Items[i]);
-   end;
-  finally
-   SymbolTypeList.Free;
-  end;
+  SymbolManager.PushSymbolList(ObjectClassSymbolList);
   MethodName:=Scanner.ReadIdentifier;
   Method:=ObjectClassSymbolList.GetSymbol(MethodName,ModuleSymbol,CurrentObjectClass);
   if not assigned(Method) then begin
@@ -5529,20 +5506,7 @@ begin
  SymbolManager.VariableType:=OldVariableType;
 
  if assigned(Method) and not ParseHeader then begin
-  SymbolTypeList:=TPointerList.Create;
-  try
-   SymbolTypeList.Add(ObjectClassSymbolList);
-   Parent:=MethodSymbol^.TypeDefinition^.ChildOf;
-   while assigned(Parent) do begin
-    SymbolTypeList.Add(Parent^.TypeDefinition^.RecordTable);
-    Parent:=Parent^.TypeDefinition^.ChildOf;
-   end;
-   for i:=0 to SymbolTypeList.Count-1 do begin
-    SymbolManager.PopSymbolList(SymbolTypeList.Items[i]);
-   end;
-  finally
-   SymbolTypeList.Free;
-  end;
+  SymbolManager.PopSymbolList(ObjectClassSymbolList);
  end;
 
  CurrentMethod:=OldCurrentMethod;
