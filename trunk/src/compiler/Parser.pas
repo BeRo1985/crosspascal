@@ -1498,7 +1498,11 @@ begin
       Scanner.ReadNext;
      end;
      else begin
-      NewTreeNode:=TreeManager.GeneratePascalBlockNode(ParseStatement(true));
+      if Scanner.CurrentMode=smPASCALEXPRESSION then begin
+       NewTreeNode:=TreeManager.GeneratePascalBlockNode(ParseExpression(false));
+      end else begin
+       NewTreeNode:=TreeManager.GeneratePascalBlockNode(ParseStatement(false));
+      end;
      end;
     end;
     if assigned(LastTreeNode) then begin
@@ -3474,7 +3478,11 @@ begin
      Scanner.ReadNext;
     end;
     else begin
-     NewTreeNode:=TreeManager.GeneratePascalBlockNode(ParseStatement(true));
+     if Scanner.CurrentMode=smPASCALEXPRESSION then begin
+      NewTreeNode:=TreeManager.GeneratePascalBlockNode(ParseExpression(false));
+     end else begin
+      NewTreeNode:=TreeManager.GeneratePascalBlockNode(ParseStatement(false));
+     end;
     end;
    end;
    if assigned(LastTreeNode) then begin
