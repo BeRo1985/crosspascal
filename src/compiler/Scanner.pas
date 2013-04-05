@@ -58,7 +58,7 @@ type TScannerToken=(tstNone,
 
      TScannerFileStack=array of TScannerFileStackItem;
 
-     TScannerMode=(smPASCAL,smC);
+     TScannerMode=(smPASCAL,smPASCALCODE,smPASCALEXPRESSION,smC);
 
      TScanner=class
       private
@@ -117,6 +117,7 @@ type TScannerToken=(tstNone,
        function ReadLabelEx:ansistring;
        function Match(Token:TScannerToken):boolean;
        procedure Illegal(Token:TScannerToken);
+       function CurrentMode:TScannerMode;
        function MaybeLabel(Token:TScannerToken):boolean;
        function IsLabel(Token:TScannerToken):boolean;
        procedure CheckForDirectives(AllowedDirectives:TScannerTokens);
@@ -786,7 +787,7 @@ begin
   ReadChar;
  end;
  case ModeStack[ModeStackPointer] of
-  smPASCAL:begin
+  smPASCAL,smPASCALCODE,smPASCALEXPRESSION:begin
    while (CurrentChar<=32) and not IsEOFOrAbortError do begin
     ReadChar;
    end;
@@ -1114,7 +1115,20 @@ begin
       end;
       ord(']'):begin
        ReadChar;
-       CurrentToken:=tstRightBracket;
+       if CurrentChar=ord(']') then begin
+        ReadChar;
+        if CurrentChar=ord(']') then begin
+         ReadChar;
+         if ModeStackPointer>0 then begin
+          CurrentToken:=tstCSKIP;
+          dec(ModeStackPointer);
+         end else begin
+          Error.InternalError(201304050322000);
+         end;
+        end;
+       end else begin
+        CurrentToken:=tstRightBracket;
+       end;
       end;
       ord('*'):begin
        ReadChar;
@@ -1284,7 +1298,7 @@ begin
         if ModeStackPointer>=length(ModeStack) then begin
          SetLength(ModeStack,ModeStackPointer+4096);
         end;
-        ModeStack[ModeStackPointer]:=smPASCAL;
+        ModeStack[ModeStackPointer]:=smPASCALEXPRESSION;
         break;
        end else begin
         HugeStringConcatChar(CurrentString,ord('<'),Len);
@@ -1292,6 +1306,26 @@ begin
        end;
       end else begin
        HugeStringConcatChar(CurrentString,ord('<'),Len);
+      end;
+     end;
+     ord('['):begin
+      ReadChar;
+      if CurrentChar=ord('[') then begin
+       ReadChar;
+       if CurrentChar=ord('[') then begin
+        ReadChar;
+        inc(ModeStackPointer);
+        if ModeStackPointer>=length(ModeStack) then begin
+         SetLength(ModeStack,ModeStackPointer+4096);
+        end;
+        ModeStack[ModeStackPointer]:=smPASCALCODE;
+        break;
+       end else begin
+        HugeStringConcatChar(CurrentString,ord('['),Len);
+        HugeStringConcatChar(CurrentString,ord('['),Len);
+       end;
+      end else begin
+       HugeStringConcatChar(CurrentString,ord('['),Len);
       end;
      end;
      else begin
@@ -1405,6 +1439,11 @@ begin
  end else begin
   Error.InternalError(200605181054000);
  end;
+end;
+
+function TScanner.CurrentMode:TScannerMode;
+begin
+ result:=ModeStack[ModeStackPointer];
 end;
 
 function TScanner.MaybeLabel(Token:TScannerToken):boolean;
