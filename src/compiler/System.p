@@ -55,6 +55,11 @@ var Input,Output:text;
 
 typedef void* pasLongstring;
 
+typedef struct pasObjectDynamicMethodTableItem {
+  size_t index;
+  void* method;
+} pasObjectDynamicMethodTableItem;
+
 typedef struct pasObjectVirtualMethodTable* pasObjectVirtualMethodTablePointer;
 
 typedef struct pasObjectVirtualMethodTable {
