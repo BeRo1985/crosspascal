@@ -189,11 +189,25 @@ begin
        tvtResult:begin
         result:='result';
        end;
-       tvtSelf:begin
+       tvtObjectInstanceSelf:begin
         if assigned(FProcSymbol) and assigned(FProcSymbol^.OwnerObjectClass) then begin
          result:='instanceData';
         end else begin
          Error.InternalError(201304050042000);
+        end;
+       end;
+       tvtClassInstanceSelf:begin
+        if assigned(FProcSymbol) and assigned(FProcSymbol^.OwnerObjectClass) then begin
+         result:='instanceData';
+        end else begin
+         Error.InternalError(201304052356000);
+        end;
+       end;
+       tvtClassSelf:begin
+        if assigned(FProcSymbol) and assigned(FProcSymbol^.OwnerObjectClass) then begin
+         result:='instanceData';
+        end else begin
+         Error.InternalError(201304052356001);
         end;
        end;
        else begin
