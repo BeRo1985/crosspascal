@@ -515,8 +515,8 @@ function IsSymbolReference(Symbol:PSymbol):boolean;
 begin
  result:=(Symbol^.VariableType in [tvtParameterVariable{VAR},tvtParameterResult{OUT}]) or
          ((Symbol^.VariableType=tvtParameterConstant{CONST}) and
-          (Symbol^.TypeDefinition^.TypeDefinition=ttdEmpty) or not
-          (Symbol^.TypeDefinition^.TypeDefinition in [ttdEnumerated,ttdBoolean,ttdSubRange,ttdCurrency,ttdFloat]));
+          ((Symbol^.TypeDefinition^.TypeDefinition=ttdEmpty) or not
+           (Symbol^.TypeDefinition^.TypeDefinition in [ttdEnumerated,ttdBoolean,ttdSubRange,ttdCurrency,ttdFloat])));
 end;
 
 constructor TSymbolList.Create(TheSymbolManager:TSymbolManager);

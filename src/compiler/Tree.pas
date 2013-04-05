@@ -23,7 +23,7 @@ type TTreeNodeType=(ttntEmpty,
                     ttntAddress,ttntField,
                     ttntORDConst,ttntCHARConst,ttntSTRINGConst,ttntFloatConst,
                     ttntSETConst,ttntPCHARConst,
-                    ttntCCODE,ttntCEXPRESSION);
+                    ttntCCODE,ttntCEXPRESSION,ttntCBLOCK,ttntPASCALBLOCK);
 
      TTreeNodeTypes=set of TTreeNodeType;
 
@@ -89,8 +89,10 @@ type TTreeNodeType=(ttntEmpty,
        function GenerateStringConstNode(const S:THugeString;AType:PType):TTreeNode;
        function GeneratePCharConstNode(const S:THugeString;AType:PType):TTreeNode;
        function GenerateSetConstNode(const S:TSetArray;AType:PType):TTreeNode;
-       function GenerateCCodeNode(const S:THugeString):TTreeNode;
-       function GenerateCExpressionNode(const S:THugeString):TTreeNode;
+       function GenerateCCodeNode(Left:TTreeNode):TTreeNode;
+       function GenerateCExpressionNode(Left:TTreeNode):TTreeNode;
+       function GenerateCBlockNode(const S:THugeString):TTreeNode;
+       function GeneratePascalBlockNode(Right:TTreeNode):TTreeNode;
        function GenerateNilNode(AType:PType):TTreeNode;
        function GenerateEmptyNode:TTreeNode;
 //     function GenerateAsmNode(ASMBlock:TAsmList):TTreeNode;
@@ -524,7 +526,16 @@ begin
    end;
    ttntCCODE:begin
     WriteType('CCODE');
-    WriteData('C code: '+HugeStringToWideString(TreeNode.StringData));
+   end;
+   ttntCEXPRESSION:begin
+    WriteType('CEXPRESSION');
+   end;
+   ttntCBLOCK:begin
+    WriteType('CBLOCK');
+    WriteData('C block: '+HugeStringToWideString(TreeNode.StringData));
+   end;
+   ttntPASCALBLOCK:begin
+    WriteType('PASCALBLOCK');
    end;
   end;
   if TreeNode.TreeNodeType=ttntBLOCK then begin
@@ -720,20 +731,35 @@ begin
  result.Return:=AType;
 end;       
 
-function TTreeManager.GenerateCCodeNode(const S:THugeString):TTreeNode;
+function TTreeManager.GenerateCCodeNode(Left:TTreeNode):TTreeNode;
 begin
  result:=NewNode;
  result.TreeNodeType:=ttntCCODE;
- result.StringData:=S;
+ result.Left:=Left;
  result.Return:=nil;
 end;
 
-function TTreeManager.GenerateCExpressionNode(const S:THugeString):TTreeNode;
+function TTreeManager.GenerateCExpressionNode(Left:TTreeNode):TTreeNode;
 begin
  result:=NewNode;
  result.TreeNodeType:=ttntCEXPRESSION;
+ result.Left:=Left;
+ result.Return:=SymbolManager.TypeCExpression;
+end;
+
+function TTreeManager.GenerateCBlockNode(const S:THugeString):TTreeNode;
+begin
+ result:=NewNode;
+ result.TreeNodeType:=ttntCBLOCK;
  result.StringData:=S;
  result.Return:=SymbolManager.TypeCExpression;
+end;
+
+function TTreeManager.GeneratePascalBlockNode(Right:TTreeNode):TTreeNode;
+begin
+ result:=NewNode;
+ result.TreeNodeType:=ttntPASCALBLOCK;
+ result.Right:=Right;
 end;
 
 function TTreeManager.GenerateNilNode(AType:PType):TTreeNode;

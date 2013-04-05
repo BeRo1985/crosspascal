@@ -869,11 +869,30 @@ begin
      Error.InternalError(201302222217001);
     end;
    end;
+   ttntCEXPRESSION:begin
+    FProcCode.Add('(',spacesBOTH);
+    while assigned(TreeNode.Left) do begin
+     TranslateCode(TreeNode.Left);
+     TreeNode.Left:=TreeNode.Left.Left;
+    end;
+    FProcCode.Add(')',spacesBOTH);
+   end;
    ttntCCODE:
+   begin
+    while assigned(TreeNode.Left) do begin
+     TranslateCode(TreeNode.Left);
+     TreeNode.Left:=TreeNode.Left.Left;
+    end;
+   end;
+   ttntCBLOCK:
    begin
      FProcCode.IncTab;
      FProcCode.AddLn(HugeStringToWideString(TreeNode.StringData));
      FProcCode.DecTab;
+   end;
+   ttntPASCALBLOCK:
+   begin
+     TranslateCode(TreeNode.Right);
    end;
    ttntOr:begin
     if assigned(TreeNode.Left) and assigned(TreeNode.Right) then begin
@@ -1858,11 +1877,6 @@ begin
    ttntSETConst:begin
    end;
    ttntPCHARConst:begin
-   end;
-   ttntCEXPRESSION:begin
-    FProcCode.Add('(',spacesBOTH);
-    FProcCode.Add(HugeStringToWideString(TreeNode.StringData),spacesBOTH);
-    FProcCode.Add(')',spacesBOTH);
    end;
    else begin
     Error.InternalError(201302222201000);
