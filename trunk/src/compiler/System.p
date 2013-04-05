@@ -112,10 +112,10 @@ function Random:double; overload;
 procedure FillChar(var Dest;Count:integer;Value:byte); overload;
 procedure FillChar(var Dest;Count:integer;Value:ansichar); overload;
 
-procedure GetMem(var p;Size:longint);
+procedure GetMem(var p;Size:ptrint);
 
 procedure FreeMem(var p); overload;
-procedure FreeMem(var p;Size:longint); overload;
+procedure FreeMem(var p;Size:ptrint); overload;
 
 function Power(Base,Exponent:extended):extended;
 function Exp(x:extended):extended;
@@ -166,18 +166,16 @@ procedure FillChar(var Dest;Count:integer;Value:ansichar);
 begin
 end;
 
-procedure GetMem(var p;Size:longint);
-var ptr:pointer;
+procedure GetMem(var p;Size:ptrint);
 begin
- ptr := @p;
-[[[ *((void**)<<<ptr>>>) = pasGetMem(<<<Size>>>); ]]]
+[[[ *((void**)<<<p>>>) = pasGetMem(<<<Size>>>); ]]]
 end;
 
 procedure FreeMem(var p);
 begin
 end;
 
-procedure FreeMem(var p;Size:longint);
+procedure FreeMem(var p;Size:ptrint);
 begin
 end;
 

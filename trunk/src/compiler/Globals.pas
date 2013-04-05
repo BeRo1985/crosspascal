@@ -80,6 +80,7 @@ type PSetArray=^TSetArray;
      TOptions=record
       Dummy:byte;
       TargetCompiler:ansistring;
+      Bits:longint;
      end;
 
 {$ifdef fpc}

@@ -1101,11 +1101,11 @@ begin
    end;
    ttdEmpty,ttdEnumerated,ttdProcedure,ttdPointer,ttdLongString,ttdClass,
    ttdInterface:begin
-{   if Options^.CPU=CPUX86_64 then begin
+    if Options^.Bits=64 then begin
      result:=8;
-    end else begin}
+    end else begin
      result:=4;
-{   end;}
+    end;
    end;
    ttdBoolean,ttdSubRange,ttdCurrency:begin
     case AType^.SubRangeType of
@@ -1200,11 +1200,11 @@ begin
    end;
    ttdEmpty,ttdEnumerated,ttdProcedure,ttdPointer,ttdLongString,ttdClass,
    ttdInterface:begin
-{   if Options^.CPU=CPUX86_64 then begin
+    if Options^.Bits=64 then begin
      result:=8;
-    end else begin}
+    end else begin
      result:=4;
-{   end;}
+    end;
    end;
    ttdBoolean,ttdSubRange,ttdCurrency:begin
     case AType^.SubRangeType of
@@ -1837,79 +1837,116 @@ end;
 
 procedure TSymbolManager.AlignRecord(RecordType:PType;DefaultAlignment:longint);
 var TypeSize,Alignment,Allocated:longint;
-    Symbol:PSymbol;
-    AType:PType;
     SizeStack:array of longint;
     AlignmentStack:array of longint;
     StackPointer:longint;
+ procedure ProcessSymbol(Symbol:PSymbol;Store:boolean);
+ var AType:PType;
+ begin
+  case Symbol^.SymbolType of
+   Symbols.tstVariable:begin
+    AType:=Symbol^.TypeDefinition;
+    TypeSize:=GetSize(AType);
+    Alignment:=GetAlignment(AType);
+    if (DefaultAlignment=1) or RecordType^.RecordPacked then begin
+     Alignment:=1;
+    end else if (DefaultAlignment>=2) and (Alignment<DefaultAlignment) then begin
+     Alignment:=DefaultAlignment;
+    end;
+    if AlignmentStack[StackPointer]<Alignment then begin
+     AlignmentStack[StackPointer]:=Alignment;
+    end;
+    if RecordType^.RecordAlignment<Alignment then begin
+     RecordType^.RecordAlignment:=Alignment;
+    end;
+    if (Alignment>1) and ((SizeStack[StackPointer] and (Alignment-1))<>0) then begin
+     SizeStack[StackPointer]:=(SizeStack[StackPointer]+(Alignment-1)) and not (Alignment-1);
+    end;
+    if Store then begin
+     Symbol^.Offset:=SizeStack[StackPointer];
+    end;
+    inc(SizeStack[StackPointer],TypeSize);
+    if RecordType^.RecordSize<SizeStack[StackPointer] then begin
+     RecordType^.RecordSize:=SizeStack[StackPointer];
+    end;
+   end;
+   tstCaseVariantLevelPush:begin
+    if (AlignmentStack[StackPointer]>1) and ((SizeStack[StackPointer] and (AlignmentStack[StackPointer]-1))<>0) then begin
+     SizeStack[StackPointer]:=(SizeStack[StackPointer]+(AlignmentStack[StackPointer]-1)) and not (AlignmentStack[StackPointer]-1);
+    end;
+    inc(StackPointer);
+    while (StackPointer+1)>=Allocated do begin
+     inc(Allocated,Allocated);
+     SetLength(SizeStack,Allocated);
+     SetLength(AlignmentStack,Allocated);
+    end;
+    SizeStack[StackPointer]:=SizeStack[StackPointer-1];
+    AlignmentStack[StackPointer]:=AlignmentStack[StackPointer-1];
+   end;
+   tstCaseVariantLevelPop:begin
+    dec(StackPointer);
+   end;
+   tstCaseVariantPush:begin
+    SizeStack[StackPointer]:=SizeStack[StackPointer-1];
+    AlignmentStack[StackPointer]:=AlignmentStack[StackPointer-1];
+   end;
+   tstCaseVariantPop:begin
+   end;
+  end;
+ end;
+var Symbol:PSymbol;
+    AType:PType;
+    Count,Counter:longint;
+    ChildOfList:array of PType;
 begin
  SizeStack:=nil;
  AlignmentStack:=nil;
+ ChildOfList:=nil;
  try
   if assigned(RecordType^.RecordTable) then begin
    Allocated:=16;
    SetLength(SizeStack,Allocated);
    SetLength(AlignmentStack,Allocated);
    StackPointer:=0;
-   if assigned(RecordType^.ChildOf) and assigned(RecordType^.ChildOf^.TypeDefinition) then begin
-    RecordType^.RecordAlignment:=RecordType^.ChildOf^.TypeDefinition^.RecordAlignment;
-    RecordType^.RecordSize:=RecordType^.ChildOf^.TypeDefinition^.RecordSize;
-   end else begin
-    RecordType^.RecordAlignment:=0;
-    RecordType^.RecordSize:=0;
-   end;
-   SizeStack[StackPointer]:=RecordType^.RecordSize;
-   AlignmentStack[StackPointer]:=RecordType^.RecordAlignment;
-   Symbol:=RecordType^.RecordTable.First;
-   while assigned(Symbol) do begin
-    case Symbol^.SymbolType of
-     Symbols.tstVariable:begin
-      AType:=Symbol^.TypeDefinition;
-      TypeSize:=GetSize(AType);
-      Alignment:=GetAlignment(AType);
-      if (DefaultAlignment=1) or RecordType^.RecordPacked then begin
-       Alignment:=1;
-      end else if (DefaultAlignment>=2) and (Alignment<DefaultAlignment) then begin
-       Alignment:=DefaultAlignment;
-      end;
-      if AlignmentStack[StackPointer]<Alignment then begin
-       AlignmentStack[StackPointer]:=Alignment;
-      end;
-      if RecordType^.RecordAlignment<Alignment then begin
-       RecordType^.RecordAlignment:=Alignment;
-      end;
-      if (Alignment>1) and ((SizeStack[StackPointer] and (Alignment-1))<>0) then begin
-       SizeStack[StackPointer]:=(SizeStack[StackPointer]+(Alignment-1)) and not (Alignment-1);
-      end;
-      Symbol^.Offset:=SizeStack[StackPointer];
-      inc(SizeStack[StackPointer],TypeSize);
-      if RecordType^.RecordSize<SizeStack[StackPointer] then begin
-       RecordType^.RecordSize:=SizeStack[StackPointer];
-      end;
-     end;
-     tstCaseVariantLevelPush:begin
-      if (AlignmentStack[StackPointer]>1) and ((SizeStack[StackPointer] and (AlignmentStack[StackPointer]-1))<>0) then begin
-       SizeStack[StackPointer]:=(SizeStack[StackPointer]+(AlignmentStack[StackPointer]-1)) and not (AlignmentStack[StackPointer]-1);
-      end;
-      inc(StackPointer);
-      while (StackPointer+1)>=Allocated do begin
-       inc(Allocated,Allocated);
-       SetLength(SizeStack,Allocated);
-       SetLength(AlignmentStack,Allocated);
-      end;
-      SizeStack[StackPointer]:=SizeStack[StackPointer-1];
-      AlignmentStack[StackPointer]:=AlignmentStack[StackPointer-1];
-     end;
-     tstCaseVariantLevelPop:begin
-      dec(StackPointer);
-     end;
-     tstCaseVariantPush:begin
-      SizeStack[StackPointer]:=SizeStack[StackPointer-1];
-      AlignmentStack[StackPointer]:=AlignmentStack[StackPointer-1];
-     end;
-     tstCaseVariantPop:begin
+   if assigned(RecordType^.ChildOf) then begin
+    Count:=0;
+    AType:=RecordType^.ChildOf^.TypeDefinition;
+    while assigned(AType) do begin
+     inc(Count);
+     if assigned(AType^.ChildOf) then begin
+      AType:=AType^.ChildOf^.TypeDefinition;
+     end else begin
+      break;
      end;
     end;
+    SetLength(ChildOfList,Count);
+    Counter:=Count;
+    AType:=RecordType^.ChildOf^.TypeDefinition;
+    while assigned(AType) do begin
+     dec(Counter);
+     ChildOfList[Counter]:=AType;
+     if assigned(AType^.ChildOf) then begin
+      AType:=AType^.ChildOf^.TypeDefinition;
+     end else begin
+      break;
+     end;
+    end;
+    for Counter:=0 to Count-1 do begin
+     Symbol:=ChildOfList[Counter]^.RecordTable.First;
+     while assigned(Symbol) do begin
+      ProcessSymbol(Symbol,false);
+      Symbol:=Symbol^.Next;
+     end;
+    end;
+    SetLength(ChildOfList,0);
+   end;
+   RecordType^.RecordAlignment:=0;
+   RecordType^.RecordSize:=0;
+   SizeStack[StackPointer]:=0;
+   AlignmentStack[StackPointer]:=0;
+   Symbol:=RecordType^.RecordTable.First;
+   while assigned(Symbol) do begin
+    ProcessSymbol(Symbol,true);
     Symbol:=Symbol^.Next;
    end;
    if ((RecordType^.RecordAlignment>1) and ((RecordType^.RecordSize and (RecordType^.RecordAlignment-1))<>0)) and not RecordType^.RecordPacked then begin
@@ -1919,6 +1956,7 @@ begin
  finally
   SetLength(SizeStack,0);
   SetLength(AlignmentStack,0);
+  SetLength(ChildOfList,0);
  end;
 end;
 
