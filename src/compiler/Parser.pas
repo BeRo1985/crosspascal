@@ -1234,9 +1234,9 @@ begin
          break;
         end;
        end;
-       if not OK then begin
+{      if (not OK) and not assigned(CurrentObjectClass) then begin
         Error.InternalError(201304051619000);
-       end;
+       end;}
       end;
      end;
      Symbols.tstProperty:begin
