@@ -895,6 +895,14 @@ begin
    begin
      TranslateCode(TreeNode.Right);
    end;
+   ttntCLOCATION:
+   begin
+     FProcCode.Add(HugeStringToWideString(TreeNode.StringData));
+   end;
+   ttntTEMPOBJECT:
+   begin
+     FProcCode.Add('tempObject');
+   end;
    ttntOr:begin
     if assigned(TreeNode.Left) and assigned(TreeNode.Right) then begin
      if assigned(TreeNode.Return) and (TreeNode.Return^.TypeDefinition=ttdBOOLEAN) then begin
@@ -1591,31 +1599,50 @@ begin
       end;
       tipNEW:begin
        if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and assigned(TreeNode.Left.Left.Return.PointerTo) and not assigned(TreeNode.Left.Right) then begin
-        TranslateCode(TreeNode.Left.Left);
-        FProcCode.AddLn(' = pasGetMem('+IntToStr(SymbolManager.GetSize(TreeNode.Left.Left.Return.PointerTo.TypeDefinition))+');');
         if TreeNode.Left.Left.Return.PointerTo.TypeDefinition^.TypeDefinition=ttdOBJECT then begin
-         FProcCode.Add('(*(');
+         FProcCode.AddLn('{');
+         FProcCode.IncTab;
+         FProcCode.AddLn('void* tempObject = pasGetMem('+IntToStr(SymbolManager.GetSize(TreeNode.Left.Left.Return.PointerTo.TypeDefinition))+');');
+         FProcCode.AddLn('if(tempObject){');
+         FProcCode.IncTab;
+         FProcCode.AddLn('pasZeroMem(tempObject, '+IntToStr(SymbolManager.GetSize(TreeNode.Left.Left.Return.PointerTo.TypeDefinition))+');');
+         FProcCode.AddLn('(('+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'*)tempObject)->INTERNAL_FIELD_VMT = (void*)&'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_VMT;');
+         FProcCode.DecTab;
+         FProcCode.AddLn('}');
          TranslateCode(TreeNode.Left.Left);
-         FProcCode.AddLn(')).INTERNAL_FIELD_VMT = (void*)&'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_VMT;');
+         FProcCode.AddLn(' = tempObject;');
+         FProcCode.DecTab;
+         FProcCode.AddLn('}');
+        end else begin
+         TranslateCode(TreeNode.Left.Left);
+         FProcCode.AddLn(' = pasGetMem('+IntToStr(SymbolManager.GetSize(TreeNode.Left.Left.Return.PointerTo.TypeDefinition))+');');
         end;
        end else if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Right) and assigned(TreeNode.Left.Right.Left) and assigned(TreeNode.Left.Left.Return) and assigned(TreeNode.Left.Left.Return.PointerTo) and not assigned(TreeNode.Left.Right.Right) then begin
-        TranslateCode(TreeNode.Left.Left);
-        FProcCode.AddLn(' = pasGetMem('+IntToStr(SymbolManager.GetSize(TreeNode.Left.Left.Return.PointerTo.TypeDefinition))+');');
         if TreeNode.Left.Left.Return.PointerTo.TypeDefinition^.TypeDefinition=ttdOBJECT then begin
-         FProcCode.Add('(*(');
-         TranslateCode(TreeNode.Left.Left);
-         FProcCode.AddLn(')).INTERNAL_FIELD_VMT = (void*)&'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_VMT;');
+         FProcCode.AddLn('{');
+         FProcCode.IncTab;
+         FProcCode.AddLn('void* tempObject = pasGetMem('+IntToStr(SymbolManager.GetSize(TreeNode.Left.Left.Return.PointerTo.TypeDefinition))+');');
+         FProcCode.AddLn('if(tempObject){');
+         FProcCode.IncTab;
+         FProcCode.AddLn('pasZeroMem(tempObject, '+IntToStr(SymbolManager.GetSize(TreeNode.Left.Left.Return.PointerTo.TypeDefinition))+');');
+         FProcCode.AddLn('(('+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'*)tempObject)->INTERNAL_FIELD_VMT = (void*)&'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_VMT;');
          FProcCode.Add('if(');
          TranslateCode(TreeNode.Left.Right);
          FProcCode.AddLn('){');
          FProcCode.IncTab;
-         FProcCode.Add('pasFreeMem(');
-         TranslateCode(TreeNode.Left.Left);
-         FProcCode.AddLn(');');
-         TranslateCode(TreeNode.Left.Left);
-         FProcCode.AddLn(' == NULL;');
+         FProcCode.AddLn('pasFreeMem(tempObject);');
+         FProcCode.AddLn('tempObject == NULL;');
          FProcCode.DecTab;
          FProcCode.AddLn('}');
+         FProcCode.DecTab;
+         FProcCode.AddLn('}');
+         TranslateCode(TreeNode.Left.Left);
+         FProcCode.AddLn(' = tempObject;');
+         FProcCode.DecTab;
+         FProcCode.AddLn('}');
+        end else begin
+         TranslateCode(TreeNode.Left.Left);
+         FProcCode.AddLn(' = pasGetMem('+IntToStr(SymbolManager.GetSize(TreeNode.Left.Left.Return.PointerTo.TypeDefinition))+');');
         end;
        end else begin
         Error.InternalError(201304050457000);
@@ -1628,12 +1655,21 @@ begin
         FProcCode.AddLn(');');
        end else if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Right) and assigned(TreeNode.Left.Right.Left) and assigned(TreeNode.Left.Left.Return) and assigned(TreeNode.Left.Left.Return.PointerTo) and not assigned(TreeNode.Left.Right.Right) then begin
         if TreeNode.Left.Left.Return.PointerTo.TypeDefinition^.TypeDefinition=ttdOBJECT then begin
+         FProcCode.AddLn('{');
+         FProcCode.IncTab;
+         FProcCode.Add('void* tempObject = &');
+         TranslateCode(TreeNode.Left.Left);
+         FProcCode.AddLn(';');
          TranslateCode(TreeNode.Left.Right);
          FProcCode.AddLn(';');
+         FProcCode.AddLn('pasFreeMem(tempObject);');
+         FProcCode.DecTab;
+         FProcCode.AddLn('}');
+        end else begin
+         FProcCode.Add('pasFreeMem(');
+         TranslateCode(TreeNode.Left.Left);
+         FProcCode.AddLn(');');
         end;
-        FProcCode.Add('pasFreeMem(');
-        TranslateCode(TreeNode.Left.Left);
-        FProcCode.AddLn(');');
        end else begin
         Error.InternalError(201304050529000);
        end;
@@ -1789,7 +1825,10 @@ begin
        begin
         FProcCode.Add(',',spacesRIGHT);
        end;
-       if TreeNode.Right.Return^.TypeDefinition=ttdOBJECT then begin
+       if TreeNode.Right.TreeNodeType=ttntTEMPOBJECT then begin
+        // OBJECT
+        TranslateCode(TreeNode.Right);
+       end else if TreeNode.Right.Return^.TypeDefinition=ttdOBJECT then begin
         // OBJECT
         FProcCode.Add('((void*)&(');
         TranslateCode(TreeNode.Right);

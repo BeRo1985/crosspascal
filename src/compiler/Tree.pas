@@ -23,7 +23,8 @@ type TTreeNodeType=(ttntEmpty,
                     ttntAddress,ttntField,
                     ttntORDConst,ttntCHARConst,ttntSTRINGConst,ttntFloatConst,
                     ttntSETConst,ttntPCHARConst,
-                    ttntCCODE,ttntCEXPRESSION,ttntCBLOCK,ttntPASCALBLOCK);
+                    ttntCCODE,ttntCEXPRESSION,ttntCBLOCK,ttntPASCALBLOCK,ttntCLOCATION,
+                    ttntTEMPOBJECT);
 
      TTreeNodeTypes=set of TTreeNodeType;
 
@@ -93,6 +94,8 @@ type TTreeNodeType=(ttntEmpty,
        function GenerateCExpressionNode(Left:TTreeNode):TTreeNode;
        function GenerateCBlockNode(const S:THugeString):TTreeNode;
        function GeneratePascalBlockNode(Right:TTreeNode):TTreeNode;
+       function GenerateCLocationNode(const S:THugeString;AType:PType):TTreeNode;
+       function GenerateTempObjectNode(AType:PType):TTreeNode;
        function GenerateNilNode(AType:PType):TTreeNode;
        function GenerateEmptyNode:TTreeNode;
 //     function GenerateAsmNode(ASMBlock:TAsmList):TTreeNode;
@@ -537,6 +540,13 @@ begin
    ttntPASCALBLOCK:begin
     WriteType('PASCALBLOCK');
    end;
+   ttntCLOCATION:begin
+    WriteType('CLOCATION');
+    WriteData('C location: '+HugeStringToWideString(TreeNode.StringData));
+   end;
+   ttntTEMPOBJECT:begin
+    WriteType('TEMPOBJECT');
+   end;
   end;
   if TreeNode.TreeNodeType=ttntBLOCK then begin
    DumpBlock;
@@ -760,6 +770,21 @@ begin
  result:=NewNode;
  result.TreeNodeType:=ttntPASCALBLOCK;
  result.Right:=Right;
+end;
+
+function TTreeManager.GenerateCLocationNode(const S:THugeString;AType:PType):TTreeNode;
+begin
+ result:=NewNode;
+ result.TreeNodeType:=ttntCLOCATION;
+ result.StringData:=S;
+ result.Return:=AType;
+end;
+
+function TTreeManager.GenerateTempObjectNode(AType:PType):TTreeNode;
+begin
+ result:=NewNode;
+ result.TreeNodeType:=ttntTEMPOBJECT;
+ result.Return:=AType;
 end;
 
 function TTreeManager.GenerateNilNode(AType:PType):TTreeNode;

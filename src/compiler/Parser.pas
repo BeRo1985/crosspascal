@@ -56,7 +56,7 @@ type TParser=class
        destructor Destroy; override;
        procedure Parse;
        function ParseCallParameter:TTreeNode;
-       function ParseNewDisposeParameter:TTreeNode;
+       function ParseNewDisposeParameter(IsNew:boolean):TTreeNode;
        function ParseFactor:TTreeNode;
        function ParseTerm:TTreeNode;
        function ParseSimpleExpression:TTreeNode;
@@ -966,7 +966,7 @@ begin
  end;
 end;
 
-function TParser.ParseNewDisposeParameter:TTreeNode;
+function TParser.ParseNewDisposeParameter(IsNew:boolean):TTreeNode;
 var FirstTreeNode,NewTreeNode,LastTreeNode:TTreeNode;
     ObjectClassSymbolList:TSymbolList;
     AType:PType;
@@ -982,7 +982,7 @@ begin
    Scanner.Match(tstComma);
    NewTreeNode:=ParseExpression(false);
    if NewTreeNode.TreeNodeType=ttntCALL then begin
-    NewTreeNode.Right:=TreeManager.GeneratePointerNode(TTreeNode.CreateFrom(FirstTreeNode),AType);
+    NewTreeNode.Right:=TreeManager.GenerateTempObjectNode(AType);
     NewTreeNode.MethodSymbol:=NewTreeNode.Symbol;
    end;
    LastTreeNode.Right:=TreeManager.GenerateParameterNode(NewTreeNode,nil);
@@ -1265,7 +1265,7 @@ begin
       if (Scanner.CurrentToken=tstLeftParen) or MustHaveParens then begin
        Scanner.Match(tstLeftParen);
        if Symbol^.InternalProcedure in [tipNew,tipDispose] then begin
-        NewTreeNode.Left:=ParseNewDisposeParameter;
+        NewTreeNode.Left:=ParseNewDisposeParameter(Symbol^.InternalProcedure=tipNew);
        end else begin
         NewTreeNode.Left:=ParseCallParameter;
         SearchOverloadedSymbolAndCheckParameters(NewTreeNode.Symbol,NewTreeNode.Left);
