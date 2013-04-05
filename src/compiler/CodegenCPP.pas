@@ -1140,7 +1140,9 @@ begin
    ttntASM:begin
    end;
    ttntVAR:begin
-    if assigned(TreeNode.Symbol^.OwnerObjectClass) then begin
+    if TreeNode.WithLevel>=0 then begin
+     FProcCode.Add('withLevel'+IntToStr(TreeNode.WithLevel)+'->');
+    end else if assigned(TreeNode.Symbol^.OwnerObjectClass) then begin
      FProcCode.Add('instanceData->');
     end;
     FProcCode.Add(GetSymbolName(TreeNode.Symbol));
@@ -1309,7 +1311,11 @@ begin
     FProcCode.AddLn('{');
     FProcCode.IncTab;
     ProcessTypeOrName(TreeNode.Left.Return,FProcCode);
-    FProcCode.Add('* withLevel'+IntToStr(FWithStackSize)+' = &(');
+    FProcCode.Add('* withLevel'+IntToStr(FWithStackSize)+' = ');
+    if TreeNode.Left.Return^.TypeDefinition<>ttdCLASS then begin
+     FProcCode.Add('&');
+    end;
+    FProcCode.Add('(');
     TranslateCode(TreeNode.Left);
     FProcCode.AddLn(');');
     inc(FWithStackSize);

@@ -657,6 +657,13 @@ begin
   if (Flags and 128)<>0 then begin
    Symbol^.ParameterSuffix:=Stream.ReadString;
   end;
+  if Stream.Read(Flags,SizeOf(byte))<>SizeOf(byte) then begin
+   SetLength(UsedUnits,0);
+   exit;
+  end;
+  if (Flags and 1)<>0 then begin
+   ReadTypeReference(Symbol^.OwnerType);
+  end;
   case Symbol^.SymbolType of
    Symbols.tstConstant:begin
     ReadTypeReference(Symbol^.ConstantTypeRecord);
@@ -1462,6 +1469,13 @@ begin
   end;
   if (Flags and 128)<>0 then begin
    Stream.WriteDataString(Symbol^.ParameterSuffix);
+  end;
+  if assigned(Symbol^.OwnerType) then begin
+   Flags:=Flags or 1;
+  end;
+  Stream.WriteByte(Flags);
+  if (Flags and 1)<>0 then begin
+   WriteTypeReference(Symbol^.OwnerType);
   end;
   case Symbol^.SymbolType of
    Symbols.tstConstant:begin
