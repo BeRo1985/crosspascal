@@ -984,6 +984,25 @@ begin
    if NewTreeNode.TreeNodeType=ttntCALL then begin
     NewTreeNode.Right:=TreeManager.GenerateTempObjectNode(AType);
     NewTreeNode.MethodSymbol:=NewTreeNode.Symbol;
+    if assigned(NewTreeNode.MethodSymbol^.OwnerObjectClass) then begin
+     if IsNew and SymbolManager.IsObjectClassAncestorType(NewTreeNode.MethodSymbol^.OwnerObjectClass,AType) and not (tpaConstructor in NewTreeNode.MethodSymbol^.ProcedureAttributes) then begin
+      Error.AddErrorCode(82);
+     end else if (not IsNew) and SymbolManager.IsObjectClassAncestorType(NewTreeNode.MethodSymbol^.OwnerObjectClass,AType) and not (tpaDestructor in NewTreeNode.MethodSymbol^.ProcedureAttributes) then begin
+      Error.AddErrorCode(83);
+     end;
+    end else begin
+     if IsNew then begin
+      Error.AddErrorCode(82);
+     end else begin
+      Error.AddErrorCode(83);
+     end;
+    end;
+   end else begin
+    if IsNew then begin
+     Error.AddErrorCode(82);
+    end else begin
+     Error.AddErrorCode(83);
+    end;
    end;
    LastTreeNode.Right:=TreeManager.GenerateParameterNode(NewTreeNode,nil);
    SymbolManager.PopSymbolList(ObjectClassSymbolList);
