@@ -897,7 +897,7 @@ var OldList:TSymbolList;
 begin
  Scanner.Reset;
  Scanner.PreprocessorInstance.ModuleSymbol:=nil;
- Error.LocalSwitches:=nil;
+ Error.LocalSwitches:=LocalSwitches;
  OldList:=SymbolManager.CurrentList;
  Scanner.ReadNext;
  DoBreak:=false;
@@ -3040,6 +3040,8 @@ begin
    exit;
   end;
 
+  Error.LocalSwitches:=LocalSwitches;
+
   ParseHeadBlock(true,true);
   MakeSymbolsPublic:=false;
   Scanner.Match(tstIMPLEMENTATION);
@@ -3060,10 +3062,12 @@ begin
    end;
   end;
 
+  Error.LocalSwitches:=LocalSwitches;
+
   ParseHeadBlock(false,true);
 
   FinishCheckMethods(Symbol);
-  
+
   InitializationCodeTree:=nil;
   FinalizationCodeTree:=nil;
   if Scanner.CurrentToken=tstBEGIN then begin
@@ -4963,6 +4967,7 @@ begin
        Symbol^.LibraryName:=HugeStringToAnsiString(Scanner.CurrentString);
        HashSymbol(Symbol);
        Scanner.Match(tstStringValue);
+       Scanner.CheckForDirectives([tstNAME]);
        if Scanner.CurrentToken=tstNAME then begin
         Scanner.Match(tstNAME);
         if Scanner.CurrentToken=tstStringValue then begin
@@ -5563,7 +5568,7 @@ begin
      Scanner.Match(tstIdentifier);
      if assigned(Symbol) then begin
       if IsUnique then begin
-       CurrentType:=SymbolManager.CloneType(Symbol^.TypeDefinition);
+       CurrentType:=SymbolManager.CloneType(Symbol^.TypeDefinition,ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
        CurrentType^.Unique:=true;
       end else begin
        CurrentType:=Symbol^.TypeDefinition;
@@ -5916,11 +5921,13 @@ begin
    CurrentType^.RecordAlignment:=0;
    CurrentType^.RecordPacked:=IsPacked or (LocalSwitches^.Alignment=1);
    CurrentType^.RecordTable:=TSymbolList.Create(SymbolManager);
-   ParseRecordField(CurrentType,true,[],[],0,0,'');
-   SymbolManager.AlignRecord(CurrentType,LocalSwitches^.Alignment);
-   if SymbolManager.GetSize(CurrentType)=0 then begin
-    Error.AbortCode(516);
+   if Scanner.CurrentToken<>tstEND then begin
+    ParseRecordField(CurrentType,true,[],[],0,0,'');
    end;
+   SymbolManager.AlignRecord(CurrentType,LocalSwitches^.Alignment);
+{  if SymbolManager.GetSize(CurrentType)=0 then begin
+    Error.AbortCode(516);
+   end;}
    Scanner.Match(tstEND);
    CurrentType^.PortabilityDirectives:=ParsePortabilityDirectives;
   end;

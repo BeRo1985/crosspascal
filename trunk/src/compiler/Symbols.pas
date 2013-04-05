@@ -1833,6 +1833,7 @@ begin
  result^:=FromType^;
  result^.ID:=ID;
  result^.OwnerModule:=ModuleSymbol;
+ result^.OwnerObjectClass:=ObjectClassType;
  case result^.TypeDefinition of
   ttdArray,ttdShortString:begin
 {  if assigned(result^.Range) then begin
