@@ -500,7 +500,7 @@ end;
 
 procedure TCodegenCPP.GenerateProc(ProcSymbol: PSymbol;
   ProcCodeTree: TTreeNode);
-var s,s2: ansistring;
+var //s,s2: ansistring;
     ParameterSymbol:PSymbol;
 begin
  FSelf := ProcSymbol.OwnerModule;
@@ -717,7 +717,7 @@ begin
 end;
 
 procedure TCodegenCPP.ProcessFunctionType(Symbol:PSymbol; ReturnType: PType; Parameter: TSymbolList; const funcName: ansistring; Target: TCodeWriter);
-var i: integer;
+var //i: integer;
     Sym: PSymbol;
 begin
  if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
@@ -2603,7 +2603,7 @@ var i,j:longint;
     Symbol,OtherSymbol:PSymbol;
     CurrentVariantLevelIndex:longint;
     VariantLevelVariants:array of integer;
-    HasLast:boolean;
+    HasLast,HasDynamicMethods:boolean;
 begin
  TypeItems:=nil;
  VariantLevelVariants:=nil;
@@ -2861,6 +2861,40 @@ begin
      SymbolList:=Type_^.RecordTable;
      if assigned(SymbolList) then begin
       if Type_^.HasVirtualTable then begin
+       CodeTarget.AddLn('');
+       HasDynamicMethods:=false;
+       MethodList:=TStringList.Create;
+       try
+        Symbol:=Type_^.RecordTable.First;
+        while assigned(Symbol) do begin
+         case Symbol^.SymbolType of
+          Symbols.tstProcedure,Symbols.tstFunction:begin
+           if tpaDynamic in Symbol^.ProcedureAttributes then begin
+            HasDynamicMethods:=true;
+            if (tpaAbstract in Symbol^.ProcedureAttributes) and not (tsaMethodDefined in Symbol^.Attributes) then begin
+             MethodList.Add('{'+IntToStr(Symbol^.VirtualIndex)+',NULL},');
+            end else begin
+             MethodList.Add('{'+IntToStr(Symbol^.VirtualIndex)+',(void*)&'+GetSymbolName(Symbol)+'},');
+            end;
+           end;
+          end;
+         end;
+         Symbol:=Symbol^.Next;
+        end;
+        if HasDynamicMethods then begin
+         CodeTarget.AddLn('pasObjectDynamicMethodTableItem '+Name+'_DMT['+IntToStr(MethodList.Count+1)+']={');
+         CodeTarget.IncTab;
+         for j:=0 to MethodList.Count-1 do begin
+          CodeTarget.AddLn(MethodList[j]);
+         end;
+         CodeTarget.AddLn('{-1,NULL}');
+         CodeTarget.DecTab;
+         CodeTarget.AddLn('};');
+         CodeTarget.AddLn('');
+        end;
+       finally
+        MethodList.Free;
+       end;
        Target.AddLn('typedef struct {');
        Target.IncTab;
        Target.AddLn('pasObjectVirtualMethodTable VMT;');
@@ -2868,13 +2902,16 @@ begin
        Target.DecTab;
        Target.AddLn('} '+Name+'_VMT_TYPE;');
        Target.AddLn('extern '+Name+'_VMT_TYPE '+Name+'_VMT;');
-       CodeTarget.AddLn('');
        CodeTarget.AddLn(Name+'_VMT_TYPE '+Name+'_VMT={');
        CodeTarget.IncTab;
        CodeTarget.AddLn('{');
        CodeTarget.IncTab;
        CodeTarget.AddLn(IntToStr(Type_^.RecordSize)+',');
-       CodeTarget.AddLn('NULL,');
+       if HasDynamicMethods then begin
+        CodeTarget.AddLn('(void*)&'+Name+'_DMT,');
+       end else begin
+        CodeTarget.AddLn('NULL,');
+       end;
        if assigned(Type_^.ChildOf) then begin
         CodeTarget.AddLn('(void*)&'+GetSymbolName(Type_^.ChildOf)+'_VMT');
        end else begin

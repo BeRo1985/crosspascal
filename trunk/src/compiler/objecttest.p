@@ -7,6 +7,7 @@ type TTestObject=object
        destructor Destroy;
        procedure Bla; virtual; abstract;
        procedure Bluh(b:longint); virtual;
+       procedure Blieh; virtual 42;
      end;
 
      TTestObject2=object(TTestObject)
@@ -27,6 +28,10 @@ end;
 procedure TTestObject.Bluh(b:longint);
 begin
  WriteLn(' TTestObject.Bluh: ',a+b);
+end;
+
+procedure TTestObject.Blieh;
+begin
 end;
 
 procedure TTestObject2.Bluh(b:longint);
