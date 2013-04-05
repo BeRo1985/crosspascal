@@ -1685,10 +1685,10 @@ begin
           end else if assigned(TreeNode.MethodSymbol) and (tpaDynamic in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
            if assigned(InheritedType) and (InheritedType^.TypeDefinition=ttdOBJECT) then begin
             // OBJECT
-            FProcCode.Add('(('+GetTypeName(InheritedType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasObjectDMTDispatch((void*)&('+GetSymbolName(TreeNode.Symbol)+','+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')))');
+            FProcCode.Add('(('+GetTypeName(InheritedType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasObjectDMTDispatch((void*)&('+GetSymbolName(TreeNode.Symbol)+'),'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+'))');
            end else begin
             // CLASS
-            FProcCode.Add('(('+GetTypeName(InheritedType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasClassDMTDispatch((void*)('+GetSymbolName(TreeNode.Symbol)+','+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')))');
+            FProcCode.Add('(('+GetTypeName(InheritedType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasClassDMTDispatch((void*)('+GetSymbolName(TreeNode.Symbol)+'),'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+'))');
            end;
           end else begin
            FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol));

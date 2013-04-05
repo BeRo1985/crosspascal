@@ -32,6 +32,7 @@ end;
 
 procedure TTestObject.Blieh;
 begin
+ WriteLn(' TTestObject.Blieh!');
 end;
 
 procedure TTestObject2.Bluh(b:longint);
@@ -53,4 +54,5 @@ begin
  end else begin 
   WriteLn('Different object types');
  end;
+ TestObject.Blieh;
 end.

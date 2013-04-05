@@ -73,6 +73,8 @@ typedef struct {
 	uint32_t dummy;
 } pasFile;
 
+void* pasObjectDMTDispatch(void* object,size_t index);
+
 void CheckRefLongstring(pasLongstring str);
 pasLongstring AddLongstring(pasLongstring left, pasLongstring right);
 void UniqueLongstring(pasLongstring *target);
@@ -246,6 +248,23 @@ end;
 #include "string.h"
 #include "stdlib.h"
 #include "stdio.h"
+
+void* pasObjectDMTDispatch(void* object,size_t index){
+  pasObjectVirtualMethodTable* VMT = (void*)*object;
+  while(VMT){
+    pasObjectDynamicMethodTableItem* DMT = VMT->dynamicMethodTable;
+    if(DMT){
+      while((DMT->index >= 0) && DMT->method){
+        if(DMT->index == index){
+          return DMT->method;
+        }
+        DMT++;
+      }
+    }
+    VMT = VMT->ancestorVirtualMethodTable;
+  }
+  return NULL;
+}
 
 typedef struct {
     uint32_t codePage;     // 0x0000 - 0xffff = ansistring codepage
