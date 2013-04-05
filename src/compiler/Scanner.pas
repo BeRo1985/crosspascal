@@ -132,7 +132,7 @@ const Directives:TScannerTokens=[tstAT_,tstABSOLUTE,tstABSTRACT,tstASSEMBLER,tst
                                  tstPROTECTED,tstPUBLIC,tstPUBLISHED,tstREAD,tstREGISTER,
                                  tstREINTRODUCE,tstSAFECALL,tstSTDCALL,tstSTRICT,
                                  tstSTORED,tstVARARGS,tstVIRTUAL,tstWRITE,
-                                 tstFAIL];
+                                 tstFAIL,tstNAME,tstMESSAGE];
 
 implementation
 

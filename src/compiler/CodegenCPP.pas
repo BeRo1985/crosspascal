@@ -173,7 +173,7 @@ begin
       end else begin
        result:='FIELD_'+Sym.Name;
       end;
-      if assigned(Sym^.TypeDefinition) and (Sym^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
+      if FInProc and assigned(Sym^.TypeDefinition) and (Sym^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
        result:='(('+GetTypeName(Sym^.TypeDefinition)+')((void*)'+result+'))';
       end;
      end;
@@ -2994,7 +2994,7 @@ begin
      Target.AddLn(';');
     end;
     ttdClassRef:begin
-     Target.AddLn('// classref');
+     Target.AddLn('typedef void* '+Name+';');
     end;
     ttdFloat:begin
      Type_^.Dumped:=true;

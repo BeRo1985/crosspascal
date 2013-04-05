@@ -19,9 +19,151 @@ const CompilerInfoString:pchar='OBJPAS2C';
       faArchive=$20;
       faAnyFile=$3F;
 
+      varEmpty=$0000;
+      varNull=$0001;
+      varSmallint=$0002;
+      varInteger=$0003;
+      varSingle=$0004;
+      varDouble=$0005;
+      varCurrency=$0006;
+      varDate=$0007;
+      varOleStr=$0008;
+      varDispatch=$0009;
+      varError=$000A;
+      varBoolean=$000B;
+      varVariant=$000C;
+      varUnknown=$000D;
+      varShortInt=$0010;
+      varByte=$0011;
+      varWord=$0012;
+      varLongWord=$0013;
+      varInt64=$0014;
+
+      varStrArg=$0048;
+      varString=$0100;
+      varAny=$0101;
+
+      varTypeMask=$0FFF;
+      varArray=$2000;
+      varByRef=$4000;
+
+      vtInteger=0;
+      vtBoolean=1;
+      vtChar=2;
+      vtExtended=3;
+      vtString=4;
+      vtPointer=5;
+      vtPChar=6;
+      vtObject=7;
+      vtClass=8;
+      vtWideChar=9;
+      vtPWideChar=10;
+      vtAnsiString=11;
+      vtCurrency=12;
+      vtVariant=13;
+      vtInterface=14;
+      vtWideString=15;
+      vtInt64=16;
+
+      vmtSelfPtr=sizeof(pointer)*(-19);
+      vmtIntfTable=sizeof(pointer)*(-18);
+      vmtAutoTable=sizeof(pointer)*(-17);
+      vmtInitTable=sizeof(pointer)*(-16);
+      vmtTypeInfo=sizeof(pointer)*(-15);
+      vmtFieldTable=sizeof(pointer)*(-14);
+      vmtMethodTable=sizeof(pointer)*(-13);
+      vmtDynamicTable=sizeof(pointer)*(-12);
+      vmtClassName=sizeof(pointer)*(-11);
+      vmtInstanceSize=sizeof(pointer)*(-10);
+      vmtParent=sizeof(pointer)*(-9);
+      vmtSafeCallException=sizeof(pointer)*(-8);
+      vmtAfterConstruction=sizeof(pointer)*(-7);
+      vmtBeforeDestruction=sizeof(pointer)*(-6);
+      vmtDispatch=sizeof(pointer)*(-5);
+      vmtDefaultHandler=sizeof(pointer)*(-4);
+      vmtNewInstance=sizeof(pointer)*(-3);
+      vmtFreeInstance=sizeof(pointer)*(-2);
+      vmtDestroy=sizeof(pointer)*(-1);
+      vmtQueryInterface=sizeof(pointer)*0;
+      vmtAddRef=sizeof(pointer)*1;
+      vmtRelease=sizeof(pointer)*2;
+      vmtCreateObject=sizeof(pointer)*3;
+
       FileMode:integer=2;
 
       RandSeed:integer=0;
+
+type DWORD=LongWord;
+     Bool=LongBool;
+     PBool=^Bool;
+
+     TObject=class;
+
+     TClass=class of TObject;
+
+     HRESULT=type ptrint;
+
+     PGUID=^TGUID;
+     TGUID=packed record
+       D1:longword;
+       D2:word;
+       D3:word;
+       D4:array[0..7] of byte;
+     end;
+
+     PInterfaceEntry=^TInterfaceEntry;
+     TInterfaceEntry=packed record
+       IID:TGUID;
+       VTable:pointer;
+       IOffset:longint;
+       ImplGetter:longint;
+     end;
+
+     PInterfaceTable=^TInterfaceTable;
+     TInterfaceTable=packed record
+       EntryCount:longint;
+       Entries:array[0..9999] of TInterfaceEntry;
+     end;
+
+     TMethod=record
+      Code:pointer;
+      Data:pointer;
+     end;
+
+     TInitContext=record
+     end;
+
+     TDispatchMessage=record
+      MsgID:word;
+     end;
+
+     TObject=class
+      constructor Create;
+      procedure Free;
+      class function InitInstance(Instance:Pointer):TObject;
+      procedure CleanupInstance;
+      function ClassType:TClass;
+      class function ClassName:shortstring;
+      class function ClassNameIs(const Name:ansistring):boolean;
+      class function ClassParent:TClass;
+      class function ClassInfo:pointer;
+      class function InstanceSize:longint;
+      class function InheritsFrom(AClass:TClass):boolean;
+      class function MethodAddress(const Name:shortstring):pointer;
+      class function MethodName(Address:pointer):shortstring;
+      function FieldAddress(const Name:shortstring):pointer;
+      function GetInterface(const IID:TGUID;out Obj):boolean;
+      class function GetInterfaceEntry(const IID:TGUID):PInterfaceEntry;
+      class function GetInterfaceTable:PInterfaceTable;
+      function SafeCallException(ExceptObject:TObject;ExceptAddr:pointer):HResult; virtual;
+      procedure AfterConstruction; virtual;
+      procedure BeforeDestruction; virtual;
+      procedure Dispatch(var Message); virtual;
+      procedure DefaultHandler(var Message); virtual;
+      class function NewInstance:TObject; virtual;
+      procedure FreeInstance; virtual;
+      destructor Destroy; virtual;
+     end;
 
 var Input,Output:text;
 
@@ -572,5 +714,108 @@ pasLongstring AddLongstring(pasLongstring left, pasLongstring right) {
 	return result;
 }
 ]]]
+
+{$hints off}
+constructor TObject.Create;
+begin
+end;
+
+procedure TObject.Free;
+begin
+end;
+
+class function TObject.InitInstance(Instance:Pointer):TObject;
+begin
+end;
+
+procedure TObject.CleanupInstance;
+begin
+end;
+
+function TObject.ClassType:TClass;
+begin
+end;
+
+class function TObject.ClassName:shortstring;
+begin
+end;
+
+class function TObject.ClassNameIs(const Name:ansistring):boolean;
+begin
+end;
+
+class function TObject.ClassParent:TClass;
+begin
+end;
+
+class function TObject.ClassInfo:pointer;
+begin
+end;
+
+class function TObject.InstanceSize:longint;
+begin
+end;
+
+class function TObject.InheritsFrom(AClass:TClass):boolean;
+begin
+end;
+
+class function TObject.MethodAddress(const Name:shortstring):pointer;
+begin
+end;
+
+class function TObject.MethodName(Address:pointer):shortstring;
+begin
+end;
+
+function TObject.FieldAddress(const Name:shortstring):pointer;
+begin
+end;
+
+function TObject.GetInterface(const IID:TGUID;out Obj):boolean;
+begin
+end;
+
+class function TObject.GetInterfaceEntry(const IID:TGUID):PInterfaceEntry;
+begin
+end;
+
+class function TObject.GetInterfaceTable:PInterfaceTable;
+begin
+end;
+
+function TObject.SafeCallException(ExceptObject:TObject;ExceptAddr:pointer):HResult;
+begin
+end;
+
+procedure TObject.AfterConstruction;
+begin
+end;
+
+procedure TObject.BeforeDestruction;
+begin
+end;
+
+procedure TObject.Dispatch(var Message);
+begin
+end;
+
+procedure TObject.DefaultHandler(var Message);
+begin
+end;
+
+class function TObject.NewInstance:TObject;
+begin
+end;
+
+procedure TObject.FreeInstance;
+begin
+end;
+
+destructor TObject.Destroy;
+begin
+end;
+{$hints on}
+
 begin
 end.
