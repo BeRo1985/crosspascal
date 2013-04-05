@@ -77,6 +77,8 @@ void* pasGetMem(size_t size);
 void pasReallocMem(void** ptr,size_t size);
 void pasFreeMem(void* ptr);
 
+void pasZeroMem(void* ptr,size_t size);
+
 void* pasObjectDMTDispatch(void* object,size_t index);
 
 void CheckRefLongstring(pasLongstring str);
@@ -162,10 +164,12 @@ end;
 
 procedure FillChar(var Dest;Count:integer;Value:byte);
 begin
+[[[ memset(&<<<Dest>>>, <<<Count>>>, <<<Value>>>); ]]]
 end;
 
 procedure FillChar(var Dest;Count:integer;Value:ansichar);
 begin
+[[[ memset(&<<<Dest>>>, <<<Count>>>, <<<Value>>>); ]]]
 end;
 
 procedure GetMem(var p;Size:ptrint);
@@ -264,15 +268,19 @@ end;
 #include "stdio.h"
 
 void* pasGetMem(size_t size){
- return malloc(size);
+  return malloc(size);
 }
 
 void pasReallocMem(void** ptr,size_t size){
- *ptr = realloc(*ptr, size);
+  *ptr = realloc(*ptr, size);
 }
 
 void pasFreeMem(void* ptr){
- free(ptr);
+  free(ptr);
+}
+
+void pasZeroMem(void* ptr,size_t size){
+  memset(ptr, size, 0);
 }
 
 void* pasObjectDMTDispatch(void* object,size_t index){

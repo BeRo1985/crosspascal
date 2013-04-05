@@ -1,6 +1,7 @@
 program objecttest;
 
-type TTestObject=object
+type PTestObject=^TTestObject;
+     TTestObject=object
       public
        a:longint;
        constructor Create;
@@ -10,6 +11,7 @@ type TTestObject=object
        procedure Blieh; virtual 42;
      end;
 
+     PTestObject2=^TTestObject2;
      TTestObject2=object(TTestObject)
       public
        aa:longint;
@@ -41,18 +43,20 @@ begin
  inherited Bluh(b);
 end;
 
-var TestObject:TTestObject;
-    TestObject2:TTestObject2;
+var TestObject:PTestObject;
+    TestObject2:PTestObject2;
 begin
- TestObject.Create;
- TestObject.Bluh(4);
- TestObject2.Create;
- TestObject2.aa:=TestObject2.a;
- TestObject2.Bluh(4);
- if typeof(TestObject)=typeof(TestObject2) then begin
+ New(TestObject,Create);
+ New(TestObject2,Create);
+ TestObject^.Bluh(4);
+ TestObject2^.aa:=TestObject2.a;
+ TestObject2^.Bluh(4);
+ if typeof(TestObject^)=typeof(TestObject2^) then begin
   WriteLn('Same object types');
- end else begin 
+ end else begin
   WriteLn('Different object types');
  end;
- TestObject.Blieh;
+ TestObject^.Blieh;
+ Dispose(TestObject,Destroy);
+ Dispose(TestObject2,Destroy);
 end.
