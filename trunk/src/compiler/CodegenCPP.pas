@@ -60,6 +60,8 @@ type TCodeWriter = class
        FStringConstCount: longint;
        FBreakCount: Integer;
        FNestedBreakCount: Integer;
+       FWithStack: array of PType;
+       FWithStackSize: longint;
        FBreakLabelNeeded: array of Integer;
        FContinueLabelNeeded: array of Integer;
       protected
@@ -444,10 +446,14 @@ begin
  FNeedNestedStack:=false;
 
  FProcSymbol:=nil;
+
+ FWithStack:=nil;
+ FWithStackSize:=0;
 end;
 
 destructor TCodegenCPP.Destroy;
 begin
+ SetLength(FWithStack,0);
  FHeader.Free;
  FCode.Free;
  FProcCode.Free;
@@ -503,6 +509,9 @@ procedure TCodegenCPP.GenerateProc(ProcSymbol: PSymbol;
 var //s,s2: ansistring;
     ParameterSymbol:PSymbol;
 begin
+
+ FWithStackSize:=0;
+
  FSelf := ProcSymbol.OwnerModule;
 
  FProcSymbol:=ProcSymbol;
@@ -620,6 +629,8 @@ begin
  FInProc:=false;
  FProcSymbol:=nil;
 
+ FWithStackSize:=0;
+
  for i:=0 to SymbolManager.UnitList.Count-1 do
   FCode.AddInclude(Copy(SymbolManager.UnitList[i], 1, Length(SymbolManager.UnitList[i]))+'.h');
 //  FCode.AddInclude(Copy(SymbolManager.UnitList[i], 2, Length(SymbolManager.UnitList[i]))+'.h');
@@ -707,10 +718,12 @@ begin
  TranslateSymbolList(FSelf.SymbolList, true);
 
  FProcCode.AddLn('void '+UnitSymbol.Name+'_C_INITIALIZATION(){');
+ FWithStackSize:=0;
  TranslateCode(InitializationCodeTree);
  FProcCode.AddLn('}');
 
  FProcCode.AddLn('void '+UnitSymbol.Name+'_C_FINALIZATION(){');
+ FWithStackSize:=0;
  TranslateCode(FinalizationCodeTree);
  FProcCode.AddLn('}');
 
@@ -1257,7 +1270,6 @@ begin
    end;
    ttntREPEAT:begin
     if assigned(TreeNode.Left) then begin
-
      FProcCode.AddLn('do{');
      StartBreakContinuePart;
      FProcCode.IncTab;
@@ -1294,6 +1306,21 @@ begin
     end;
    end;
    ttntWITH:begin
+    FProcCode.AddLn('{');
+    FProcCode.IncTab;
+    ProcessTypeOrName(TreeNode.Left.Return,FProcCode);
+    FProcCode.Add('* withLevel'+IntToStr(FWithStackSize)+' = &(');
+    TranslateCode(TreeNode.Left);
+    FProcCode.AddLn(');');
+    inc(FWithStackSize);
+    if FWithStackSize>=length(FWithStack) then begin
+     SetLength(FWithStack,RoundUpToPowerOfTwo(FWithStackSize+16));
+    end;
+    FWithStack[FWithStackSize-1]:=TreeNode.Left.Return;
+    TranslateCode(TreeNode.Right);
+    dec(FWithStackSize);
+    FProcCode.DecTab;
+    FProcCode.AddLn('}');
    end;
    ttntCASE:if not Assigned(TreeNode.Left) then begin
     Error.InternalError(201303230327482);
@@ -2843,7 +2870,7 @@ begin
            Target.IncTab;
            inc(CurrentVariantLevelIndex);
            if CurrentVariantLevelIndex>length(VariantLevelVariants) then begin
-            SetLength(VariantLevelVariants,CurrentVariantLevelIndex);
+            SetLength(VariantLevelVariants,RoundUpToPowerOfTwo(CurrentVariantLevelIndex));
            end;
            VariantLevelVariants[CurrentVariantLevelIndex-1]:=0;
           end;
