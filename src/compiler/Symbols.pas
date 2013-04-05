@@ -1101,10 +1101,13 @@ begin
    end;
    ttdEmpty,ttdEnumerated,ttdProcedure,ttdPointer,ttdLongString,ttdClass,
    ttdInterface:begin
-    if Options^.Bits=64 then begin
-     result:=8;
-    end else begin
-     result:=4;
+    case Options^.TargetArchitecture of
+     taX64,taX64WIN64:begin
+      result:=8;
+     end;
+     else {taARM,taARMEABI,taX86,taX86WIN32:}begin
+      result:=4;
+     end;
     end;
    end;
    ttdBoolean,ttdSubRange,ttdCurrency:begin
@@ -1122,7 +1125,17 @@ begin
       result:=8;
      end;
      tstFloat80Bit:begin
-      result:=10;
+      case Options^.TargetArchitecture of
+       taX86,taX86WIN32:begin
+        result:=12;
+       end;
+       taX64,taX64WIN64:begin
+        result:=16;
+       end;
+       else begin
+        result:=8;
+       end;
+      end;
      end;
      else begin
       result:=0;
@@ -1157,7 +1170,17 @@ begin
       result:=8;
      end;
      tstFloat80Bit:begin
-      result:=10;
+      case Options^.TargetArchitecture of
+       taX86,taX86WIN32:begin
+        result:=12;
+       end;
+       taX64,taX64WIN64:begin
+        result:=16;
+       end;
+       else begin
+        result:=8;
+       end;
+      end;
      end;
      else begin
       result:=0;
@@ -1200,10 +1223,13 @@ begin
    end;
    ttdEmpty,ttdEnumerated,ttdProcedure,ttdPointer,ttdLongString,ttdClass,
    ttdInterface:begin
-    if Options^.Bits=64 then begin
-     result:=8;
-    end else begin
-     result:=4;
+    case Options^.TargetArchitecture of
+     taX64,taX64WIN64:begin
+      result:=8;
+     end;
+     else {taARM,taARMEABI,taX86,taX86WIN32:}begin
+      result:=4;
+     end;
     end;
    end;
    ttdBoolean,ttdSubRange,ttdCurrency:begin
@@ -1218,10 +1244,30 @@ begin
       result:=4;
      end;
      tstSigned64Bit,tstUnsigned64Bit,tstFloat64Bit:begin
-      result:=8;
+      case Options^.TargetArchitecture of
+       taARMEABI,taX86WIN32:begin
+        result:=8;
+       end;
+       taARM,taX86:begin
+        result:=4;
+       end;
+       else begin
+        result:=8;
+       end;
+      end;
      end;
      tstFloat80Bit:begin
-      result:=10;
+      case Options^.TargetArchitecture of
+       taX86,taX86WIN32:begin
+        result:=4;
+       end;
+       taX64,taX64WIN64:begin
+        result:=8;
+       end;
+       else begin
+        result:=8;
+       end;
+      end;
      end;
      else begin
       result:=0;
@@ -1253,10 +1299,30 @@ begin
       result:=4;
      end;
      tstSigned64Bit,tstUnsigned64Bit,tstFloat64Bit:begin
-      result:=8;
+      case Options^.TargetArchitecture of
+       taARMEABI,taX86WIN32:begin
+        result:=8;
+       end;
+       taARM,taX86:begin
+        result:=4;
+       end;
+       else begin
+        result:=8;
+       end;
+      end;
      end;
      tstFloat80Bit:begin
-      result:=10;
+      case Options^.TargetArchitecture of
+       taX86,taX86WIN32:begin
+        result:=4;
+       end;
+       taX64,taX64WIN64:begin
+        result:=8;
+       end;
+       else begin
+        result:=8;
+       end;
+      end;
      end;
      else begin
       result:=0;
