@@ -745,7 +745,7 @@ procedure TCodegenCPP.TranslateCode(TreeNode:TTreeNode);
 var SubTreeNode,SubTreeNode2:TTreeNode;
     s:ansistring;
     HaveParameters:boolean;
-    InheritedType:PType;
+    ObjectClassType:PType;
 begin
  if assigned(TreeNode) then begin
   case TreeNode.TreeNodeType of
@@ -1590,10 +1590,53 @@ begin
        end;
       end;
       tipNEW:begin
-       // TODO: Implement it!
+       if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and assigned(TreeNode.Left.Left.Return.PointerTo) and not assigned(TreeNode.Left.Right) then begin
+        TranslateCode(TreeNode.Left.Left);
+        FProcCode.AddLn(' = pasGetMem('+IntToStr(SymbolManager.GetSize(TreeNode.Left.Left.Return.PointerTo.TypeDefinition))+');');
+        if TreeNode.Left.Left.Return.PointerTo.TypeDefinition^.TypeDefinition=ttdOBJECT then begin
+         FProcCode.Add('(*(');
+         TranslateCode(TreeNode.Left.Left);
+         FProcCode.AddLn(')).INTERNAL_FIELD_VMT = (void*)&'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_VMT;');
+        end;
+       end else if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Right) and assigned(TreeNode.Left.Right.Left) and assigned(TreeNode.Left.Left.Return) and assigned(TreeNode.Left.Left.Return.PointerTo) and not assigned(TreeNode.Left.Right.Right) then begin
+        TranslateCode(TreeNode.Left.Left);
+        FProcCode.AddLn(' = pasGetMem('+IntToStr(SymbolManager.GetSize(TreeNode.Left.Left.Return.PointerTo.TypeDefinition))+');');
+        if TreeNode.Left.Left.Return.PointerTo.TypeDefinition^.TypeDefinition=ttdOBJECT then begin
+         FProcCode.Add('(*(');
+         TranslateCode(TreeNode.Left.Left);
+         FProcCode.AddLn(')).INTERNAL_FIELD_VMT = (void*)&'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_VMT;');
+         FProcCode.Add('if(');
+         TranslateCode(TreeNode.Left.Right);
+         FProcCode.AddLn('){');
+         FProcCode.IncTab;
+         FProcCode.Add('pasFreeMem(');
+         TranslateCode(TreeNode.Left.Left);
+         FProcCode.AddLn(');');
+         TranslateCode(TreeNode.Left.Left);
+         FProcCode.AddLn(' == NULL;');
+         FProcCode.DecTab;
+         FProcCode.AddLn('}');
+        end;
+       end else begin
+        Error.InternalError(201304050457000);
+       end;
       end;
       tipDISPOSE:begin
-       // TODO: Implement it!
+       if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and assigned(TreeNode.Left.Left.Return.PointerTo) and not assigned(TreeNode.Left.Right) then begin
+        FProcCode.Add('pasFreeMem(');
+        TranslateCode(TreeNode.Left.Left);
+        FProcCode.AddLn(');');
+       end else if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Right) and assigned(TreeNode.Left.Right.Left) and assigned(TreeNode.Left.Left.Return) and assigned(TreeNode.Left.Left.Return.PointerTo) and not assigned(TreeNode.Left.Right.Right) then begin
+        if TreeNode.Left.Left.Return.PointerTo.TypeDefinition^.TypeDefinition=ttdOBJECT then begin
+         TranslateCode(TreeNode.Left.Right);
+         FProcCode.AddLn(';');
+        end;
+        FProcCode.Add('pasFreeMem(');
+        TranslateCode(TreeNode.Left.Left);
+        FProcCode.AddLn(');');
+       end else begin
+        Error.InternalError(201304050529000);
+       end;
       end;
       tipSETLENGTH:begin
        // TODO: Implement it!
@@ -1680,43 +1723,45 @@ begin
        end;
       end;
       else {tipNone:}begin
-       if assigned(TreeNode.Symbol.OwnerObjectClass) then begin
+       if assigned(TreeNode.Symbol.OwnerModule) then begin
         if assigned(TreeNode.MethodSymbol) then begin
-         FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol));
-        end else begin
-         FProcCode.Add(GetSymbolName(TreeNode.Symbol));
-        end;
-       end else begin
-        if assigned(TreeNode.Symbol.OwnerModule) then begin
-         if assigned(TreeNode.MethodSymbol) then begin
-          if assigned(TreeNode.InheritedType) then begin
-           InheritedType:=TreeNode.InheritedType;
-          end else begin
-           InheritedType:=TreeNode.Symbol^.TypeDefinition;
-          end;
+         if assigned(TreeNode.Right) then begin
+          ObjectClassType:=TreeNode.Right.Return;
           if assigned(TreeNode.MethodSymbol) and (tpaVirtual in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
-           if assigned(InheritedType) and (InheritedType^.TypeDefinition=ttdOBJECT) then begin
+           if assigned(ObjectClassType) and (ObjectClassType^.TypeDefinition=ttdOBJECT) then begin
             // OBJECT
-            FProcCode.Add('(('+GetTypeName(InheritedType)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')(((('+GetTypeName(InheritedType)+'*)&'+GetSymbolName(TreeNode.Symbol)+')->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
+            FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')(((('+GetTypeName(ObjectClassType)+'*)&(');
+            TranslateCode(TreeNode.Right);
+            FProcCode.Add('))->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
            end else begin
             // CLASS
-            FProcCode.Add('(('+GetTypeName(InheritedType)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')(((('+GetTypeName(InheritedType)+')'+GetSymbolName(TreeNode.Symbol)+')->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
+            FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')(((('+GetTypeName(ObjectClassType)+')(');
+            TranslateCode(TreeNode.Right);
+            FProcCode.Add('))->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
            end;
           end else if assigned(TreeNode.MethodSymbol) and (tpaDynamic in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
-           if assigned(InheritedType) and (InheritedType^.TypeDefinition=ttdOBJECT) then begin
+           if assigned(ObjectClassType) and (ObjectClassType^.TypeDefinition=ttdOBJECT) then begin
             // OBJECT
-            FProcCode.Add('(('+GetTypeName(InheritedType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasObjectDMTDispatch((void*)&('+GetSymbolName(TreeNode.Symbol)+'),'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+'))');
+            FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasObjectDMTDispatch((void*)&(');
+            TranslateCode(TreeNode.Right);
+            FProcCode.Add('),'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+'))');
            end else begin
             // CLASS
-            FProcCode.Add('(('+GetTypeName(InheritedType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasClassDMTDispatch((void*)('+GetSymbolName(TreeNode.Symbol)+'),'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+'))');
+            FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasClassDMTDispatch((void*)(');
+            TranslateCode(TreeNode.Right);
+            FProcCode.Add('),'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+'))');
            end;
           end else begin
            FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol));
           end;
          end else begin
-          FProcCode.Add(GetSymbolName(TreeNode.Symbol));
+          FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol));
          end;
+        end else begin
+         FProcCode.Add(GetSymbolName(TreeNode.Symbol));
         end;
+       end else begin
+        Error.InternalError(201304050609000);
        end;
       end;
       FProcCode.Add('(');
@@ -1738,6 +1783,28 @@ begin
         FProcCode.Add(',',spacesRIGHT);
        end;
        FProcCode.Add('(void*)instanceData');
+       HaveParameters:=true;
+      end else if assigned(TreeNode.Right) then begin
+       if HaveParameters then
+       begin
+        FProcCode.Add(',',spacesRIGHT);
+       end;
+       if TreeNode.Right.Return^.TypeDefinition=ttdOBJECT then begin
+        // OBJECT
+        FProcCode.Add('((void*)&(');
+        TranslateCode(TreeNode.Right);
+        FProcCode.Add('))');
+{      end else if (TreeNode.Right.Return^.TypeDefinition=ttdPOINTER) and assigned(TreeNode.Right.Return^.PointerTo) and assigned(TreeNode.Right.Return^.PointerTo^.TypeDefinition) and (TreeNode.Right.Return^.PointerTo^.TypeDefinition^.TypeDefinition=ttdOBJECT) then begin
+        // OBJECT
+        FProcCode.Add('(void*)(');
+        TranslateCode(TreeNode.Right);
+        FProcCode.Add(')');}
+       end else begin
+        // CLASS
+        FProcCode.Add('(void*)(');
+        TranslateCode(TreeNode.Right);
+        FProcCode.Add(')');
+       end;
        HaveParameters:=true;
       end else if assigned(TreeNode.MethodSymbol) and assigned(TreeNode.Symbol^.TypeDefinition) then begin
        if HaveParameters then

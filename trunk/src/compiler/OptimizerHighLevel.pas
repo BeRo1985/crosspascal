@@ -2464,6 +2464,16 @@ begin
    ttntPCHARConst:begin
    end;
    ttntCCODE:begin
+    OptimizeTree(TreeNode.Left);
+   end;
+   ttntCEXPRESSION:begin
+    OptimizeTree(TreeNode.Left);
+   end;
+   ttntCBLOCK:begin
+    OptimizeTree(TreeNode.Left);
+   end;
+   ttntPASCALBLOCK:begin
+    OptimizeTree(TreeNode.Left);
    end;
   end;
   if assigned(TreeNode) then begin

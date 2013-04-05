@@ -1974,6 +1974,10 @@ begin
    SetLength(SizeStack,Allocated);
    SetLength(AlignmentStack,Allocated);
    StackPointer:=0;
+   SizeStack[StackPointer]:=0;
+   AlignmentStack[StackPointer]:=0;
+   RecordType^.RecordAlignment:=0;
+   RecordType^.RecordSize:=0;
    if assigned(RecordType^.ChildOf) then begin
     Count:=0;
     AType:=RecordType^.ChildOf^.TypeDefinition;
@@ -2006,10 +2010,6 @@ begin
     end;
     SetLength(ChildOfList,0);
    end;
-   RecordType^.RecordAlignment:=0;
-   RecordType^.RecordSize:=0;
-   SizeStack[StackPointer]:=0;
-   AlignmentStack[StackPointer]:=0;
    Symbol:=RecordType^.RecordTable.First;
    while assigned(Symbol) do begin
     ProcessSymbol(Symbol,true);

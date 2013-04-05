@@ -967,18 +967,27 @@ begin
 end;
 
 function TParser.ParseNewDisposeParameter:TTreeNode;
-var NewTreeNode,LastTreeNode:TTreeNode;
+var FirstTreeNode,NewTreeNode,LastTreeNode:TTreeNode;
     ObjectClassSymbolList:TSymbolList;
+    AType:PType;
 begin
- NewTreeNode:=ParseExpression(false);
+ FirstTreeNode:=ParseExpression(false);
+ NewTreeNode:=FirstTreeNode;
  LastTreeNode:=TreeManager.GenerateParameterNode(NewTreeNode,nil);
- ObjectClassSymbolList:=NewTreeNode.Return^.PointerTo^.TypeDefinition^.RecordTable;
- SymbolManager.PushSymbolList(ObjectClassSymbolList);
- if Scanner.CurrentToken<>tstRightParen then begin
-  Scanner.Match(tstComma);
-  NewTreeNode:=ParseExpression(false);
-  LastTreeNode.Right:=TreeManager.GenerateParameterNode(NewTreeNode,nil);
-  SymbolManager.PopSymbolList(ObjectClassSymbolList);
+ if assigned(NewTreeNode.Return) and assigned(NewTreeNode.Return^.PointerTo) and assigned(NewTreeNode.Return^.PointerTo^.TypeDefinition) and (NewTreeNode.Return^.PointerTo^.TypeDefinition^.TypeDefinition=ttdOBJECT) then begin
+  AType:=NewTreeNode.Return^.PointerTo^.TypeDefinition;
+  ObjectClassSymbolList:=NewTreeNode.Return^.PointerTo^.TypeDefinition^.RecordTable;
+  SymbolManager.PushSymbolList(ObjectClassSymbolList);
+  if Scanner.CurrentToken<>tstRightParen then begin
+   Scanner.Match(tstComma);
+   NewTreeNode:=ParseExpression(false);
+   if NewTreeNode.TreeNodeType=ttntCALL then begin
+    NewTreeNode.Right:=TreeManager.GeneratePointerNode(TTreeNode.CreateFrom(FirstTreeNode),AType);
+    NewTreeNode.MethodSymbol:=NewTreeNode.Symbol;
+   end;
+   LastTreeNode.Right:=TreeManager.GenerateParameterNode(NewTreeNode,nil);
+   SymbolManager.PopSymbolList(ObjectClassSymbolList);
+  end;
  end;
  result:=LastTreeNode;
 end;
@@ -1639,7 +1648,7 @@ begin
           end;
           Symbols.tstFunction,Symbols.tstProcedure:begin
            case AType^.TypeDefinition of
-            ttdObject,ttdClass,ttdInterface:begin
+            ttdObject,ttdClass,ttdInterface:begin       
              NewTreeNode:=TreeManager.GenerateMethodCallNode(Symbol,FieldSymbol,NewTreeNode,nil);
              if (Scanner.CurrentToken=tstLeftParen) or MustHaveParens then begin
               Scanner.Match(tstLeftParen);
