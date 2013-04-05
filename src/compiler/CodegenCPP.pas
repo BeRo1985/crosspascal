@@ -205,7 +205,7 @@ begin
        end;
        tvtClassSelf:begin
         if assigned(FProcSymbol) and assigned(FProcSymbol^.OwnerObjectClass) then begin
-         result:='instanceData';
+         result:='classReference';
         end else begin
          Error.InternalError(201304052356001);
         end;
@@ -382,7 +382,7 @@ begin
   if HaveParameters then
    Target.Add(',',spacesRIGHT);
   if tpaClassProcedure in Symbol^.ProcedureAttributes then begin
-   Target.Add(GetTypeName(Symbol^.OwnerObjectClass^.ClassOfType)+' *instanceData');
+   Target.Add(GetTypeName(Symbol^.OwnerObjectClass^.ClassOfType)+' classReference');
   end else begin
    Target.Add(GetSymbolName(Symbol^.OwnerObjectClass^.Symbol)+' *instanceData');
   end;
@@ -1869,7 +1869,15 @@ begin
        begin
         FProcCode.Add(',',spacesRIGHT);
        end;
-       FProcCode.Add('(void*)instanceData');
+       if tpaClassProcedure in TreeNode.Symbol.ProcedureAttributes then begin
+        if tpaClassProcedure in FProcSymbol.ProcedureAttributes then begin
+         FProcCode.Add('(void*)classReference');
+        end else begin
+         FProcCode.Add('(void*)(((void*)instanceData)-sizeof(pasClassVirtualMethodTable))');
+        end;
+       end else begin
+        FProcCode.Add('(void*)instanceData');
+       end;
        HaveParameters:=true;
       end else if assigned(TreeNode.Right) then begin
        if HaveParameters then
@@ -3012,7 +3020,7 @@ begin
      Target.AddLn(';');
     end;
     ttdClassRef:begin
-     Target.AddLn('typedef void* '+Name+';');
+     Target.AddLn('typedef pasClassVirtualMethodTable* '+Name+';');
     end;
     ttdFloat:begin
      Type_^.Dumped:=true;

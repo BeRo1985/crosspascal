@@ -211,6 +211,33 @@ typedef struct pasObjectVirtualMethodTable {
   void* virtualMethods[0];
 } pasObjectVirtualMethodTable;
 
+typedef struct pasClassVirtualMethodTable;
+
+typedef struct pasClassVirtualMethodTable* pasClassVirtualMethodTablePointer;
+
+typedef struct pasClassVirtualMethodTable {
+  void* vmtSelfPtr;
+  void* vmtIntfTable;
+  void* vmtAutoTable;
+  void* vmtInitTable;
+  void* vmtTypeInfo;
+  void* vmtFieldTable;
+  void* vmtMethodTable;
+  void* vmtDynamicTable;
+  void* vmtClassName;
+  size_t vmtInstanceSize;
+  void* vmtParent;
+  void* vmtSafeCallException;
+  void* vmtAfterConstruction;
+  void* vmtBeforeDestruction;
+  void* vmtDispatch;
+  void* vmtDefaultHandler;
+  void* vmtNewInstance;
+  void* vmtFreeInstance;
+  void* vmtDestroy;
+  void* virtualMethods[0];
+} pasClassVirtualMethodTable;
+
 typedef struct {
 	uint32_t dummy;
 } pasFile;
