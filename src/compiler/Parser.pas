@@ -1222,6 +1222,12 @@ begin
    end;
    if assigned(Symbol) then begin
     AType:=Symbol^.TypeDefinition;
+    if (WhichWithLevel<0) and assigned(Symbol^.OwnerObjectClass) and
+       ((assigned(CurrentProcedureFunction) and assigned(CurrentProcedureFunction^.OwnerObjectClass)) and
+         (tpaClassProcedure in CurrentProcedureFunction^.ProcedureAttributes)) and
+        not ((Symbol^.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction]) and (tpaClassProcedure in Symbol^.ProcedureAttributes)) then begin
+     Error.AddErrorCode(128,CorrectSymbolName(Name));
+    end;
     case Symbol^.SymbolType of
      Symbols.tstVariable:begin
       NewTreeNode:=TreeManager.GenerateVarNode(Symbol);
@@ -5443,10 +5449,7 @@ begin
       ttdCLASS:begin
        if tpaClassProcedure in Symbol^.ProcedureAttributes then begin
         SelfSymbol^.VariableType:=tvtClassSelf;
-        SelfSymbol^.TypeDefinition:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
-        SelfSymbol^.TypeDefinition^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
-        SelfSymbol^.TypeDefinition^.TypeDefinition:=ttdClassRef;
-        SelfSymbol^.TypeDefinition^.ClassOf:=Symbol^.OwnerObjectClass^.Symbol;
+        SelfSymbol^.TypeDefinition:=Symbol^.OwnerObjectClass^.ClassOfType;
        end else begin
         SelfSymbol^.VariableType:=tvtClassInstanceSelf;
         SelfSymbol^.TypeDefinition:=Symbol^.OwnerObjectClass;
