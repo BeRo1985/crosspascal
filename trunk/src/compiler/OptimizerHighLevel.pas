@@ -2475,6 +2475,10 @@ begin
    ttntPASCALBLOCK:begin
     OptimizeTree(TreeNode.Left);
    end;
+   ttntCLOCATION:begin
+   end;
+   ttntTEMPOBJECT:begin
+   end;
   end;
   if assigned(TreeNode) then begin
    OptimizeEmptyTrees(TreeNode.Left);
