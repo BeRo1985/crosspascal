@@ -254,7 +254,7 @@ void* pasObjectDMTDispatch(void* object,size_t index){
   while(VMT){
     pasObjectDynamicMethodTableItem* DMT = VMT->dynamicMethodTable;
     if(DMT){
-      while((DMT->index >= 0) && DMT->method){
+      while(DMT->method){
         if(DMT->index == index){
           return DMT->method;
         }
