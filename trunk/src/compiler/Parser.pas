@@ -4489,6 +4489,7 @@ begin
   result^.ClassOfType:=ClassOfType;
  end;
  if IsForward then begin
+  result^.VirtualIndexCount:=0;
   SetLength(InterfaceSymbols,0);
   exit;
  end;
@@ -4502,6 +4503,12 @@ begin
  OldCurrentParseObjectClass:=CurrentParseObjectClass;
  CurrentObjectClass:=result;
  CurrentParseObjectClass:=result;
+
+ if assigned(result^.ChildOf) then begin
+  result^.VirtualIndexCount:=result^.ChildOf^.TypeDefinition^.VirtualIndexCount;
+ end else begin
+  result^.VirtualIndexCount:=0;
+ end;
 
  result^.RecordTable:=TSymbolList.Create(SymbolManager);
  if assigned(result^.ChildOf) and assigned(result^.ChildOf^.TypeDefinition) then begin
@@ -4557,6 +4564,8 @@ begin
         Symbol^.ProcedureAttributes:=Symbol^.ProcedureAttributes+[tpaVirtual];
         Scanner.Match(tstVIRTUAL);
         Scanner.Match(tstSEPARATOR);
+        Symbol^.VirtualIndex:=result^.VirtualIndexCount;
+        inc(result^.VirtualIndexCount);
        end;
        tstABSTRACT:begin
         Symbol^.ProcedureAttributes:=Symbol^.ProcedureAttributes+[tpaAbstract];

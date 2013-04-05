@@ -1872,7 +1872,7 @@ begin
        if tpaClassProcedure in TreeNode.Symbol.ProcedureAttributes then begin
         if tpaClassProcedure in FProcSymbol.ProcedureAttributes then begin
          FProcCode.Add('(void*)classReference');
-        end else begin
+        end else begin 
          FProcCode.Add('(void*)(((void*)instanceData)-sizeof(pasClassVirtualMethodTable))');
         end;
        end else begin
