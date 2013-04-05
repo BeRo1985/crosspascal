@@ -385,6 +385,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
      TSymbolListStack=record
       Previous,Next:PSymbolListStack;
       List:TSymbolList;
+      WithLevel:ptrint;
      end;
 
      TSymbolList=class
@@ -401,9 +402,9 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
        procedure UnlistSymbol(var Symbol:PSymbol);
        procedure DeleteSymbol(var Symbol:PSymbol);
        procedure RemoveLastSymbol;
-       function GetSymbol(const Name:ansistring;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;Childs:boolean=false):PSymbol;
-       function ContainsSymbol(Symbol:PSymbol;Childs:boolean=false):boolean;
-       procedure AddSymbol(Symbol:PSymbol;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;AtBegin:boolean=false;Childs:boolean=false);
+       function GetSymbol(const Name:ansistring;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;Childs:boolean=true):PSymbol;
+       function ContainsSymbol(Symbol:PSymbol;Childs:boolean=true):boolean;
+       procedure AddSymbol(Symbol:PSymbol;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;AtBegin:boolean=false;Childs:boolean=true);
      end;
 
      TTypeList=class
@@ -468,10 +469,10 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
        function SameTypes(A,B:PType):boolean;
        function CompatibleTypes(A,B:PType):boolean;
        function CompatibleEqualTypes(A,B:PType):boolean;
-       function GetSymbol(const Name:ansistring;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;Childs:boolean=false):PSymbol;
+       function GetSymbol(const Name:ansistring;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;WhichWithLevel:pointer=nil):PSymbol;
        function CheckUnits(ModuleSymbol:PSymbol;ObjectClassType:PType;Symbol:PSymbol):boolean;
        function GetOverloadedProcedure(Start:PSymbol;Name:ansistring):PSymbol;
-       procedure PushSymbolList(SymbolList:TSymbolList);
+       procedure PushSymbolList(SymbolList:TSymbolList;WithLevel:longint=-1);
        procedure PopSymbolList(SymbolList:TSymbolList);
        procedure PopLastSymbolList;
        procedure FixSymbolListChilds;
@@ -600,7 +601,7 @@ begin
  end;
 end;
 
-function TSymbolList.GetSymbol(const Name:ansistring;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;Childs:boolean=false):PSymbol;
+function TSymbolList.GetSymbol(const Name:ansistring;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;Childs:boolean=true):PSymbol;
 var NextOverloadedSymbol,Symbol:PSymbol;
     StringHashMapEntity:PBeRoStringHashMapEntity;
     Found,IsVisible:boolean;
@@ -627,7 +628,7 @@ begin
    if Found then begin
     if not assigned(Symbol) then begin
      if Childs and assigned(ChildOf) then begin
-      result:=ChildOf.GetSymbol(Name,ModuleSymbol,ObjectClassType);
+      result:=ChildOf.GetSymbol(Name,ModuleSymbol,ObjectClassType,Childs);
      end else begin
       result:=nil;
      end;
@@ -706,11 +707,11 @@ begin
   end;
  end;
  if Childs and assigned(ChildOf) and not assigned(result) then begin
-  result:=ChildOf.GetSymbol(Name,ModuleSymbol,ObjectClassType);
+  result:=ChildOf.GetSymbol(Name,ModuleSymbol,ObjectClassType,Childs);
  end;
 end;
 
-function TSymbolList.ContainsSymbol(Symbol:PSymbol;Childs:boolean=false):boolean;
+function TSymbolList.ContainsSymbol(Symbol:PSymbol;Childs:boolean=true):boolean;
 var ListSymbol:PSymbol;
 begin
  result:=false;
@@ -727,7 +728,7 @@ begin
  end;
 end;
 
-procedure TSymbolList.AddSymbol(Symbol:PSymbol;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;AtBegin:boolean=false;Childs:boolean=false);
+procedure TSymbolList.AddSymbol(Symbol:PSymbol;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;AtBegin:boolean=false;Childs:boolean=true);
 var TestSymbol,OurNewSymbol:PSymbol;
     StringHashMapEntity:PBeRoStringHashMapEntity;
 begin
@@ -1654,14 +1655,20 @@ begin
  result:=TypeCheck.AreTypesEqualCompatible(Error,self,A,B);
 end;
 
-function TSymbolManager.GetSymbol(const Name:ansistring;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;Childs:boolean=false):PSymbol;
+function TSymbolManager.GetSymbol(const Name:ansistring;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;WhichWithLevel:pointer=nil):PSymbol;
 var List:PSymbolListStack;
 begin
  List:=LastSymbolListStack;
+ if assigned(WhichWithLevel) then begin
+  longint(WhichWithLevel^):=-1;
+ end;
  result:=nil;
  while assigned(List) do begin
-  result:=List^.List.GetSymbol(Name,ModuleSymbol,ObjectClassType,Childs);
+  result:=List^.List.GetSymbol(Name,ModuleSymbol,ObjectClassType,true);
   if assigned(result) then begin
+   if assigned(WhichWithLevel) then begin
+    longint(WhichWithLevel^):=List.WithLevel;
+   end;
    break;
   end;
   List:=List^.Previous;
@@ -1701,12 +1708,13 @@ begin
  end;
 end;
 
-procedure TSymbolManager.PushSymbolList(SymbolList:TSymbolList);
+procedure TSymbolManager.PushSymbolList(SymbolList:TSymbolList;WithLevel:longint=-1);
 var SymbolListStack:PSymbolListStack;
 begin
  GetMem(SymbolListStack,SizeOf(TSymbolListStack));
  FillChar(SymbolListStack^,SizeOf(TSymbolListStack),#0);
  SymbolListStack^.List:=SymbolList;
+ SymbolListStack^.WithLevel:=WithLevel;
  if assigned(LastSymbolListStack) then begin
   LastSymbolListStack^.Next:=SymbolListStack;
   SymbolListStack^.Previous:=LastSymbolListStack;
