@@ -381,7 +381,11 @@ begin
  if assigned(Symbol^.OwnerObjectClass) then begin
   if HaveParameters then
    Target.Add(',',spacesRIGHT);
-  Target.Add(GetSymbolName(Symbol^.OwnerObjectClass^.Symbol)+' *instanceData');
+  if tpaClassProcedure in Symbol^.ProcedureAttributes then begin
+   Target.Add(GetTypeName(Symbol^.OwnerObjectClass^.ClassOfType)+' *instanceData');
+  end else begin
+   Target.Add(GetSymbolName(Symbol^.OwnerObjectClass^.Symbol)+' *instanceData');
+  end;
   HaveParameters:=true;
  end;
  if Assigned(Symbol.Parameter) then
