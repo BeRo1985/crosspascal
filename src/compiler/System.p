@@ -117,6 +117,8 @@ procedure GetMem(var p;Size:ptrint);
 procedure FreeMem(var p); overload;
 procedure FreeMem(var p;Size:ptrint); overload;
 
+procedure ReallocMem(var p;Size:ptrint);
+
 function Power(Base,Exponent:extended):extended;
 function Exp(x:extended):extended;
 function Ln(x:extended):extended;
@@ -168,15 +170,22 @@ end;
 
 procedure GetMem(var p;Size:ptrint);
 begin
-[[[ *((void**)<<<p>>>) = pasGetMem(<<<Size>>>); ]]]
+[[[ (void*)<<<p>>> = pasGetMem(<<<Size>>>); ]]]
 end;
 
 procedure FreeMem(var p);
 begin
+[[[ pasFreeMem((void*)<<<p>>>); ]]]
 end;
 
 procedure FreeMem(var p;Size:ptrint);
 begin
+[[[ pasFreeMem((void*)<<<p>>>); ]]]
+end;
+
+procedure ReallocMem(var p;Size:ptrint);
+begin
+[[[ pasReallocMem(&<<<p>>>,<<<Size>>>); ]]]
 end;
 
 function Power(Base,Exponent:extended):extended;

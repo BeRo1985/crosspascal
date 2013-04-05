@@ -883,11 +883,12 @@ begin
      TranslateCode(TreeNode.Left);
      TreeNode.Left:=TreeNode.Left.Left;
     end;
+    FProcCode.AddLn('');
    end;
    ttntCBLOCK:
    begin
      FProcCode.IncTab;
-     FProcCode.AddLn(HugeStringToWideString(TreeNode.StringData));
+     FProcCode.Add(HugeStringToWideString(TreeNode.StringData));
      FProcCode.DecTab;
    end;
    ttntPASCALBLOCK:
