@@ -1055,6 +1055,9 @@ begin
       exit;
      end;
     end;
+    if (Flags and 2)<>0 then begin
+     ReadTypeReference(AType^.ClassOfType);
+    end;
    end;
    ttdClassRef:begin
     if Stream.Read(Flags,SizeOf(byte))<>SizeOf(byte) then begin
@@ -1977,11 +1980,17 @@ begin
     if AType^.VirtualIndexCount<>0 then begin
      Flags:=Flags or 1;
     end;
+    if (AType^.TypeDefinition=ttdClass) and assigned(AType^.ClassOfType) then begin
+     Flags:=Flags or 2;
+    end;
     Stream.WriteByte(Flags);
     if (Flags and 1)<>0 then begin
      if Stream.Write(AType^.VirtualIndexCount,SizeOf(longint))<>SizeOf(longint) then begin
       exit;
      end;
+    end;
+    if (Flags and 2)<>0 then begin
+     WriteTypeReference(AType^.ClassOfType);
     end;
    end;
    ttdClassRef:begin

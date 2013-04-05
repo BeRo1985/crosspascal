@@ -4355,7 +4355,7 @@ var Symbol,Parent,NewSymbol,ForwardClass:PSymbol;
     SymbolAttributes:TSymbolAttributes;
     NewTreeNode:TTreeNode;
     InterfaceSymbols:array of PSymbol;
-    OldCurrentObjectClass,OldCurrentParseObjectClass:PType;
+    OldCurrentObjectClass,OldCurrentParseObjectClass,ClassOfType:PType;
     IsClassOf,IsForward:boolean;
 begin
  if assigned(CurrentProcedureFunction) then begin
@@ -4392,10 +4392,14 @@ begin
     ParentName:=NewName;
     Parent:=NewSymbol;
    end;
-   result:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
-   result^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
-   result^.TypeDefinition:=ttdClassRef;
-   result^.ClassOf:=Parent;
+   if assigned(NewSymbol) and (NewSymbol^.SymbolType=Symbols.tstType) and (NewSymbol^.TypeDefinition^.TypeDefinition=ttdClass) and assigned(NewSymbol^.TypeDefinition^.ClassOfType) then begin
+    result:=NewSymbol^.TypeDefinition^.ClassOfType;
+   end else begin
+    result:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+    result^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
+    result^.TypeDefinition:=ttdClassRef;
+    result^.ClassOf:=Parent;
+   end;
    exit;
   end else if Scanner.CurrentToken=tstLeftParen then begin
    Scanner.Match(tstLeftParen);
@@ -4471,6 +4475,13 @@ begin
  result^.ForwardClass:=IsForward;
  result^.RecordAlignment:=0;
  result^.RecordPacked:=IsPacked or (LocalSwitches^.Alignment=1);
+ if not assigned(result^.ClassOfType) then begin
+  ClassOfType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+  ClassOfType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
+  ClassOfType^.TypeDefinition:=ttdClassRef;
+  ClassOfType^.ClassOf:=nil;
+  result^.ClassOfType:=ClassOfType;
+ end;
  if IsForward then begin
   SetLength(InterfaceSymbols,0);
   exit;
@@ -5424,7 +5435,27 @@ begin
      SelfSymbol^.SymbolType:=Symbols.tstVariable;
      SelfSymbol^.TypeDefinition:=Symbol^.OwnerObjectClass;
      SelfSymbol^.VariableLevel:=SymbolManager.LexicalScopeLevel;
-     SelfSymbol^.VariableType:=tvtSelf;
+     case Symbol^.OwnerObjectClass^.TypeDefinition of
+      ttdOBJECT:begin
+       SelfSymbol^.VariableType:=tvtObjectInstanceSelf;
+       SelfSymbol^.TypeDefinition:=Symbol^.OwnerObjectClass;
+      end;
+      ttdCLASS:begin
+       if tpaClassProcedure in Symbol^.ProcedureAttributes then begin
+        SelfSymbol^.VariableType:=tvtClassSelf;
+        SelfSymbol^.TypeDefinition:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+        SelfSymbol^.TypeDefinition^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
+        SelfSymbol^.TypeDefinition^.TypeDefinition:=ttdClassRef;
+        SelfSymbol^.TypeDefinition^.ClassOf:=Symbol^.OwnerObjectClass^.Symbol;
+       end else begin
+        SelfSymbol^.VariableType:=tvtClassInstanceSelf;
+        SelfSymbol^.TypeDefinition:=Symbol^.OwnerObjectClass;
+       end;
+      end;
+      else begin
+       Error.InternalError(201304052355000);
+      end;
+     end;
      SelfSymbol^.LocalProcSymbol:=CurrentProcedureFunction;
      SelfSymbol^.LocalProcSymbolAccessedFromHigherNestedProc:=false;
      SelfSymbol^.Alias:=nil;
@@ -7234,8 +7265,13 @@ begin
   end;
   Symbol^.SymbolType:=Symbols.tstType;
   Symbol^.TypeDefinition:=ParseTypeDefinition(Name);
-  if not assigned(Symbol^.TypeDefinition^.Symbol) then begin
-   Symbol^.TypeDefinition^.Symbol:=Symbol;
+  if assigned(Symbol^.TypeDefinition) then begin
+   if not assigned(Symbol^.TypeDefinition^.Symbol) then begin
+    Symbol^.TypeDefinition^.Symbol:=Symbol;
+   end;
+   if (Symbol^.TypeDefinition^.TypeDefinition=ttdCLASS) and assigned(Symbol^.TypeDefinition^.ClassOfType) and not assigned(Symbol^.TypeDefinition^.ClassOfType^.ClassOf) then begin
+    Symbol^.TypeDefinition^.ClassOfType^.ClassOf:=Symbol;
+   end;
   end;
   IsForwared:=false;
   ForwardedSymbol:=SymbolManager.GetSymbol(Symbol^.Name,ModuleSymbol,CurrentObjectClass);
@@ -7262,6 +7298,9 @@ begin
      ForwardedSymbol^.TypeDefinition^.WasForwardedClass:=false;
      ForwardedSymbol^.TypeDefinition^.Symbol:=ForwardedSymbol;
      ForwardedSymbol^.Attributes:=ForwardedSymbol^.Attributes+Symbol^.Attributes;
+     if (ForwardedSymbol^.TypeDefinition^.TypeDefinition=ttdCLASS) and assigned(ForwardedSymbol^.TypeDefinition^.ClassOfType) then begin
+      ForwardedSymbol^.TypeDefinition^.ClassOfType^.ClassOf:=ForwardedSymbol;
+     end;
      SymbolManager.DestroySymbol(Symbol);
      IsForwared:=true;
     end;

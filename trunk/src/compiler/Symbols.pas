@@ -62,7 +62,8 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
                     tctAlign,
                     tctStop);
 
-     TVariableType=(tvtGlobal,tvtLocal,tvtResult,tvtSelf,
+     TVariableType=(tvtGlobal,tvtLocal,tvtResult,
+                    tvtObjectInstanceSelf,tvtClassInstanceSelf,tvtClassSelf,
                     tvtParameterVariable,tvtParameterResult,
                     tvtParameterConstant,tvtParameterValue,
                     tvtObjectField,tvtClassField,
@@ -142,6 +143,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
         RecordPacked:boolean;
         RecordTable:TSymbolList;
         ChildOf:PSymbol;
+        ClassOfType:PType;
       //InterfaceChildOf:array of PSymbol;
         GUID:TGUID;
         VirtualIndexCount:longint;
