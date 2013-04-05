@@ -1914,7 +1914,7 @@ begin
    DirectiveName:=DirectiveName+UpCase(ansichar(byte(CurrentChar)));
    ReadChar;
   end;
-  while (CurrentChar>0) and (CurrentChar<32) do begin
+  while (CurrentChar>0) and (CurrentChar<=32) do begin
    ReadChar;
   end;
   if DirectiveStringTree.Find(DirectiveName,Link) then begin
@@ -1925,6 +1925,9 @@ begin
      break;
     end;
     tdIFDEF:begin
+     while (CurrentChar>0) and (CurrentChar<=32) do begin
+      ReadChar;
+     end;
      DefineName:='';
      while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
       DefineName:=DefineName+UpCase(ansichar(byte(CurrentChar)));
@@ -1945,6 +1948,9 @@ begin
      end;
     end;
     tdIFNDEF:begin
+     while (CurrentChar>0) and (CurrentChar<=32) do begin
+      ReadChar;
+     end;
      DefineName:='';
      while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
       DefineName:=DefineName+UpCase(ansichar(byte(CurrentChar)));
@@ -1954,6 +1960,9 @@ begin
      break;
     end;
     tdIFOPT:begin
+     while (CurrentChar>0) and (CurrentChar<=32) do begin
+      ReadChar;
+     end;
      if (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z']) then begin
       case UpCase(ansichar(byte(CurrentChar))) of
        'A':begin
@@ -2092,6 +2101,9 @@ begin
      if CurrentCondition then begin
       case Directive of
        tdDEFINE:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         DefineName:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          DefineName:=DefineName+UpCase(ansichar(byte(CurrentChar)));
@@ -2100,6 +2112,9 @@ begin
         AddDefine(DefineName);
        end;
        tdUNDEF:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         DefineName:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          DefineName:=DefineName+UpCase(ansichar(byte(CurrentChar)));
@@ -2108,7 +2123,7 @@ begin
         RemoveDefine(DefineName);
        end;
        tdI,tdINCLUDE:begin
-        while (CurrentChar>0) and (CurrentChar<32) do begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
          ReadChar;
         end;
         if (Directive=tdI) and ((CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['-','+'])) then begin
@@ -2139,6 +2154,9 @@ begin
         end;
        end;
        tdALIGN:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2172,6 +2190,9 @@ begin
         LocalSwitches^.Alignment:=8;
        end;
        tdAPPTYPE:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2197,6 +2218,9 @@ begin
         end;
        end;
        tdASSERTIONS:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2222,6 +2246,9 @@ begin
         end;
        end;
        tdBOOLEVAL:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2236,6 +2263,9 @@ begin
         end;
        end;
        tdLIBPREFIX:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         if CurrentChar=ord('''') then begin
          Parameter:=HugeStringToAnsiString(ReadPascalString);
@@ -2247,6 +2277,9 @@ begin
         end;
        end;
        tdLIBSUBFIX:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         if CurrentChar=ord('''') then begin
          Parameter:=HugeStringToAnsiString(ReadPascalString);
@@ -2258,6 +2291,9 @@ begin
         end;
        end;
        tdCODEPAGE:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_','$']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2271,6 +2307,9 @@ begin
         end;
        end;
        tdLIBVERSION:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         if CurrentChar=ord('''') then begin
          Parameter:=HugeStringToAnsiString(ReadPascalString);
@@ -2293,6 +2332,9 @@ begin
         end;
        end;
        tdDEBUGINFO:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2307,6 +2349,9 @@ begin
         end;
        end;
        tdDENYPACKAGEUNIT:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2321,6 +2366,9 @@ begin
         end;
        end;
        tdDESCRIPTION:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         if CurrentChar=ord('''') then begin
          Parameter:=HugeStringToAnsiString(ReadPascalString);
@@ -2332,6 +2380,9 @@ begin
         end;
        end;
        tdDESIGNINFO:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2346,6 +2397,9 @@ begin
         end;
        end;
        tdE,tdEXTENSION:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2354,6 +2408,9 @@ begin
         GlobalSwitches^.Extension:=Parameter;
        end;
        tdOBJEXPORTALL:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2379,6 +2436,9 @@ begin
         end;
        end;
        tdEXTENDEDSYNTAX:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2393,6 +2453,9 @@ begin
         end;
        end;
        tdEXTERNALSYM:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2400,6 +2463,9 @@ begin
         end;
        end;
        tdHINTS:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2414,6 +2480,9 @@ begin
         end;
        end;
        tdHPPEMIT:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         if CurrentChar=ord('''') then begin
          Parameter:=HugeStringToAnsiString(ReadPascalString);
@@ -2424,6 +2493,9 @@ begin
         end;
        end;
        tdIMAGEBASE:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'f','A'..'F','0'..'9','$']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2437,6 +2509,9 @@ begin
         end;
        end;
        tdIMPLICITBUILD:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2462,6 +2537,9 @@ begin
         end;
        end;
        tdIMPORTEDDATA:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2476,6 +2554,9 @@ begin
         end;
        end;
        tdIOCHECKS:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2505,6 +2586,9 @@ begin
         end;
        end;
        tdLINK:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_','.','/','\','-']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2512,6 +2596,9 @@ begin
         end;
        end;
        tdLOCALSYMBOLS:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2526,6 +2613,9 @@ begin
         end;
        end;
        tdH:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         if CurrentChar=ord('-') then begin
          ReadChar;
          LocalSwitches^.LongStrings:=false;
@@ -2537,6 +2627,9 @@ begin
         end;
        end;
        tdLONGSTRINGS:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2558,6 +2651,9 @@ begin
          ReadChar;
          LocalSwitches^.TypeInfo:=true;
         end else begin
+         while (CurrentChar>0) and (CurrentChar<=32) do begin
+          ReadChar;
+         end;
          Parameter:='';
          while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_','$']) do begin
           Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2569,16 +2665,19 @@ begin
          end else begin
           Error.AbortCode(59,DirectiveName);
          end;
-         while (CurrentChar>0) and (CurrentChar<32) do begin
+         while (CurrentChar>0) and (CurrentChar<=32) do begin
           ReadChar;
          end;
          if CurrentChar=ord(',') then begin
           ReadChar;
-          while (CurrentChar>0) and (CurrentChar<32) do begin
+          while (CurrentChar>0) and (CurrentChar<=32) do begin
            ReadChar;
           end;
          end else begin
           Error.AbortCode(59,DirectiveName);
+         end;
+         while (CurrentChar>0) and (CurrentChar<=32) do begin
+          ReadChar;
          end;
          Parameter:='';
          while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_','$']) do begin
@@ -2594,6 +2693,9 @@ begin
         end;
        end;
        tdMINSTACKSIZE:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_','$']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2607,6 +2709,9 @@ begin
         end;
        end;
        tdMAXSTACKSIZE:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_','$']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2640,6 +2745,9 @@ begin
         LocalSwitches^.MinEnumSize:=4;
        end;
        tdMINENUMSIZE:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_','$']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2664,6 +2772,9 @@ begin
         end;
        end;
        tdOPENSTRINGS:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2678,6 +2789,9 @@ begin
         end;
        end;
        tdO:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         if CurrentChar=ord('-') then begin
          ReadChar;
          LocalSwitches^.Optimization:=false;
@@ -2689,6 +2803,9 @@ begin
         end;
        end;
        tdOPTIMIZATION:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2714,6 +2831,9 @@ begin
         end;
        end;
        tdOVERFLOWCHECKS:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2728,6 +2848,9 @@ begin
         end;
        end;
        tdSETPEFLAGS:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_','$']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2741,6 +2864,9 @@ begin
         end;
        end;
        tdSETPEOPTFLAGS:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_','$']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2765,6 +2891,9 @@ begin
         end;
        end;
        tdSAFEDIVIDE:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2779,6 +2908,9 @@ begin
         end;
        end;
        tdNODEFINE:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and not (ansichar(byte(CurrentChar)) in [#0..#32,',']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2786,6 +2918,9 @@ begin
         end;
        end;
        tdNOINCLUDE:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and not (ansichar(byte(CurrentChar)) in [#0..#32,',']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2803,6 +2938,9 @@ begin
         end;
        end;
        tdRANGECHECKS:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2817,6 +2955,9 @@ begin
         end;
        end;
        tdREALCOMPATIBILITY:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2831,6 +2972,9 @@ begin
         end;
        end;
        tdRESOURCE:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and not (ansichar(byte(CurrentChar)) in [#0..#32,',']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2838,6 +2982,9 @@ begin
         end;
        end;
        tdRUNONLY:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2852,6 +2999,9 @@ begin
         end;
        end;
        tdTYPEINFO:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2882,6 +3032,9 @@ begin
         GlobalSwitches^.DefinitionInfo:=true;
        end;
        tdREFERENCEINFO:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2896,6 +3049,9 @@ begin
         end;
        end;
        tdDEFINITIONINFO:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2921,6 +3077,9 @@ begin
         end;
        end;
        tdTYPEDADDRESS:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2935,6 +3094,9 @@ begin
         end;
        end;
        tdUNICODESTRINGS:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2960,6 +3122,9 @@ begin
         end;
        end;
        tdVARSTRINGCHECKS:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2974,6 +3139,9 @@ begin
         end;
        end;
        tdWARNINGS:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -2988,6 +3156,9 @@ begin
         end;
        end;
        tdWEAKPACKAGEUNIT:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -3013,6 +3184,9 @@ begin
         end;
        end;
        tdSTACKFRAMES:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
@@ -3038,6 +3212,9 @@ begin
         end;
        end;
        tdWRITEABLECONST:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));

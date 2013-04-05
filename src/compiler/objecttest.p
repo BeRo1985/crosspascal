@@ -1,4 +1,5 @@
 program objecttest;
+{$apptype console}
 
 type PTestObject=^TTestObject;
      TTestObject=object
