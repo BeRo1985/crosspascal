@@ -45,7 +45,7 @@ type TParser=class
        function ParsePortabilityDirectives:TPortabilityDirectives;
       public
        Scanner:TScanner;
-       ModuleName,FileName:ansistring;
+       ModuleName,FileName,ObjectClassName:ansistring;
        MustHaveParens,MakeSymbolsPublic,IsSystemUnit,IsInExceptionHandler:boolean;
        ModuleSymbol,CurrentMethod,CurrentProcedureFunction:PSymbol;
        CurrentObjectClass:PType;
@@ -125,6 +125,7 @@ begin
  CurrentProcedureFunction:=nil;
  CurrentObjectClass:=nil;
  CurrentParseObjectClass:=nil;
+ ObjectClassName:='';
  ParameterNumber:=0;
  UnitLevel:=TheUnitLevel;
  ForEachVarCounter:=0;
@@ -133,6 +134,7 @@ end;
 
 destructor TParser.Destroy;
 begin
+ ObjectClassName:='';
  WithStack.Free;
  Scanner.Free;
  OptimizerHighLevel.Free;
@@ -4130,7 +4132,7 @@ function TParser.ParseObjectDeclaration(ObjectName:ansistring;IsPacked:boolean):
 var Symbol,{NewSymbol,}Parent,TestSymbol:PSymbol;
     OldList:TSymbolList;
     OldVariableType:TVariableType;
-    ParentName:ansistring;
+    ParentName,OldObjectClassName:ansistring;
     SymbolAttributes:TSymbolAttributes;
     OldCurrentObjectClass,OldCurrentParseObjectClass,CurrentObject:PType;
     NewTreeNode:TTreeNode;
@@ -4208,6 +4210,8 @@ begin
  if assigned(result^.ChildOf) and assigned(result^.ChildOf^.TypeDefinition) then begin
   result^.RecordTable.ChildOf:=result^.ChildOf^.TypeDefinition^.RecordTable;
  end;
+ OldObjectClassName:=ObjectClassName;
+ ObjectClassName:=ObjectName;
  while not Scanner.IsEOFOrAbortError do begin
   Scanner.CheckForDirectives([tstSTRICT,tstPRIVATE,tstPUBLIC,tstPROTECTED,tstPUBLISHED]);
   case Scanner.CurrentToken of
@@ -4303,6 +4307,7 @@ begin
   end;
  end;
  Scanner.Match(tstEND);
+ ObjectClassName:=OldObjectClassName;
 
  if not result^.HasVirtualTable then begin
   CurrentObject:=result;
@@ -4364,7 +4369,7 @@ var Symbol,Parent,NewSymbol,ForwardClass:PSymbol;
     OldList:TSymbolList;
     OldVariableType:TVariableType;
     I,J:longint;
-    NewName,ParentName:ansistring;
+    NewName,ParentName,OldObjectClassName:ansistring;
     SymbolAttributes:TSymbolAttributes;
     NewTreeNode:TTreeNode;
     InterfaceSymbols:array of PSymbol;
@@ -4528,6 +4533,8 @@ begin
  OldVariableType:=SymbolManager.VariableType;
  SymbolManager.VariableType:=tvtClassField;
  SymbolAttributes:=[tsaOOPPublic];
+ OldObjectClassName:=ObjectClassName;
+ ObjectClassName:=ObjectName;
  if not IsClassOf then begin
   while not Scanner.IsEOFOrAbortError do begin
    Scanner.CheckForDirectives([tstSTRICT,tstPRIVATE,tstPUBLIC,tstPROTECTED,tstPUBLISHED]);
@@ -4629,6 +4636,7 @@ begin
   end;
   Scanner.Match(tstEND);
  end;
+ ObjectClassName:=OldObjectClassName;
 
  result^.HasVirtualTable:=true;
 
@@ -4638,7 +4646,7 @@ begin
   end;
  end else begin
   Symbol:=SymbolManager.NewSymbol(ModuleSymbol,result);
-  Symbol^.Name:='VMT';            
+  Symbol^.Name:='VMT';
   Symbol^.Attributes:=Symbol^.Attributes+[tsaField,tsaInternalField,tsaClassVMT];
   Symbol^.SymbolType:=Symbols.tstVariable;
   Symbol^.TypeDefinition:=SymbolManager.TypePointer;
@@ -5183,7 +5191,7 @@ begin
    Error.AbortCode(101);
    exit;
   end;
-  Method^.OverloadedName:=Scanner.ProcedureName+'_'+Method^.OverloadedName;
+ // Method^.OverloadedName:=Scanner.ProcedureName+'_'+Method^.OverloadedName;
   HashSymbol(Method);
  end else begin
   MethodSymbol:=nil;
@@ -5237,6 +5245,9 @@ begin
   Symbol^.ProcedureName:=Scanner.ProcedureName;
   Symbol^.Name:=Method^.Name;
   HashSymbol(Symbol);
+ end else if length(ObjectClassName)>0 then begin
+  Scanner.ProcedureName:=ObjectClassName+'_'+Symbol^.Name;
+  Symbol^.ProcedureName:=Scanner.ProcedureName;
  end;
 
  Symbol^.OverloadedName:=Scanner.ProcedureName+Symbol^.ParameterSuffix;
