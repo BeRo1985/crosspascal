@@ -4506,8 +4506,10 @@ begin
 
  if assigned(result^.ChildOf) then begin
   result^.VirtualIndexCount:=result^.ChildOf^.TypeDefinition^.VirtualIndexCount;
+  result^.DynamicIndexCount:=result^.ChildOf^.TypeDefinition^.DynamicIndexCount;
  end else begin
   result^.VirtualIndexCount:=0;
+  result^.DynamicIndexCount:=0;
  end;
 
  result^.RecordTable:=TSymbolList.Create(SymbolManager);
@@ -4576,6 +4578,8 @@ begin
         Symbol^.ProcedureAttributes:=Symbol^.ProcedureAttributes+[tpaDynamic];
         Scanner.Match(tstDYNAMIC);
         Scanner.Match(tstSEPARATOR);
+        Symbol^.DynamicIndex:=result^.DynamicIndexCount;
+        inc(result^.DynamicIndexCount);
        end;
        tstOVERRIDE:begin
         Symbol^.ProcedureAttributes:=Symbol^.ProcedureAttributes+[tpaOverride];

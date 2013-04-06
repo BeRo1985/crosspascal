@@ -801,6 +801,10 @@ begin
      ReadTypeReference(Symbol^.ReturnType);
     end;
     if (Flags and 8)<>0 then begin
+     if Stream.Read(Symbol^.DynamicIndex,SizeOf(longint))<>SizeOf(longint) then begin
+      SetLength(UsedUnits,0);
+      exit;
+     end;
     end;
     if (Flags and 16)<>0 then begin
      ReadSymbolReference(Symbol^.ResultSymbol);
@@ -1057,6 +1061,12 @@ begin
     end;
     if (Flags and 2)<>0 then begin
      ReadTypeReference(AType^.ClassOfType);
+    end;
+    if (Flags and 4)<>0 then begin
+     if Stream.Read(AType^.DynamicIndexCount,SizeOf(longint))<>SizeOf(longint) then begin
+      SetLength(UsedUnits,0);
+      exit;
+     end;
     end;
    end;
    ttdClassRef:begin
@@ -1619,9 +1629,9 @@ begin
     if assigned(Symbol^.ReturnType) then begin
      Flags:=Flags or 4;
     end;
-{   if Symbol^.??? then begin
+    if Symbol^.DynamicIndex<>0 then begin
      Flags:=Flags or 8;
-    end;}
+    end;
     if assigned(Symbol^.ResultSymbol) then begin
      Flags:=Flags or 16;
     end;
@@ -1644,8 +1654,11 @@ begin
     if (Flags and 4)<>0 then begin
      WriteTypeReference(Symbol^.ReturnType);
     end;
-{   if (Flags and 8)<>0 then begin
-    end;}
+    if (Flags and 8)<>0 then begin
+     if Stream.Write(Symbol^.DynamicIndex,SizeOf(longint))<>SizeOf(longint) then begin
+      exit;
+     end;
+    end;
     if (Flags and 16)<>0 then begin
      WriteSymbolReference(Symbol^.ResultSymbol);
     end;
@@ -1983,6 +1996,9 @@ begin
     if (AType^.TypeDefinition=ttdClass) and assigned(AType^.ClassOfType) then begin
      Flags:=Flags or 2;
     end;
+    if AType^.DynamicIndexCount<>0 then begin
+     Flags:=Flags or 4;
+    end;
     Stream.WriteByte(Flags);
     if (Flags and 1)<>0 then begin
      if Stream.Write(AType^.VirtualIndexCount,SizeOf(longint))<>SizeOf(longint) then begin
@@ -1991,6 +2007,11 @@ begin
     end;
     if (Flags and 2)<>0 then begin
      WriteTypeReference(AType^.ClassOfType);
+    end;
+    if (Flags and 4)<>0 then begin
+     if Stream.Write(AType^.DynamicIndexCount,SizeOf(longint))<>SizeOf(longint) then begin
+      exit;
+     end;
     end;
    end;
    ttdClassRef:begin
