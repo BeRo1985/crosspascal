@@ -3109,6 +3109,52 @@ begin
          CodeTarget.AddLn('NULL');
         end;
        end else begin
+        // void* vmtSelfPtr;
+        CodeTarget.AddLn('(void*)&'+Name+'_VMT,');
+        // void* vmtIntfTable;
+        CodeTarget.AddLn('NULL,');
+        // void* vmtAutoTable;
+        CodeTarget.AddLn('NULL,');
+        // void* vmtInitTable;
+        CodeTarget.AddLn('NULL,');
+        // void* vmtTypeInfo;
+        CodeTarget.AddLn('NULL,');
+        // void* vmtFieldTable;
+        CodeTarget.AddLn('NULL,');
+        // void* vmtMethodTable;
+        CodeTarget.AddLn('NULL,');
+        // void* vmtDynamicTable;
+        if HasDynamicMethods then begin
+         CodeTarget.AddLn('(void*)&'+Name+'_DMT,');
+        end else begin
+         CodeTarget.AddLn('NULL,');
+        end;
+        // void* vmtClassName;
+        CodeTarget.AddLn('NULL,');
+        // size_t vmtInstanceSize;
+        CodeTarget.AddLn(IntToStr(Type_^.RecordSize)+',');
+        // void* vmtParent;
+        if assigned(Type_^.ChildOf) then begin
+         CodeTarget.AddLn('(void*)&'+GetSymbolName(Type_^.ChildOf)+'_VMT,');
+        end else begin
+         CodeTarget.AddLn('NULL,');
+        end;
+        // void* vmtSafeCallException;
+        CodeTarget.AddLn('NULL,');
+        // void* vmtAfterConstruction;
+        CodeTarget.AddLn('NULL,');
+        // void* vmtBeforeDestruction;
+        CodeTarget.AddLn('NULL,');
+        // void* vmtDispatch;
+        CodeTarget.AddLn('NULL,');
+        // void* vmtDefaultHandler;
+        CodeTarget.AddLn('NULL,');
+        // void* vmtNewInstance;
+        CodeTarget.AddLn('NULL,');
+        // void* vmtFreeInstance;
+        CodeTarget.AddLn('NULL,');
+        // void* vmtDestroy;
+        CodeTarget.AddLn('NULL');
        end;
        CodeTarget.DecTab;
        CodeTarget.AddLn('},');
