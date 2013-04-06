@@ -45,7 +45,7 @@ type TParser=class
        function ParsePortabilityDirectives:TPortabilityDirectives;
       public
        Scanner:TScanner;
-       ModuleName,FileName,ObjectClassName:ansistring;
+       ModuleName,OriginalModuleName,FileName,ObjectClassName:ansistring;
        MustHaveParens,MakeSymbolsPublic,IsSystemUnit,IsInExceptionHandler:boolean;
        ModuleSymbol,CurrentMethod,CurrentProcedureFunction:PSymbol;
        CurrentObjectClass:PType;
@@ -202,6 +202,7 @@ var Symbol,LastSymbol:PSymbol;
 begin
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'POINTER';
+ Symbol^.OriginalCaseName:='Pointer';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -214,6 +215,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'BOOLEAN';
+ Symbol^.OriginalCaseName:='Boolean';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -229,6 +231,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'BYTEBOOL';
+ Symbol^.OriginalCaseName:='ByteBool';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -243,6 +246,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'WORDBOOL';
+ Symbol^.OriginalCaseName:='WordBool';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -257,6 +261,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'LONGBOOL';
+ Symbol^.OriginalCaseName:='LongBool';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -271,6 +276,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'BOOL64';
+ Symbol^.OriginalCaseName:='Bool64';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -285,6 +291,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'FALSE';
+ Symbol^.OriginalCaseName:='False';
  Symbol^.SymbolType:=Symbols.tstConstant;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  Symbol^.ConstantTypeRecord:=BooleanType;
@@ -294,6 +301,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'TRUE';
+ Symbol^.OriginalCaseName:='True';
  Symbol^.SymbolType:=Symbols.tstConstant;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  Symbol^.ConstantTypeRecord:=BooleanType;
@@ -303,6 +311,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'INT64';
+ Symbol^.OriginalCaseName:='Int64';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -318,6 +327,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'QWORD';
+ Symbol^.OriginalCaseName:='QWord';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -333,6 +343,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'UINT64';
+ Symbol^.OriginalCaseName:='UInt64';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  Symbol^.TypeDefinition:=AType;
@@ -340,6 +351,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'LONGWORD';
+ Symbol^.OriginalCaseName:='LongWord';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -355,6 +367,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'CARDINAL';
+ Symbol^.OriginalCaseName:='Cardinal';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -369,6 +382,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'LONGINT';
+ Symbol^.OriginalCaseName:='LongInt';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  Symbol^.TypeDefinition:=AType;
@@ -384,6 +398,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'INTEGER';
+ Symbol^.OriginalCaseName:='Integer';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -398,6 +413,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'WORD';
+ Symbol^.OriginalCaseName:='Word';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -412,6 +428,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'SMALLINT';
+ Symbol^.OriginalCaseName:='SmallInt';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -426,6 +443,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'BYTE';
+ Symbol^.OriginalCaseName:='Byte';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -440,6 +458,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'SHORTINT';
+ Symbol^.OriginalCaseName:='ShortInt';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -456,6 +475,7 @@ begin
   taX64,taX64WIN64:begin
    Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
    Symbol^.Name:=tpsIdentifier+'PTRINT';
+   Symbol^.OriginalCaseName:='PtrInt';
    Symbol^.SymbolType:=Symbols.tstType;
    Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
    Symbol^.TypeDefinition:=Int64Type;
@@ -463,6 +483,7 @@ begin
 
    Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
    Symbol^.Name:=tpsIdentifier+'PTRUINT';
+   Symbol^.OriginalCaseName:='PtrUInt';
    Symbol^.SymbolType:=Symbols.tstType;
    Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
    Symbol^.TypeDefinition:=QWordType;
@@ -470,6 +491,7 @@ begin
 
    Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
    Symbol^.Name:=tpsIdentifier+'NATIVEINT';
+   Symbol^.OriginalCaseName:='NativeInt';
    Symbol^.SymbolType:=Symbols.tstType;
    Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
    Symbol^.TypeDefinition:=Int64Type;
@@ -477,6 +499,7 @@ begin
 
    Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
    Symbol^.Name:=tpsIdentifier+'NATIVEUINT';
+   Symbol^.OriginalCaseName:='NativEUInt';
    Symbol^.SymbolType:=Symbols.tstType;
    Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
    Symbol^.TypeDefinition:=QWordType;
@@ -485,6 +508,7 @@ begin
   else {taARM,taARMEABI,taX86,taX86WIN32:}begin
    Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
    Symbol^.Name:=tpsIdentifier+'PTRINT';
+   Symbol^.OriginalCaseName:='PtrInt';
    Symbol^.SymbolType:=Symbols.tstType;
    Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
    Symbol^.TypeDefinition:=LongIntType;
@@ -492,6 +516,7 @@ begin
 
    Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
    Symbol^.Name:=tpsIdentifier+'PTRUINT';
+   Symbol^.OriginalCaseName:='PtrUInt';
    Symbol^.SymbolType:=Symbols.tstType;
    Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
    Symbol^.TypeDefinition:=LongWordType;
@@ -499,6 +524,7 @@ begin
 
    Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
    Symbol^.Name:=tpsIdentifier+'NATIVEINT';
+   Symbol^.OriginalCaseName:='NativeInt';
    Symbol^.SymbolType:=Symbols.tstType;
    Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
    Symbol^.TypeDefinition:=LongIntType;
@@ -506,6 +532,7 @@ begin
 
    Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
    Symbol^.Name:=tpsIdentifier+'NATIVEUINT';
+   Symbol^.OriginalCaseName:='NativeUInt';
    Symbol^.SymbolType:=Symbols.tstType;
    Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
    Symbol^.TypeDefinition:=LongWordType;
@@ -522,6 +549,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'CHAR';
+ Symbol^.OriginalCaseName:='Char';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  Symbol^.TypeDefinition:=AType;
@@ -530,6 +558,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'ANSICHAR';
+ Symbol^.OriginalCaseName:='AnsiChar';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  Symbol^.TypeDefinition:=AType;
@@ -545,6 +574,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'PCHAR';
+ Symbol^.OriginalCaseName:='PChar';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  Symbol^.TypeDefinition:=AType;
@@ -553,6 +583,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'PANSICHAR';
+ Symbol^.OriginalCaseName:='PAnsiChar';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  Symbol^.TypeDefinition:=AType;
@@ -561,6 +592,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'WIDECHAR';
+ Symbol^.OriginalCaseName:='WideChar';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -576,6 +608,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'PWIDECHAR';
+ Symbol^.OriginalCaseName:='PWideChar';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -588,6 +621,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'HUGECHAR';
+ Symbol^.OriginalCaseName:='HugeChar';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -603,6 +637,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'PHUGECHAR';
+ Symbol^.OriginalCaseName:='PHugeChar';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -615,6 +650,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'SINGLE';
+ Symbol^.OriginalCaseName:='Single';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -627,6 +663,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'DOUBLE';
+ Symbol^.OriginalCaseName:='Double';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -639,6 +676,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'REAL';
+ Symbol^.OriginalCaseName:='Real';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -651,6 +689,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'EXTENDED';
+ Symbol^.OriginalCaseName:='Extended';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -663,6 +702,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'TEXT';
+ Symbol^.OriginalCaseName:='Text';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -675,6 +715,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'ANSISTRING';
+ Symbol^.OriginalCaseName:='AnsiString';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -689,6 +730,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'WIDESTRING';
+ Symbol^.OriginalCaseName:='WideString';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -703,6 +745,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'HUGESTRING';
+ Symbol^.OriginalCaseName:='HugeString';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -717,6 +760,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'UNICODESTRING';
+ Symbol^.OriginalCaseName:='UnicodeString';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -731,6 +775,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'$CEXPRESSION$';
+ Symbol^.OriginalCaseName:='$CExpression$';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
@@ -742,6 +787,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'WRITE';
+ Symbol^.OriginalCaseName:='Write';
  Symbol^.SymbolType:=Symbols.tstProcedure;
  Symbol^.InternalProcedure:=tipWRITE;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -749,6 +795,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'WRITELN';
+ Symbol^.OriginalCaseName:='WriteLn';
  Symbol^.SymbolType:=Symbols.tstProcedure;
  Symbol^.InternalProcedure:=tipWRITELN;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -756,6 +803,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'READ';
+ Symbol^.OriginalCaseName:='Read';
  Symbol^.SymbolType:=Symbols.tstProcedure;
  Symbol^.InternalProcedure:=tipREAD;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -763,6 +811,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'READLN';
+ Symbol^.OriginalCaseName:='ReadLn';
  Symbol^.SymbolType:=Symbols.tstProcedure;
  Symbol^.InternalProcedure:=tipREADLN;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -770,6 +819,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'SIZEOF';
+ Symbol^.OriginalCaseName:='SizeOf';
  Symbol^.SymbolType:=Symbols.tstFunction;
  Symbol^.InternalProcedure:=tipSIZEOF;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -778,6 +828,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'DEC';
+ Symbol^.OriginalCaseName:='Dec';
  Symbol^.SymbolType:=Symbols.tstProcedure;
  Symbol^.InternalProcedure:=tipDEC;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -785,12 +836,14 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'INC';
+ Symbol^.OriginalCaseName:='Inc';
  Symbol^.SymbolType:=Symbols.tstProcedure;
  Symbol^.InternalProcedure:=tipINC;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'SUCC';
+ Symbol^.OriginalCaseName:='Succ';
  Symbol^.SymbolType:=Symbols.tstFUNCTION;
  Symbol^.InternalProcedure:=tipSUCC;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -798,6 +851,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'PRED';
+ Symbol^.OriginalCaseName:='Pred';
  Symbol^.SymbolType:=Symbols.tstFUNCTION;
  Symbol^.InternalProcedure:=tipPRED;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -805,6 +859,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'ORD';
+ Symbol^.OriginalCaseName:='Ord';
  Symbol^.SymbolType:=Symbols.tstFUNCTION;
  Symbol^.InternalProcedure:=tipORD;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -812,6 +867,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'CHR';
+ Symbol^.OriginalCaseName:='Chr';
  Symbol^.SymbolType:=Symbols.tstFUNCTION;
  Symbol^.InternalProcedure:=tipCHR;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -819,6 +875,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'NEW';
+ Symbol^.OriginalCaseName:='New';
  Symbol^.SymbolType:=Symbols.tstPROCEDURE;
  Symbol^.InternalProcedure:=tipNEW;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -826,6 +883,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'DISPOSE';
+ Symbol^.OriginalCaseName:='Dispose';
  Symbol^.SymbolType:=Symbols.tstPROCEDURE;
  Symbol^.InternalProcedure:=tipDISPOSE;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -833,6 +891,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'SETLENGTH';
+ Symbol^.OriginalCaseName:='SetLength';
  Symbol^.SymbolType:=Symbols.tstPROCEDURE;
  Symbol^.InternalProcedure:=tipSETLENGTH;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -840,6 +899,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'LENGTH';
+ Symbol^.OriginalCaseName:='Length';
  Symbol^.SymbolType:=Symbols.tstFUNCTION;
  Symbol^.InternalProcedure:=tipLENGTH;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -847,6 +907,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'ASSIGNED';
+ Symbol^.OriginalCaseName:='Assigned';
  Symbol^.SymbolType:=Symbols.tstFUNCTION;
  Symbol^.InternalProcedure:=tipASSIGNED;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -854,6 +915,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'TRUNC';
+ Symbol^.OriginalCaseName:='Trunc';
  Symbol^.SymbolType:=Symbols.tstFUNCTION;
  Symbol^.InternalProcedure:=tipTRUNC;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -861,6 +923,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'ROUND';
+ Symbol^.OriginalCaseName:='Round';
  Symbol^.SymbolType:=Symbols.tstFUNCTION;
  Symbol^.InternalProcedure:=tipROUND;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -868,6 +931,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'SQR';
+ Symbol^.OriginalCaseName:='Sqr';
  Symbol^.SymbolType:=Symbols.tstFUNCTION;
  Symbol^.InternalProcedure:=tipSQR;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -875,6 +939,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'SQRT';
+ Symbol^.OriginalCaseName:='Sqrt';
  Symbol^.SymbolType:=Symbols.tstFUNCTION;
  Symbol^.InternalProcedure:=tipSQR;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -882,6 +947,7 @@ begin
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'TYPEOF';
+ Symbol^.OriginalCaseName:='TypeOf';
  Symbol^.SymbolType:=Symbols.tstFUNCTION;
  Symbol^.InternalProcedure:=tipTYPEOF;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
@@ -1212,14 +1278,14 @@ begin
  case Scanner.CurrentToken of
   tstIdentifier:begin
    Error.Push;
-   Name:=Scanner.ReadIdentifier;
+   Name:=Scanner.ReadIdentifier(nil);
    WhichWithLevel:=-1;
    Symbol:=SymbolManager.GetSymbol(Name,ModuleSymbol,CurrentObjectClass,@WhichWithLevel);
    if assigned(Symbol) and (Symbol^.SymbolType=Symbols.tstUnit) then begin
     Error.Pop;
     Error.Push;
     Scanner.Match(tstPeriod);
-    Name:=Scanner.ReadIdentifier;
+    Name:=Scanner.ReadIdentifier(nil);
     Symbol:=Symbol^.SymbolList.GetSymbol(Name,ModuleSymbol,CurrentObjectClass);
    end;
    if assigned(Symbol) then begin
@@ -1324,7 +1390,7 @@ begin
   tstINHERITED:begin
    Scanner.Match(tstINHERITED);
    if Scanner.CurrentToken=tstIdentifier then begin
-    Name:=Scanner.ReadIdentifier;
+    Name:=Scanner.ReadIdentifier(nil);
    end else if assigned(CurrentMethod) then begin
     Name:=CurrentMethod^.Name;
    end else begin
@@ -1664,7 +1730,7 @@ begin
      end;
      case AType^.TypeDefinition of
       ttdRecord,ttdObject,ttdClass,ttdInterface:begin
-       FieldName:=Scanner.ReadIdentifier;
+       FieldName:=Scanner.ReadIdentifier(nil);
 //     Symbol:=SymbolManager.GetSymbol(Name,ModuleSymbol,CurrentObjectClass);
        if assigned(AType) then begin
         FieldSymbol:=AType^.RecordTable.GetSymbol(FieldName,ModuleSymbol,CurrentObjectClass,true);
@@ -1796,11 +1862,11 @@ begin
    end;
    tstAS:begin
     Scanner.Match(tstAS);
-    Name:=Scanner.ReadIdentifier;
+    Name:=Scanner.ReadIdentifier(nil);
     Symbol:=SymbolManager.GetSymbol(Name,ModuleSymbol,CurrentObjectClass);
     if assigned(Symbol) and (Symbol^.SymbolType=Symbols.tstUnit) then begin
      Scanner.Match(tstPeriod);
-     Name:=Scanner.ReadIdentifier;
+     Name:=Scanner.ReadIdentifier(nil);
      Symbol:=Symbol^.SymbolList.GetSymbol(Name,ModuleSymbol,CurrentObjectClass);
     end;
     if assigned(Symbol) then begin
@@ -1918,11 +1984,11 @@ begin
    end;
    tstIS:begin
     Scanner.Match(tstIS);
-    Name:=Scanner.ReadIdentifier;
+    Name:=Scanner.ReadIdentifier(nil);
     Symbol:=SymbolManager.GetSymbol(Name,ModuleSymbol,CurrentObjectClass);
     if assigned(Symbol) and (Symbol^.SymbolType=Symbols.tstUnit) then begin
      Scanner.Match(tstPeriod);
-     Name:=Scanner.ReadIdentifier;
+     Name:=Scanner.ReadIdentifier(nil);
      Symbol:=Symbol^.SymbolList.GetSymbol(Name,ModuleSymbol,CurrentObjectClass);
     end;
     if assigned(Symbol) then begin
@@ -2021,7 +2087,7 @@ begin
   exit;
  end;
  if Scanner.CurrentToken=tstIdentifier then begin
-  Name:=Scanner.ReadIdentifier;
+  Name:=Scanner.ReadIdentifier(nil);
   ToSymbol:=SymbolManager.GetSymbol(Name,ModuleSymbol,CurrentObjectClass);
   if not assigned(ToSymbol) then begin
    Error.AbortCode(37);
@@ -2705,7 +2771,7 @@ begin
  if WithProgramToken then begin
   Scanner.Match(tstPROGRAM);
   if Scanner.CurrentToken=tstIdentifier then begin
-   ModuleName:=Scanner.ReadIdentifier;
+   ModuleName:=Scanner.ReadIdentifier(@OriginalModuleName);
    if Scanner.CurrentToken=tstLeftParen then begin
     Scanner.Match(tstLeftParen);
     if Scanner.CurrentToken=tstIdentifier then begin
@@ -2732,6 +2798,7 @@ begin
  Symbol^.SymbolType:=Symbols.tstUNIT;
  Symbol^.UnitKind:=tukPROGRAM;
  Symbol^.Name:=ModuleName;
+ Symbol^.OriginalCaseName:=OriginalModuleName;
  Symbol^.OriginalName:=ChangeFileExt(ExtractFileName(FileName),'');
  Symbol^.OriginalFileName:=FileName;
  Symbol^.SymbolPointerList:=TPointerList.Create;
@@ -2798,7 +2865,7 @@ begin
  IsSystemUnit:=false;
  Scanner.Match(tstPACKAGE);
  if Scanner.CurrentToken=tstIdentifier then begin
-  ModuleName:=Scanner.ReadIdentifier;
+  ModuleName:=Scanner.ReadIdentifier(@OriginalModuleName);
   Scanner.Match(tstSeparator);
  end else begin
   Scanner.Match(tstIdentifier);
@@ -2807,6 +2874,7 @@ begin
  Symbol^.SymbolType:=Symbols.tstUNIT;
  Symbol^.UnitKind:=tukPACKAGE;
  Symbol^.Name:=ModuleName;
+ Symbol^.OriginalCaseName:=OriginalModuleName;
  Symbol^.OriginalName:=ChangeFileExt(ExtractFileName(FileName),'');
  Symbol^.OriginalFileName:=FileName;
  Symbol^.SymbolPointerList:=TPointerList.Create;
@@ -2900,7 +2968,7 @@ begin
  IsSystemUnit:=false;
  Scanner.Match(tstLIBRARY);
  if Scanner.CurrentToken=tstIdentifier then begin
-  ModuleName:=Scanner.ReadIdentifier;
+  ModuleName:=Scanner.ReadIdentifier(@OriginalModuleName);
   Scanner.Match(tstSeparator);
  end else begin
   Scanner.Match(tstIdentifier);
@@ -2909,6 +2977,7 @@ begin
  Symbol^.SymbolType:=Symbols.tstUNIT;
  Symbol^.UnitKind:=tukLIBRARY;
  Symbol^.Name:=ModuleName;
+ Symbol^.OriginalCaseName:=OriginalModuleName;
  Symbol^.OriginalName:=ChangeFileExt(ExtractFileName(FileName),'');
  Symbol^.OriginalFileName:=FileName;
  Symbol^.SymbolPointerList:=TPointerList.Create;
@@ -2982,7 +3051,7 @@ begin
   OldModuleName:=ModuleName;
   OldIsSystemUnit:=IsSystemUnit;
 
-  ModuleName:=Scanner.ReadIdentifier;
+  ModuleName:=Scanner.ReadIdentifier(@OriginalModuleName);
 
   if CorrectSymbolName(ModuleName)<>UPPERCASE(ChangeFileExt(ExtractFileName(Scanner.FileName),'')) then begin
    Error.AbortCode(89,CorrectSymbolName(ModuleName),UPPERCASE(ExtractFileName(Scanner.FileName)));
@@ -3006,6 +3075,7 @@ begin
    Symbol^.TypePointerList:=TPointerList.Create;
    Symbol^.SymbolTableStream:=TBeRoStream.Create;
    Symbol^.Name:=ModuleName;
+   Symbol^.OriginalCaseName:=OriginalModuleName;
    Symbol^.OriginalName:=ChangeFileExt(ExtractFileName(FileName),'');
    Symbol^.OriginalFileName:=FileName;
    Symbol^.OwnerModule:=Symbol;
@@ -3211,7 +3281,7 @@ begin
  while not Scanner.IsEOFOrAbortError do begin
   if Scanner.CurrentToken=tstIdentifier then begin
    AIdentifier:=Scanner.CurrentIdentifier;
-   AIdentifierEx:=Scanner.ReadIdentifier;
+   AIdentifierEx:=Scanner.ReadIdentifier(nil);
    AName:='';
    AIndex:=-1;
    Scanner.Match(tstIdentifier);
@@ -3584,7 +3654,7 @@ begin
     LastSymbol^.Next:=Symbol;
    end;
    LastSymbol:=Symbol;
-   Symbol^.Name:=Scanner.ReadIdentifier;
+   Symbol^.Name:=Scanner.ReadIdentifier(@Symbol^.OriginalCaseName);
    HashSymbol(Symbol);
    if Scanner.CurrentToken=tstCOMMA then begin
     Scanner.Match(tstCOMMA);
@@ -3639,7 +3709,7 @@ begin
     Error.AbortCode(508);
    end;
    Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
-   Symbol^.Name:=Scanner.ReadIdentifier;
+   Symbol^.Name:=Scanner.ReadIdentifier(@Symbol^.OriginalCaseName);
    Scanner.Match(tstCOLON);
    AType:=ParseTypeDefinition(TypeName);
    Symbol^.SymbolType:=Symbols.tstVariable;
@@ -3718,7 +3788,7 @@ begin
 end;
 
 procedure TParser.ParsePropertyField(var RecordType:PType);
-var SymbolName,TypeName,TempName:ansistring;
+var SymbolName,TypeName,TempName,OriginalCaseName:ansistring;
     NewTreeNode:TTreeNode;
     Symbol,ParentSymbol,TempSymbol,SymbolA,SymbolB:PSymbol;
     PortabilityDirectives:TPortabilityDirectives;
@@ -3726,12 +3796,14 @@ var SymbolName,TypeName,TempName:ansistring;
     ParameterSuffix:ansistring;
 begin
  Scanner.Match(tstPROPERTY);
- SymbolName:=Scanner.ReadIdentifier;
+ OriginalCaseName:='';
+ SymbolName:=Scanner.ReadIdentifier(@OriginalCaseName);
  if Error.DoAbort then begin
   exit;
  end;
  ParentSymbol:=RecordType^.RecordTable.GetSymbol(SymbolName,ModuleSymbol,CurrentObjectClass,true);
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+ Symbol^.OriginalCaseName:=OriginalCaseName;
  Symbol^.Name:=SymbolName;
  Symbol^.SymbolType:=Symbols.tstProperty;
  if assigned(ParentSymbol) and ((ParentSymbol^.SymbolType<>Symbols.tstProperty) or not assigned(ParentSymbol^.OwnerObjectClass)) then begin
@@ -3798,7 +3870,7 @@ begin
    Symbol^.PropertyNoDefault:=true;
    PortabilityDirectives:=[];
    Scanner.Match(tstCOLON);
-   TypeName:=Scanner.ReadIdentifier;
+   TypeName:=Scanner.ReadIdentifier(nil);
    Scanner.CheckForDirectives([tstREAD,tstWRITE,tstSTORED,tstDEFAULT,tstNODEFAULT,tstIMPLEMENTS,tstINDEX]);
    TempSymbol:=SymbolManager.GetSymbol(TypeName,ModuleSymbol,CurrentObjectClass);
    if (not assigned(TempSymbol)) or (TempSymbol^.SymbolType<>Symbols.tstType) then begin
@@ -3811,7 +3883,7 @@ begin
    case Scanner.CurrentToken of
     tstREAD:begin
      Scanner.Match(tstREAD);
-     TempName:=Scanner.ReadIdentifier;
+     TempName:=Scanner.ReadIdentifier(nil);
      Scanner.CheckForDirectives([tstREAD,tstWRITE,tstSTORED,tstDEFAULT,tstNODEFAULT,tstIMPLEMENTS,tstINDEX]);
      TempSymbol:=RecordType^.RecordTable.GetSymbol(TempName,ModuleSymbol,CurrentObjectClass,true);
      if (not (assigned(TempSymbol) and assigned(TempSymbol^.OwnerObjectClass))) or not (TempSymbol^.SymbolType in [Symbols.tstVariable,Symbols.tstFunction]) then begin
@@ -3860,7 +3932,7 @@ begin
     end;
     tstWRITE:begin
      Scanner.Match(tstWRITE);
-     TempName:=Scanner.ReadIdentifier;
+     TempName:=Scanner.ReadIdentifier(nil);
      Scanner.CheckForDirectives([tstREAD,tstWRITE,tstSTORED,tstDEFAULT,tstNODEFAULT,tstIMPLEMENTS,tstINDEX]);
      TempSymbol:=RecordType^.RecordTable.GetSymbol(TempName,ModuleSymbol,CurrentObjectClass,true);
      if (not (assigned(TempSymbol) and assigned(TempSymbol^.OwnerObjectClass))) or not (TempSymbol^.SymbolType in [Symbols.tstVariable,Symbols.tstProcedure]) then begin
@@ -3915,7 +3987,7 @@ begin
     tstSTORED:begin
      Scanner.Match(tstSTORED);
      Scanner.AllowedDirectives:=Scanner.AllowedDirectives+[tstREAD,tstWRITE,tstSTORED,tstDEFAULT,tstNODEFAULT,tstIMPLEMENTS,tstINDEX];
-     TempName:=Scanner.ReadIdentifier;
+     TempName:=Scanner.ReadIdentifier(nil);
      Scanner.CheckForDirectives([tstREAD,tstWRITE,tstSTORED,tstDEFAULT,tstNODEFAULT,tstIMPLEMENTS,tstINDEX]);
      TempSymbol:=RecordType^.RecordTable.GetSymbol(TempName,ModuleSymbol,CurrentObjectClass,true);
      if assigned(TempSymbol) and assigned(TempSymbol^.OwnerObjectClass) then begin
@@ -4082,7 +4154,7 @@ begin
        Symbol^.PropertyImplements:=TSymbolList.Create(SymbolManager);
       end;
       while not Scanner.IsEOFOrAbortError do begin
-       TempName:=Scanner.ReadIdentifier;
+       TempName:=Scanner.ReadIdentifier(nil);
        TempSymbol:=SymbolManager.GetSymbol(TempName,ModuleSymbol,CurrentObjectClass);
        if assigned(TempSymbol) and (TempSymbol^.SymbolType=Symbols.tstType) and
           assigned(TempSymbol^.TypeDefinition) and (TempSymbol^.TypeDefinition^.TypeDefinition in [ttdCLASS,ttdINTERFACE]) then begin
@@ -4146,11 +4218,11 @@ begin
  Parent:=nil;
  if Scanner.CurrentToken=tstLeftParen then begin
   Scanner.Match(tstLeftParen);
-  ParentName:=Scanner.ReadIdentifier;
+  ParentName:=Scanner.ReadIdentifier(nil);
   Parent:=SymbolManager.GetSymbol(ParentName,ModuleSymbol,CurrentObjectClass);
   if assigned(Parent) and (Parent^.SymbolType=Symbols.tstUnit) then begin
    Scanner.Match(tstPeriod);
-   ParentName:=Scanner.ReadIdentifier;
+   ParentName:=Scanner.ReadIdentifier(nil);
    Parent:=Parent^.SymbolList.GetSymbol(ParentName,ModuleSymbol,CurrentObjectClass);
   end;
   if not assigned(Parent) then begin
@@ -4395,11 +4467,11 @@ begin
   if Scanner.CurrentToken=tstOF then begin
 // IsClassOf:=TRUE;
    Scanner.Match(tstOF);
-   NewName:=Scanner.ReadIdentifier;
+   NewName:=Scanner.ReadIdentifier(nil);
    NewSymbol:=SymbolManager.GetSymbol(NewName,ModuleSymbol,CurrentObjectClass);
    if assigned(NewSymbol) and (NewSymbol^.SymbolType=Symbols.tstUnit) then begin
     Scanner.Match(tstPeriod);
-    NewName:=Scanner.ReadIdentifier;
+    NewName:=Scanner.ReadIdentifier(nil);
     NewSymbol:=NewSymbol^.SymbolList.GetSymbol(NewName,ModuleSymbol,CurrentObjectClass);
    end;
    if not assigned(NewSymbol) then begin
@@ -4423,11 +4495,11 @@ begin
    Scanner.Match(tstLeftParen);
    I:=0;
    while not Scanner.IsEOFOrAbortError do begin
-    NewName:=Scanner.ReadIdentifier;
+    NewName:=Scanner.ReadIdentifier(nil);
     NewSymbol:=SymbolManager.GetSymbol(NewName,ModuleSymbol,CurrentObjectClass);
     if assigned(NewSymbol) and (NewSymbol^.SymbolType=Symbols.tstUnit) then begin
      Scanner.Match(tstPeriod);
-     NewName:=Scanner.ReadIdentifier;
+     NewName:=Scanner.ReadIdentifier(nil);
      NewSymbol:=NewSymbol^.SymbolList.GetSymbol(NewName,ModuleSymbol,CurrentObjectClass);
     end;
     if not assigned(NewSymbol) then begin
@@ -4688,11 +4760,11 @@ begin
  if Scanner.CurrentToken=tstLeftParen then begin
   Scanner.Match(tstLeftParen);
   while not Scanner.IsEOFOrAbortError do begin
-   NewName:=Scanner.ReadIdentifier;
+   NewName:=Scanner.ReadIdentifier(nil);
    NewSymbol:=SymbolManager.GetSymbol(NewName,ModuleSymbol,CurrentObjectClass);
    if assigned(NewSymbol) and (NewSymbol^.SymbolType=Symbols.tstUnit) then begin
     Scanner.Match(tstPeriod);
-    NewName:=Scanner.ReadIdentifier;
+    NewName:=Scanner.ReadIdentifier(nil);
     NewSymbol:=NewSymbol^.SymbolList.GetSymbol(NewName,ModuleSymbol,CurrentObjectClass);
    end;
    if not assigned(NewSymbol) then begin
@@ -4851,7 +4923,7 @@ begin
     LastSymbol^.Next:=CurrentSymbol;
    end;
    LastSymbol:=CurrentSymbol;
-   CurrentSymbol^.Name:=Scanner.ReadIdentifier;
+   CurrentSymbol^.Name:=Scanner.ReadIdentifier(@CurrentSymbol^.OriginalCaseName);
    CurrentSymbol^.OverloadedName:=ModuleName+tpsParameter+CurrentSymbol^.Name+tpsParameter+INTTOSTR(ParameterNumber);
    HashSymbol(CurrentSymbol);
    inc(ParameterNumber);
@@ -5094,7 +5166,7 @@ end;
 function TParser.ParseProcedure(ParseHeader:boolean;ProcedureAttributes:TProcedureAttributes):PSymbol;
 var Parent:PSymbol;
     ObjectClassSymbolList:TSymbolList;
-    OldObjectName,OldName,Name,ParameterSuffix,MethodName,s:ansistring;
+    OldObjectName,OldName,Name,ParameterSuffix,MethodName,OriginalCaseName,s:ansistring;
     Method,MethodSymbol,SearchSymbol,Symbol,SymbolA,SymbolB,ResultSymbol,SelfSymbol,
     OldCurrentMethod,OldCurrentProcedureFunction:PSymbol;
     OldCurrentObjectClass:PType;
@@ -5163,7 +5235,8 @@ begin
  OldCurrentObjectClass:=CurrentObjectClass;
  
  OldName:=Scanner.ProcedureName;
- Name:=Scanner.ReadIdentifier;
+ OriginalCaseName:='';
+ Name:=Scanner.ReadIdentifier(@OriginalCaseName);
  if length(Scanner.ProcedureName)>0 then begin
   Scanner.ProcedureName:=Scanner.ProcedureName+'_NESTED_'+Name;
  end else begin
@@ -5185,7 +5258,7 @@ begin
   end;
   ObjectClassSymbolList:=MethodSymbol^.TypeDefinition^.RecordTable;
   SymbolManager.PushSymbolList(ObjectClassSymbolList);
-  MethodName:=Scanner.ReadIdentifier;
+  MethodName:=Scanner.ReadIdentifier(@OriginalCaseName);
   Method:=ObjectClassSymbolList.GetSymbol(MethodName,ModuleSymbol,CurrentObjectClass);
   if not assigned(Method) then begin
    Error.AbortCode(101);
@@ -5200,6 +5273,7 @@ begin
  end;
  Symbol^.ProcedureName:=Scanner.ProcedureName;
  Symbol^.Name:=Name;
+ Symbol^.OriginalCaseName:=OriginalCaseName;
  HashSymbol(Symbol);
 
  if Scanner.CurrentToken=tstLeftParen then begin
@@ -5244,6 +5318,7 @@ begin
   Scanner.ProcedureName:=Scanner.ProcedureName+'_'+Method^.Name;
   Symbol^.ProcedureName:=Scanner.ProcedureName;
   Symbol^.Name:=Method^.Name;
+  Symbol^.OriginalCaseName:=Method^.OriginalCaseName;
   HashSymbol(Symbol);
  end else if length(ObjectClassName)>0 then begin
   Scanner.ProcedureName:=ObjectClassName+'_'+Symbol^.Name;
@@ -5677,7 +5752,7 @@ begin
     HigherValue:=0;
     while not Scanner.IsEOFOrAbortError do begin
      Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
-     Symbol^.Name:=Scanner.ReadIdentifier;
+     Symbol^.Name:=Scanner.ReadIdentifier(@Symbol^.OriginalCaseName);
      HashSymbol(Symbol);
      Symbol^.SymbolType:=Symbols.tstConstant;
      Symbol^.ConstantType:=tctOrdinal;
@@ -5956,7 +6031,7 @@ begin
     case Scanner.CurrentToken of
      tstIdentifier:begin
       Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
-      Symbol^.Name:=Scanner.ReadIdentifier;
+      Symbol^.Name:=Scanner.ReadIdentifier(@Symbol^.OriginalCaseName);
       Symbol^.SymbolType:=Symbols.tstType;
       Symbol^.VariableType:=SymbolManager.VariableType;
       Symbol^.TypeDefinition:=nil;
@@ -6552,7 +6627,7 @@ begin
       Error.AbortCode(124);
       break;
      end;
-     Field:=Scanner.ReadIdentifier;
+     Field:=Scanner.ReadIdentifier(nil);
      Scanner.Match(tstColon);                                                              
      Symbol:=ConstantType^.RecordTable.GetSymbol(Field,ModuleSymbol,CurrentObjectClass,true);
      if assigned(Symbol) then begin
@@ -6949,14 +7024,16 @@ end;
 
 procedure TParser.ParseRESOURCESTRINGDeclartion;
 var NewTreeNode:TTreeNode;
-    Name:ansistring;
+    Name,OriginalCaseName:ansistring;
 //  ConstantType:PType;
     Symbol:PSymbol;
 begin
  Scanner.Match(tstRESOURCESTRING);
  repeat
-  Name:=Scanner.ReadIdentifier;
+  OriginalCaseName:='';
+  Name:=Scanner.ReadIdentifier(@OriginalCaseName);
   Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+  Symbol^.OriginalCaseName:=OriginalCaseName;
   Symbol^.Name:=Name;
   HashSymbol(Symbol);
   if MakeSymbolsPublic then begin
@@ -7009,15 +7086,17 @@ end;
 
 procedure TParser.ParseCONSTDeclartion;
 var NewTreeNode:TTreeNode;
-    Name:ansistring;
+    Name,OriginalCaseName:ansistring;
     ConstantType:PType;
     Constant:PConstant;
     Symbol:PSymbol;
 begin
  Scanner.Match(tstCONST);
  repeat
-  Name:=Scanner.ReadIdentifier;
+  OriginalCaseName:='';
+  Name:=Scanner.ReadIdentifier(@OriginalCaseName);
   Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+  Symbol^.OriginalCaseName:=OriginalCaseName;
   Symbol^.Name:=Name;
   HashSymbol(Symbol);
   if MakeSymbolsPublic then begin
@@ -7143,7 +7222,7 @@ begin
     LastSymbol^.Next:=CurrentSymbol;
    end;
    LastSymbol:=CurrentSymbol;
-   CurrentSymbol^.Name:=Scanner.ReadIdentifier;
+   CurrentSymbol^.Name:=Scanner.ReadIdentifier(@CurrentSymbol^.OriginalCaseName);
    HashSymbol(CurrentSymbol);
    if Scanner.CurrentToken=tstCOMMA then begin
     Scanner.Match(tstCOMMA);
@@ -7170,11 +7249,11 @@ begin
    case Scanner.CurrentToken of
     tstIdentifier:begin
      AbsoluteType:=tatVariableOverlay;
-     AbsoluteSymbol:=SymbolManager.GetSymbol(Scanner.ProcedureName+Scanner.ReadIdentifier,ModuleSymbol,CurrentObjectClass);
+     AbsoluteSymbol:=SymbolManager.GetSymbol(Scanner.ProcedureName+Scanner.ReadIdentifier(nil),ModuleSymbol,CurrentObjectClass);
      if assigned(AbsoluteSymbol) and (AbsoluteSymbol^.SymbolType=Symbols.tstUnit) then begin
       Scanner.Match(tstIdentifier);
       Scanner.Match(tstPeriod);
-      AbsoluteSymbol:=AbsoluteSymbol^.SymbolList.GetSymbol(Scanner.ReadIdentifier,ModuleSymbol,CurrentObjectClass);
+      AbsoluteSymbol:=AbsoluteSymbol^.SymbolList.GetSymbol(Scanner.ReadIdentifier(nil),ModuleSymbol,CurrentObjectClass);
      end;
      if not assigned(AbsoluteSymbol) then begin
       Error.AbortCode(525);
@@ -7304,16 +7383,18 @@ begin
 end;
 
 procedure TParser.ParseTYPEDeclartion;
-var Name:ansistring;
+var OriginalCaseName,Name:ansistring;
     ForwardedSymbol,Symbol:PSymbol;
     IsForwared:boolean;
 begin
  Scanner.Match(tstTYPE);
  while not Scanner.IsEOFOrAbortError do begin
-  Name:=Scanner.ReadIdentifier;
+  OriginalCaseName:='';
+  Name:=Scanner.ReadIdentifier(@OriginalCaseName);
   Scanner.Match(tstEQUAL);
   Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
   Symbol^.Name:=Name;
+  Symbol^.OriginalCaseName:=OriginalCaseName;
   HashSymbol(Symbol);
   if MakeSymbolsPublic then begin
    Symbol^.Attributes:=Symbol^.Attributes+[tsaPublic,tsaPublicUnitSymbol];

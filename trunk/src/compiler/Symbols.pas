@@ -221,7 +221,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
       Previous,Next:PSymbol;
       PreviousWithEqualName,NextWithEqualName:PSymbol;
       Name,ProcedureName,ParameterSuffix,OverloadedName,LibraryName,
-      ExternalName,OriginalName,OriginalFileName:ansistring;
+      ExternalName,OriginalName,OriginalFileName,OriginalCaseName:ansistring;
       Attributes:TSymbolAttributes;
       PortabilityDirectives:TPortabilityDirectives;
 
@@ -1547,6 +1547,7 @@ begin
   Symbol^.ExternalName:='';
   Symbol^.OriginalName:='';
   Symbol^.OriginalFileName:='';
+  Symbol^.OriginalCaseName:='';
   Symbol^.StringValue:=nil;
   if Symbol^.SymbolType=tstUnit then begin
    DestroySymbolUnits(Symbol);
