@@ -812,6 +812,17 @@ end;
 
 class function TObject.InheritsFrom(AClass:TClass):boolean;
 begin
+[[[
+  <<<result>>> = 0;
+  pasClassVirtualMethodTable* VMT = (void*)<<<self>>>;
+  while(VMT){
+    if(VMT == <<<AClass>>>){
+      <<<result>>> = 1;
+      break;
+    }
+    VMT = VMT->vmtParent;
+  }
+]]]
 end;
 
 class function TObject.MethodAddress(const Name:shortstring):pointer;
