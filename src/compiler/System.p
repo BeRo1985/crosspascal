@@ -791,6 +791,9 @@ end;
 
 function TObject.ClassType:TClass;
 begin
+[[[
+  <<<result>>> = <<<self>>>->INTERNAL_FIELD_VMT;
+]]]
 end;
 
 class function TObject.ClassName:shortstring;
