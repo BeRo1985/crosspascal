@@ -1225,8 +1225,9 @@ begin
     if (WhichWithLevel<0) and assigned(Symbol^.OwnerObjectClass) and
        ((assigned(CurrentProcedureFunction) and assigned(CurrentProcedureFunction^.OwnerObjectClass)) and
          (tpaClassProcedure in CurrentProcedureFunction^.ProcedureAttributes)) and
-        not ((Symbol^.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction]) and (tpaClassProcedure in Symbol^.ProcedureAttributes)) then begin
-     Error.AddErrorCode(128,CorrectSymbolName(Name));
+        not (((Symbol^.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction]) and (tpaClassProcedure in Symbol^.ProcedureAttributes)) or
+             not (Symbol^.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction])) then begin
+     Error.AddErrorCode(128,CorrectSymbolName(Symbol .Name));
     end;
     case Symbol^.SymbolType of
      Symbols.tstVariable:begin
@@ -1544,6 +1545,9 @@ begin
        NewTreeNode:=TreeManager.GeneratePascalBlockNode(ParseExpression(false));
       end else begin
        NewTreeNode:=TreeManager.GeneratePascalBlockNode(ParseStatement(false));
+       if Scanner.CurrentToken=tstSeparator then begin
+        Scanner.ReadNext;
+       end;
       end;
      end;
     end;
@@ -3533,6 +3537,9 @@ begin
       NewTreeNode:=TreeManager.GeneratePascalBlockNode(ParseExpression(false));
      end else begin
       NewTreeNode:=TreeManager.GeneratePascalBlockNode(ParseStatement(false));
+      if Scanner.CurrentToken=tstSeparator then begin
+       Scanner.ReadNext;
+      end;
      end;
     end;
    end;

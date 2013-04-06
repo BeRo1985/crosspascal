@@ -914,13 +914,10 @@ begin
      TranslateCode(TreeNode.Left);
      TreeNode.Left:=TreeNode.Left.Left;
     end;
-    FProcCode.AddLn('');
    end;
    ttntCBLOCK:
    begin
-     FProcCode.IncTab;
-     FProcCode.Add(HugeStringToWideString(TreeNode.StringData));
-     FProcCode.DecTab;
+    FProcCode.Add(HugeStringToWideString(TreeNode.StringData));
    end;
    ttntPASCALBLOCK:
    begin
@@ -1160,7 +1157,7 @@ begin
    ttntVAR:begin
     if TreeNode.WithLevel>=0 then begin
      FProcCode.Add('withLevel'+IntToStr(TreeNode.WithLevel)+'->');
-    end else if assigned(TreeNode.Symbol^.OwnerObjectClass) then begin
+    end else if assigned(TreeNode.Symbol^.OwnerObjectClass) and assigned(TreeNode.Symbol^.OwnerType) then begin
      FProcCode.Add('instanceData->');
     end;
     FProcCode.Add(GetSymbolName(TreeNode.Symbol));
@@ -1414,12 +1411,12 @@ begin
     end;
    end;
    ttntEXIT:begin
-    if assigned(FSelf.ReturnType) then begin
-     FProcCode.Add('return '+GetSymbolName(FSelf.ResultSymbol),spacesBOTH);
+    if assigned(FProcSymbol.ReturnType) then begin
+     FProcCode.AddLn('return '+GetSymbolName(FProcSymbol.ResultSymbol)+';',spacesBOTH);
     end else if assigned(FProcSymbol) and (tpaConstructor in FProcSymbol^.ProcedureAttributes) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
      FProcCode.AddLn('return 0;');
     end else begin
-     FProcCode.Add('return',spacesBOTH);
+     FProcCode.AddLn('return;',spacesBOTH);
     end;
    end;
    ttntFAIL:begin
@@ -1441,7 +1438,7 @@ begin
     FProcCode.AddLn('LABEL_'+GetSymbolName(FSelf)+'_'+TreeNode.LabelName+':')
    end;
    ttntGOTO:begin
-    FProcCode.Add('goto LABEL_'+GetSymbolName(FSelf)+'_'+TreeNode.LabelName);
+    FProcCode.Add('goto LABEL_'+GetSymbolName(FSelf)+'_'+TreeNode.LabelName+';');
    end;
    ttntTRY:begin
    end;
