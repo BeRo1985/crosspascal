@@ -32,7 +32,7 @@ type TCodeWriter = class
        procedure AddInclude(const s: ansistring);
 
        procedure Add(const s: ansistring; Spaces: longint = spacesNONE);
-       procedure AddLn(const s: ansistring; Spaces: longint = spacesNONE);
+       procedure AddLn(s: ansistring; Spaces: longint = spacesNONE);
 
        procedure Clear;
        procedure ExportStream(TargetStream: TBeRoStream);
@@ -386,7 +386,11 @@ begin
   if tpaClassProcedure in Symbol^.ProcedureAttributes then begin
    Target.Add(GetTypeName(Symbol^.OwnerObjectClass^.ClassOfType)+' classReference');
   end else begin
-   Target.Add(GetSymbolName(Symbol^.OwnerObjectClass^.Symbol)+' *instanceData');
+   if Symbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT then begin
+    Target.Add(GetSymbolName(Symbol^.OwnerObjectClass^.Symbol)+' *instanceData');
+   end else begin
+    Target.Add(GetSymbolName(Symbol^.OwnerObjectClass^.Symbol)+' instanceData');
+   end;
   end;
   HaveParameters:=true;
  end;
@@ -919,10 +923,11 @@ begin
      TranslateCode(TreeNode.Left);
      TreeNode.Left:=TreeNode.Left.Left;
     end;
+    FProcCode.AddLn('');
    end;
    ttntCBLOCK:
    begin
-    FProcCode.Add(HugeStringToWideString(TreeNode.StringData));
+    FProcCode.Add(HugeStringToAnsiString(TreeNode.StringData));
    end;
    ttntPASCALBLOCK:
    begin
@@ -930,7 +935,7 @@ begin
    end;
    ttntCLOCATION:
    begin
-     FProcCode.Add(HugeStringToWideString(TreeNode.StringData));
+     FProcCode.Add(HugeStringToAnsiString(TreeNode.StringData));
    end;
    ttntTEMPOBJECT:
    begin
@@ -1684,7 +1689,7 @@ begin
          FProcCode.AddLn('){');
          FProcCode.IncTab;
          FProcCode.AddLn('pasFreeMem(tempObject);');
-         FProcCode.AddLn('tempObject == NULL;');
+         FProcCode.AddLn('tempObject = NULL;');
          FProcCode.DecTab;
          FProcCode.AddLn('}');
          FProcCode.DecTab;
@@ -3351,9 +3356,9 @@ procedure TCodeWriter.Add(const s: ansistring; Spaces: longint = spacesNONE);
 begin
  if ((Spaces and spacesLEFT)<>0) and ((length(FCurrentLine)>0) and not (FCurrentLine[length(FCurrentLine)] in [#0..#32,'(','[','{'])) then
    FCurrentLine := FCurrentLine + ' ';
- if (length(s)>0) and (s[1] in [',',';',')',']','}']) then begin
+(*if (length(s)>0) and (s[1] in [',',';',')',']','}']) then begin
   FCurrentLine := trimright(FCurrentLine);
- end;
+ end;*)
  FCurrentLine := FCurrentLine + s;
  if ((Spaces and spacesRIGHT)<>0) and ((length(FCurrentLine)>0) and not (FCurrentLine[length(FCurrentLine)] in [#0..#32])) then
    FCurrentLine := FCurrentLine + ' ';
@@ -3384,16 +3389,19 @@ begin
   AddHeader('#include "'+s+'"');
 end;
 
-procedure TCodeWriter.AddLn(const s: ansistring; Spaces: longint = spacesNONE);
+procedure TCodeWriter.AddLn(s: ansistring; Spaces: longint = spacesNONE);
 var i: Integer;
 begin
- if (s = ';')and(FCurrentLine = '') then
-  Exit;
+ if (s = ';')and ((FCurrentLine = '') or ((length(FCurrentLine)>0) and (FCurrentLine[length(FCurrentLine)] in [#10,#13]))) then begin
+  //s:='';
+  exit;
+ end;
+  //Exit;
 
  if ((Spaces and spacesLEFT)<>0) and ((length(FCurrentLine)>0) and not (FCurrentLine[length(FCurrentLine)] in [#0..#32,'(','[','{'])) then
    FCurrentLine := FCurrentLine + ' ';
 
- if (length(s)>0) and (s[length(s)] in [',',';',')',']','}']) then begin
+ if (length(s)>0) and (s[1] in [',',';',')',']','}']) then begin
   FCurrentLine := trimright(FCurrentLine);
  end;
 
