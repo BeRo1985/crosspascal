@@ -664,6 +664,9 @@ begin
   if (Flags and 1)<>0 then begin
    ReadTypeReference(Symbol^.OwnerType);
   end;
+  if (Flags and 2)<>0 then begin
+   Symbol^.OriginalCaseName:=Stream.ReadString;
+  end;
   case Symbol^.SymbolType of
    Symbols.tstConstant:begin
     ReadTypeReference(Symbol^.ConstantTypeRecord);
@@ -1486,9 +1489,15 @@ begin
   if assigned(Symbol^.OwnerType) then begin
    Flags:=Flags or 1;
   end;
+  if length(Symbol^.OriginalCaseName)>0 then begin
+   Flags:=Flags or 2;
+  end;
   Stream.WriteByte(Flags);
   if (Flags and 1)<>0 then begin
    WriteTypeReference(Symbol^.OwnerType);
+  end;
+  if (Flags and 2)<>0 then begin
+   Stream.WriteDataString(Symbol^.OriginalCaseName);
   end;
   case Symbol^.SymbolType of
    Symbols.tstConstant:begin

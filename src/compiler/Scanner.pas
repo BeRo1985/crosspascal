@@ -93,6 +93,7 @@ type TScannerToken=(tstNone,
        ToInjectToken,CurrentToken,CurrentDirectiveToken,LastToken,NextToken:TScannerToken;
        CurrentString:THugeString;
        CurrentIdentifier:ansistring;
+       CurrentOriginalIdentifier:ansistring;
        CurrentValue:int64;
        CurrentFloatValue:extended;
        CurrentCharValue:THugeChar;
@@ -110,7 +111,7 @@ type TScannerToken=(tstNone,
        function IsEOF:boolean;
        function IsEOFOrAbortError:boolean;
        function ReadNext:boolean;
-       function ReadIdentifier:ansistring;
+       function ReadIdentifier(OriginalIdentifier:pointer):ansistring;
        function ReadNumber:int64;
        function ReadFloat:extended;
        function ReadLabel:ansistring;
@@ -761,7 +762,7 @@ begin
 end;
 
 function TScanner.ReadNext:boolean;
-var CurrentReadNextString:ansistring;
+var CurrentReadNextString,CurrentReadNextStringUpCase:ansistring;
     Comment:THugeString;
     LastChar:THugeChar;
     Link:longword;
@@ -926,7 +927,7 @@ begin
           if (Len+1)>=length(CurrentReadNextString) then begin
            SetLength(CurrentReadNextString,RoundUpToPowerOfTwo(Len+1));
           end;
-          CurrentReadNextString[Len+1]:=upcase(ansichar(byte(CurrentChar)));
+          CurrentReadNextString[Len+1]:=ansichar(byte(CurrentChar));
           inc(Len);
           ReadChar;
          end;
@@ -946,7 +947,8 @@ begin
         end;
        end;
        SetLength(CurrentReadNextString,Len);
-       if KeywordStringTree.Find(CurrentReadNextString,Link) then begin
+       CurrentReadNextStringUpCase:=UpperCase(CurrentReadNextString);
+       if KeywordStringTree.Find(CurrentReadNextStringUpCase,Link) then begin
         CurrentToken:=TScannerToken(Link);
         if (CurrentToken in Directives) and not (CurrentToken in AllowedDirectives) then begin
          CurrentDirectiveToken:=CurrentToken;
@@ -955,7 +957,8 @@ begin
        end;
        if CurrentToken=tstNone then begin
         CurrentToken:=tstIdentifier;
-        CurrentIdentifier:=CurrentReadNextString;
+        CurrentIdentifier:=CurrentReadNextStringUpCase;
+        CurrentOriginalIdentifier:=CurrentReadNextString;
        end;
       end;
       ord('0')..ord('9'):begin
@@ -1344,10 +1347,13 @@ begin
  end;
 end;
 
-function TScanner.ReadIdentifier:ansistring;
+function TScanner.ReadIdentifier(OriginalIdentifier:pointer):ansistring;
 begin
  if CurrentToken=tstIdentifier then begin
   result:=tpsIdentifier+CurrentIdentifier;
+  if assigned(OriginalIdentifier) then begin
+   ansistring(OriginalIdentifier^):=CurrentOriginalIdentifier;
+  end;
   ReadNext;
  end else begin
   if CurrentToken<=MaxToken then begin
