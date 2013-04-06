@@ -98,6 +98,8 @@ type TCodeWriter = class
        procedure TranslateTemp(Symbol: PSymbol; Target: TCodeWriter);
        procedure TranslateUnit(Symbol: PSymbol; Target: TCodeWriter);
 
+       procedure TranslateMethodList(List: TSymbolList; ATarget: TCodeWriter = nil);
+
        procedure TranslateSymbolList(List: TSymbolList; IgnoreTypes: boolean; ATarget: TCodeWriter = nil);
        procedure InitializeSymbolList(List: TSymbolList;Target: TCodeWriter);
        procedure FinalizeSymbolList(List: TSymbolList;Target: TCodeWriter);
@@ -666,6 +668,8 @@ begin
  TranslateModuleTypes(FSelf, FHeader, FModuleCode);
  TranslateSymbolList(FSelf.SymbolList, true);
 
+ TranslateMethodList(FSelf.SymbolList,FHeader);
+
  FHeader.AddLn('extern int main(int argc, char **argv);');
 
  FProcCode.AddLn('void pasStart(){');
@@ -734,6 +738,7 @@ begin
  FSelf := UnitSymbol;
  TranslateModuleTypes(FSelf, FHeader, FModuleCode);
  TranslateSymbolList(FSelf.SymbolList, true);
+ TranslateMethodList(FSelf.SymbolList,FHeader);
 
  FProcCode.AddLn('void '+UnitSymbol.Name+'_C_INITIALIZATION(){');
  FWithStackSize:=0;
@@ -2138,11 +2143,11 @@ begin
 
  if (Target <> FCode) and not ((Target = FProcCode) and (Symbol^.OwnerModule = FSelf)) then
  repeat
-  Target.Add('extern ',spacesRIGHT);
-  ConvertFuncSymbol(Symbol, Target);
-  Symbol := Symbol.NextOverloaded;
-  if Assigned(Symbol) then
-   Target.AddLn(';');
+   Target.Add('extern ',spacesRIGHT);
+   ConvertFuncSymbol(Symbol, Target);
+   Symbol := Symbol.NextOverloaded;
+   if Assigned(Symbol) then
+     Target.AddLn(';');
  until not Assigned(Symbol);
 end;
 
@@ -2187,6 +2192,55 @@ begin
   FProcCode.InsertAtMark('void* '+result+' = (void*)(&'+result+'_DATA[16]);');
 end;
 
+procedure TCodegenCPP.TranslateMethodList(List: TSymbolList; ATarget: TCodeWriter = nil);
+var sym: PSymbol;
+    Symbol: PSymbol;
+    Target: TCodeWriter;
+    LastProcStruct:boolean;
+begin
+ sym := List.First;
+ LastProcStruct:=false;
+
+ while Assigned(sym) do
+ begin
+  if not (tsaMapped in Sym^.Attributes) then begin
+
+   if Assigned(ATarget) then
+    Target := ATarget
+   else if (tsaPublicUnitSymbol in sym.Attributes) then
+    Target := FHeader
+   else
+    Target := FCode;
+
+   case Sym.SymbolType of
+    tstProcedure,
+    tstFunction:begin
+     Symbol:=sym;
+     repeat
+      if assigned(Symbol.MethodSymbol) and (tsaMethodDefined in Symbol.MethodSymbol.Attributes) then begin
+       Target.Add('extern ',spacesRIGHT);
+       ConvertFuncSymbol(Symbol, Target);
+       if Assigned(Symbol) then
+         Target.AddLn(';');
+      end;
+      Symbol := Symbol.NextOverloaded;
+     until not Assigned(Symbol);
+    end;
+   end;
+
+   if Sym.SymbolType<>tstUnit then
+     if LastProcStruct then
+       FProcStruct.AddLn(';')
+      else
+       Target.AddLn(';');
+
+  end;
+  sym := sym.Next;
+ end;
+
+ dec(FDepth);
+end;
+
 procedure TCodegenCPP.TranslateSymbolList(List: TSymbolList; IgnoreTypes: boolean; ATarget: TCodeWriter = nil);
 var sym: PSymbol;
     Target: TCodeWriter;
@@ -2221,7 +2275,9 @@ begin
       TranslateVariable(Sym, Target);
      end;
     end;
-    tstType: ;
+    tstType:begin
+
+    end;
     tstProcedure: TranslateProcedure(Sym, Target);
     tstFunction: TranslateFunction(Sym, Target);
     tstUnit: TranslateUnit(Sym, Target);
@@ -2233,7 +2289,7 @@ begin
        FProcStruct.AddLn(';')
       else
        Target.AddLn(';');
-       
+
   end;
   sym := sym.Next;
  end;

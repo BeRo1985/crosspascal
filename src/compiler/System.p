@@ -776,6 +776,9 @@ end;
 
 procedure TObject.Free;
 begin
+ if assigned(self) then begin
+  Destroy;
+ end;
 end;
 
 class function TObject.InitInstance(Instance:Pointer):TObject;
@@ -800,14 +803,23 @@ end;
 
 class function TObject.ClassParent:TClass;
 begin
+[[[
+  <<<result>>> = ((pasClassVirtualMethodTable*)((void*)<<<self>>>))->vmtParent;
+]]]
 end;
 
 class function TObject.ClassInfo:pointer;
 begin
+[[[
+  <<<result>>> = ((pasClassVirtualMethodTable*)((void*)<<<self>>>))->vmtTypeInfo;
+]]]
 end;
 
 class function TObject.InstanceSize:longint;
 begin
+[[[
+  <<<result>>> = ((pasClassVirtualMethodTable*)((void*)<<<self>>>))->vmtInstanceSize;
+]]]
 end;
 
 class function TObject.InheritsFrom(AClass:TClass):boolean;
@@ -839,18 +851,24 @@ end;
 
 function TObject.GetInterface(const IID:TGUID;out Obj):boolean;
 begin
+ result:=false;
 end;
 
 class function TObject.GetInterfaceEntry(const IID:TGUID):PInterfaceEntry;
 begin
+ result:=nil;
 end;
 
 class function TObject.GetInterfaceTable:PInterfaceTable;
 begin
+[[[
+  <<<result>>> = ((pasClassVirtualMethodTable*)((void*)<<<self>>>))->vmtIntfTable;
+]]]
 end;
 
 function TObject.SafeCallException(ExceptObject:TObject;ExceptAddr:pointer):HResult;
 begin
+ result:=HResult($8000ffff); // E_UNEXPECTED 
 end;
 
 procedure TObject.AfterConstruction;
