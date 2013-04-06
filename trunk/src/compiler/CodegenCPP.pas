@@ -1873,7 +1873,7 @@ begin
         if tpaClassProcedure in FProcSymbol.ProcedureAttributes then begin
          FProcCode.Add('(void*)classReference');
         end else begin 
-         FProcCode.Add('(*((void**)instanceData))');
+         FProcCode.Add('((void*)(instanceData->INTERNAL_FIELD_VMT))');
         end;
        end else begin
         FProcCode.Add('(void*)instanceData');
