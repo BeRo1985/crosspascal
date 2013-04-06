@@ -783,6 +783,9 @@ end;
 
 class function TObject.InitInstance(Instance:Pointer):TObject;
 begin
+[[[
+  
+]]]
 end;
 
 procedure TObject.CleanupInstance;
@@ -892,10 +895,18 @@ end;
 
 class function TObject.NewInstance:TObject;
 begin
+[[[
+  <<<result>>> = pasGetMem(<<<InstanceSize>>>);
+]]]
+ result:=InitInstance(result);
 end;
 
 procedure TObject.FreeInstance;
 begin
+ CleanupInstance;
+[[[
+  pasFreeMem(<<<self>>>);
+]]]
 end;
 
 destructor TObject.Destroy;
