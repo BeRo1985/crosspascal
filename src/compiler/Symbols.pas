@@ -12,7 +12,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
                        tsaMethod,tsaFORControlVariable,tsaParameterWithDefault,
                        tsaHiddenParameter,tsaParameterSelf,tsaParameterResult,
                        tsaTemporaryExceptionVariable,tsaField,tsaInternalField,
-                       tsaInherited,tsaInheritedInClass,tsaObjectVMT,
+                       tsaInherited,tsaInheritedInClass,tsaObjectVMT,tsaClassVMT,
                        tsaHidden,tsaInternalHidden,tsaMethodDefined,tsaMapped);
      TSymbolAttributes=set of TSymbolAttribute;
 
