@@ -1834,9 +1834,9 @@ begin
             FProcCode.Add('),'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+'))');
            end else begin
             // CLASS
-            FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasClassDMTDispatch((void*)(');
+            FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasClassDMTDispatch((');
             TranslateCode(TreeNode.Right);
-            FProcCode.Add('),'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+'))');
+            FProcCode.Add(')->INTERNAL_FIELD_VMT,'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+'))');
            end;
           end else begin
            FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol));

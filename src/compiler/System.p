@@ -257,6 +257,8 @@ void pasZeroMem(void* ptr,size_t size);
 
 void* pasObjectDMTDispatch(void* object,size_t index);
 
+void* pasClassDMTDispatch(void* classVMT,size_t index);
+
 void CheckRefLongstring(pasLongstring str);
 pasLongstring AddLongstring(pasLongstring left, pasLongstring right);
 void UniqueLongstring(pasLongstring *target);
@@ -472,6 +474,23 @@ void* pasObjectDMTDispatch(void* object,size_t index){
       }
     }
     VMT = VMT->ancestorVirtualMethodTable;
+  }
+  return NULL;
+}
+
+void* pasClassDMTDispatch(void* classVMT,size_t index){
+  pasClassVirtualMethodTable* VMT = (void*)classVMT;
+  while(VMT){
+    pasClassDynamicMethodTableItem* DMT = VMT->vmtDynamicTable;
+    if(DMT){
+      while(DMT->method){
+        if(DMT->index == index){
+          return DMT->method;
+        }
+        DMT++;
+      }
+    }
+    VMT = VMT->vmtParent;
   }
   return NULL;
 }
