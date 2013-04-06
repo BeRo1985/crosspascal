@@ -147,6 +147,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
       //InterfaceChildOf:array of PSymbol;
         GUID:TGUID;
         VirtualIndexCount:longint;
+        DynamicIndexCount:longint;
        );
        ttdClassRef:(
         ClassOf:PSymbol;
@@ -311,6 +312,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
         InlineRear:pointer;
         InternalProcedure:TInternalProcedure;
         VirtualIndex:longint;
+        DynamicIndex:longint;
         MessageCode:longint;
         ForwardSymbol:PSymbol;
         MethodSymbol:PSymbol;
