@@ -4477,6 +4477,7 @@ begin
   end;
  end;
  result^.TypeDefinition:=ttdClass;
+ result^.HasVirtualTable:=true;
  result^.ChildOf:=Parent;
  result^.ForwardClass:=IsForward;
  result^.RecordAlignment:=0;
@@ -4620,6 +4621,26 @@ begin
    end;
   end;
   Scanner.Match(tstEND);
+ end;
+
+ result^.HasVirtualTable:=true;
+
+ if assigned(result^.ChildOf) then begin
+  if not result^.ChildOf^.TypeDefinition^.HasVirtualTable then begin
+   Error.AbortCode(90,CorrectSymbolName(result^.ChildOf^.Name));
+  end;
+ end else begin
+  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,result);
+  Symbol^.Name:='VMT';            
+  Symbol^.Attributes:=Symbol^.Attributes+[tsaField,tsaInternalField,tsaClassVMT];
+  Symbol^.SymbolType:=Symbols.tstVariable;
+  Symbol^.TypeDefinition:=SymbolManager.TypePointer;
+  Symbol^.Offset:=0;
+  Symbol^.TypedConstant:=false;
+  Symbol^.TypedTrueConstant:=false;
+  Symbol^.TypedConstantReadOnly:=false;
+  Symbol^.OwnerType:=result;
+  result^.RecordTable.AddSymbol(Symbol,ModuleSymbol,result,true);
  end;
 
  SymbolManager.AlignRecord(result,LocalSwitches^.Alignment);

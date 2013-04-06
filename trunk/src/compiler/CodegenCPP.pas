@@ -1873,7 +1873,7 @@ begin
         if tpaClassProcedure in FProcSymbol.ProcedureAttributes then begin
          FProcCode.Add('(void*)classReference');
         end else begin 
-         FProcCode.Add('(void*)(((void*)instanceData)-sizeof(pasClassVirtualMethodTable))');
+         FProcCode.Add('(*((void**)instanceData))');
         end;
        end else begin
         FProcCode.Add('(void*)instanceData');
@@ -2923,6 +2923,8 @@ begin
           Symbols.tstVariable:begin
            if tsaObjectVMT in Symbol^.Attributes then begin
             Target.AddLn('pasObjectVirtualMethodTable* '+GetSymbolName(Symbol)+';');
+           end else if tsaClassVMT in Symbol^.Attributes then begin
+            Target.AddLn('pasClassVirtualMethodTable* '+GetSymbolName(Symbol)+';');
            end else if (Symbol^.TypeDefinition^.TypeDefinition=ttdPOINTER) and not assigned(Symbol^.TypeDefinition^.PointerTo) then begin
             Target.AddLn('void* '+GetSymbolName(Symbol)+';');
            end else if (Symbol^.TypeDefinition^.TypeDefinition=ttdPOINTER) and (Symbol^.TypeDefinition^.PointerTo=Type_^.Symbol) then begin
@@ -3062,7 +3064,11 @@ begin
          Symbol:=Symbol^.Next;
         end;
         if HasDynamicMethods then begin
-         CodeTarget.AddLn('pasObjectDynamicMethodTableItem '+Name+'_DMT['+IntToStr(MethodList.Count+1)+']={');
+         if Type_.TypeDefinition=ttdObject then begin
+          CodeTarget.AddLn('pasObjectDynamicMethodTableItem '+Name+'_DMT['+IntToStr(MethodList.Count+1)+']={');
+         end else begin
+          CodeTarget.AddLn('pasClassDynamicMethodTableItem '+Name+'_DMT['+IntToStr(MethodList.Count+1)+']={');
+         end;
          CodeTarget.IncTab;
          for j:=0 to MethodList.Count-1 do begin
           CodeTarget.AddLn(MethodList[j]);
@@ -3077,7 +3083,11 @@ begin
        end;
        Target.AddLn('typedef struct {');
        Target.IncTab;
-       Target.AddLn('pasObjectVirtualMethodTable VMT;');
+       if Type_.TypeDefinition=ttdObject then begin
+        Target.AddLn('pasObjectVirtualMethodTable VMT;');
+       end else begin
+        Target.AddLn('pasClassVirtualMethodTable VMT;');
+       end;
        Target.AddLn('void* virtualMethods['+IntToStr(Type_^.VirtualIndexCount)+'];');
        Target.DecTab;
        Target.AddLn('} '+Name+'_VMT_TYPE;');
@@ -3086,16 +3096,19 @@ begin
        CodeTarget.IncTab;
        CodeTarget.AddLn('{');
        CodeTarget.IncTab;
-       CodeTarget.AddLn(IntToStr(Type_^.RecordSize)+',');
-       if HasDynamicMethods then begin
-        CodeTarget.AddLn('(void*)&'+Name+'_DMT,');
+       if Type_.TypeDefinition=ttdObject then begin
+        CodeTarget.AddLn(IntToStr(Type_^.RecordSize)+',');
+        if HasDynamicMethods then begin
+         CodeTarget.AddLn('(void*)&'+Name+'_DMT,');
+        end else begin
+         CodeTarget.AddLn('NULL,');
+        end;
+        if assigned(Type_^.ChildOf) then begin
+         CodeTarget.AddLn('(void*)&'+GetSymbolName(Type_^.ChildOf)+'_VMT');
+        end else begin
+         CodeTarget.AddLn('NULL');
+        end;
        end else begin
-        CodeTarget.AddLn('NULL,');
-       end;
-       if assigned(Type_^.ChildOf) then begin
-        CodeTarget.AddLn('(void*)&'+GetSymbolName(Type_^.ChildOf)+'_VMT');
-       end else begin
-        CodeTarget.AddLn('NULL');
        end;
        CodeTarget.DecTab;
        CodeTarget.AddLn('},');
