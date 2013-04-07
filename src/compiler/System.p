@@ -269,6 +269,7 @@ void IncRefLongstring(pasLongstring *str);
 void FreeLongstring(pasLongstring *str);
 uint32_t LengthLongstring(pasLongstring str);
 void AssignLongstring(pasLongstring *target, pasLongstring newStr);
+void AssignShortstring(uint8_t* target, uint32_t maxLength, pasLongstring strInput);
 void UniqueLongstring(pasLongstring *target);
 pasLongstring ConvertLongstring(uint32_t codePage, uint32_t elementSize, pasLongstring strInput);
 
@@ -619,6 +620,48 @@ void UniqueLongstring(pasLongstring *target) {
     newtarget = CreateLongstring(header->codePage, header->elementSize, header->length, *target);
     DecRefLongstring(target);
     *target = newtarget;
+}
+
+void AssignShortstring(uint8_t* target, uint32_t maxLength, pasLongstring strInput) {
+    uint32_t length,i,v;
+    LongstringRefHeader* header;
+    if(NULL == strInput) {
+        ((uint8_t*)(target))[0] = 0;
+        ((uint8_t*)(target))[1] = 0;
+        return ;
+    }
+
+    header = (LongstringRefHeader*)((uint32_t)(strInput) - LongstringRefHeaderSize);
+
+    if(maxLength<header->length)
+        length = maxLength;
+    else
+        length = header->length;
+
+   ((uint8_t*)(target))[0] = length;
+   target++;
+
+    for(i=0;i<length;i++) {
+        switch(header->elementSize){
+            case 1:{
+              v = ((uint8_t*)(strInput))[i];
+              break;
+            }
+            case 2:{
+              v = ((uint16_t*)(strInput))[i];
+              break;
+            }
+            case 4:{
+              v = ((uint32_t*)(strInput))[i];
+              break;
+            }
+        }
+        ((uint8_t*)(target))[i] = v;
+    }
+    if(length<maxLength)
+        ((uint8_t*)(target))[length] = 0;
+
+    CheckRefLongstring(strInput);
 }
 
 pasLongstring ConvertLongstring(uint32_t codePage, uint32_t elementSize, pasLongstring strInput) {
