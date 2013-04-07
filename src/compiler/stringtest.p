@@ -14,7 +14,8 @@ var AString: string;
     AWidestring: widestring;
     AUnicodestring: Unicodestring;
     APChar: PChar;
-    AShortstring: shortstring;
+    AShortstring, AShortstring2: shortstring;
+    Fooo: string[4];
 
 procedure TestA(const s: String);
 var s2: string;
@@ -38,16 +39,23 @@ begin
 end;
 
 begin
-  AString := ConstString1;
-  TestA(AString + AString);
-  TestB(AString);
-  TestC(ConstString1  + AString);
+  Astring := 'xxx';
+  AShortstring := AString + 'Hund';
+  AShortstring2 := AShortstring;
+  Writeln(AShortstring);
+  AString := AShortstring;
+  Writeln(AString);
+  Writeln(Length(AString));
+  Writeln(Length(AShortstring + AShortstring));
+  Fooo := AShortstring;
+  Writeln('***',AShortString + 'Wurst ',Fooo);
 
   Writeln(ConstString1);
   Writeln(ConstString2);
   Writeln(ConstString3);
-  Writeln(ConstString4);
   Writeln(1);
+  Writeln(ConstString4);
+  Writeln('1');
 
   Writeln(ConstString5);
   Writeln(ConstString6);

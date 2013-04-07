@@ -1790,9 +1790,22 @@ begin
          case TreeNode.Left.Left.Return.TypeDefinition of
           ttdLongString: begin
            FProcCode.Add('LengthLongstring(');
-           TranslateCode(TreeNode.Left.Left);
+           TranslateStringCode(TreeNode.Left.Left, TreeNode.Left.Left.Return);
            FProcCode.Add(')');
           end;
+          ttdShortString: begin
+           if (TreeNode.Left.Left.TreeNodeType = ttntAdd) then
+           begin
+            FProcCode.Add('LengthLongstring(');
+            TranslateStringCode(TreeNode.Left.Left, @AnsiStringType);
+            FProcCode.Add(')');
+           end else
+           begin
+            FProcCode.Add('((uint8_t*)(&');
+            TranslateCode(TreeNode.Left.Left);
+            FProcCode.Add('))[0]');
+           end;
+          end
           else
            Error.InternalError(20130321033001);
          end
