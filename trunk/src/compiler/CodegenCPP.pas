@@ -842,6 +842,16 @@ begin
       FProcCode.Add(', (pasLongstring)',spacesRIGHT);
       TranslateStringCode(TreeNode.Right, TreeNode.Left.Return);
       FProcCode.Add(')');
+     end else
+     if(TreeNode.Left.TreeNodeType=ttntVAR)and(TreeNode.Left.Symbol.TypeDefinition.TypeDefinition=ttdShortstring) then
+     begin
+      FProcCode.Add('AssignShortstring(&');
+      TranslateCode(TreeNode.Left);
+      FProcCode.Add(', ');
+      FProcCode.Add(IntToStr(TreeNode.Left.Symbol.TypeDefinition.Length));
+      FProcCode.Add(', (pasLongstring)',spacesRIGHT);
+      TranslateStringCode(TreeNode.Right, @Ansistringtype);
+      FProcCode.Add(')');
      end else begin
       TranslateCode(TreeNode.Left);
       FProcCode.Add('=',spacesBOTH);
