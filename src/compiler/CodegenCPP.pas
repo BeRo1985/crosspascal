@@ -586,6 +586,23 @@ begin
  FProcCode.AddLn('{');
  FProcCode.IncTab;
  FProcCode.SetMarker;
+
+ if Assigned(ProcSymbol.Parameter) then
+  ParameterSymbol := ProcSymbol.Parameter.First
+ else
+  ParameterSymbol := nil;
+
+ while Assigned(ParameterSymbol) do
+ begin
+  if(ParameterSymbol^.SymbolType = Symbols.tstVariable) and
+    (parameterSymbol.VariableType = tvtParameterValue) and
+    (parameterSymbol.TypeDefinition.TypeDefinition = ttdLongstring) then
+  begin
+   FProcCode.AddLn('IncRefLongstring(&'+GetSymbolName(ParameterSymbol)+');');
+  end;
+  ParameterSymbol := ParameterSymbol.Next;
+ end;
+
  if FNeedNestedStack then begin
   if SymbolManager.LexicalScopeLevel<=1 then begin
    FProcCode.AddLn('void* nestedLevelStack['+IntToStr(SymbolManager.LexicalScopeLevelCount)+'];');
@@ -618,6 +635,23 @@ begin
 
  FProcCode.AddLn('//code');
  TranslateCode(ProcCodeTree);
+
+ if Assigned(ProcSymbol.Parameter) then
+  ParameterSymbol := ProcSymbol.Parameter.First
+ else
+  ParameterSymbol := nil;
+
+ while Assigned(ParameterSymbol) do
+ begin
+  if(ParameterSymbol^.SymbolType = Symbols.tstVariable) and
+    (parameterSymbol.VariableType = tvtParameterValue) and
+    (parameterSymbol.TypeDefinition.TypeDefinition = ttdLongstring) then
+  begin
+   FProcCode.AddLn('DecRefLongstring(&'+GetSymbolName(ParameterSymbol)+');');
+  end;
+  ParameterSymbol := ParameterSymbol.Next;
+ end;
+
 
  if FNeedNestedStack then begin
   if SymbolManager.LexicalScopeLevel>1 then begin
@@ -1535,7 +1569,7 @@ begin
           end
          else
           Error.InternalError(201303210030000);
-         if SubTreeNode.ReferenceParameter then begin
+         if (SubTreeNode.ReferenceParameter) then begin
           FProcCode.Add('((void*)(&(');
          end else if assigned(SubTreeNode.Left.Return) and (SubTreeNode.Left.Return^.TypeDefinition=ttdPointer) then begin
           FProcCode.Add('((void*)(');
@@ -1948,7 +1982,11 @@ begin
       end else if assigned(SubTreeNode.Left.Return) and (SubTreeNode.Left.Return^.TypeDefinition=ttdPointer) then begin
        FProcCode.Add('((void*)(');
       end;
-      TranslateCode(SubTreeNode.Left);
+      (*
+      if SubTreeNode.Left.Return.TypeDefinition = ttdLongString then
+       TranslateStringCode(SubTreeNode.Left, SubTreeNode.Left.Return.TypeDefinition)
+      else *)
+       TranslateCode(SubTreeNode.Left);
       if SubTreeNode.ReferenceParameter then begin
        FProcCode.Add(')))');
       end else if assigned(SubTreeNode.Left.Return) and (SubTreeNode.Left.Return^.TypeDefinition=ttdPointer) then begin
@@ -2094,7 +2132,7 @@ begin
     or ((TreeNode.Left.Return.TypeDefinition <> ttdLongString)and(TreeNode.Left.Return.TypeDefinition <> ttdShortString)) then
      Error.InternalError(20130406173437);
 
-    if TreeNode.Left.TreeNodeType = ttntAdd then
+    if (TreeNode.Left.TreeNodeType = ttntAdd)or(TreeNode.Left.TreeNodeType = ttntTYPECONV) then
      TranslateStringCode(TreeNode.Left, DesiredStringType)
     else
     // this is either clever or extremely stupid: we directly convert into the desired string type
