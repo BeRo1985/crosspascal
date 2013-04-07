@@ -595,7 +595,7 @@ begin
  while Assigned(ParameterSymbol) do
  begin
   if(ParameterSymbol^.SymbolType = Symbols.tstVariable) and
-    (parameterSymbol.VariableType = tvtParameterValue) and
+    ((parameterSymbol.VariableType = tvtParameterValue)or(parameterSymbol.VariableType = tvtParameterConstant)) and
     (parameterSymbol.TypeDefinition.TypeDefinition = ttdLongstring) then
   begin
    FProcCode.AddLn('IncRefLongstring(&'+GetSymbolName(ParameterSymbol)+');');
@@ -631,10 +631,10 @@ begin
 
  FInProc:=true;
 
- FinalizeSymbolList(SymbolManager.CurrentList, FProcCode);
-
  FProcCode.AddLn('//code');
  TranslateCode(ProcCodeTree);
+
+ FinalizeSymbolList(SymbolManager.CurrentList, FProcCode);
 
  if Assigned(ProcSymbol.Parameter) then
   ParameterSymbol := ProcSymbol.Parameter.First
@@ -644,7 +644,7 @@ begin
  while Assigned(ParameterSymbol) do
  begin
   if(ParameterSymbol^.SymbolType = Symbols.tstVariable) and
-    (parameterSymbol.VariableType = tvtParameterValue) and
+    ((parameterSymbol.VariableType = tvtParameterValue)or(parameterSymbol.VariableType = tvtParameterConstant)) and
     (parameterSymbol.TypeDefinition.TypeDefinition = ttdLongstring) then
   begin
    FProcCode.AddLn('DecRefLongstring(&'+GetSymbolName(ParameterSymbol)+');');
@@ -1982,10 +1982,11 @@ begin
       end else if assigned(SubTreeNode.Left.Return) and (SubTreeNode.Left.Return^.TypeDefinition=ttdPointer) then begin
        FProcCode.Add('((void*)(');
       end;
-      (*
-      if SubTreeNode.Left.Return.TypeDefinition = ttdLongString then
-       TranslateStringCode(SubTreeNode.Left, SubTreeNode.Left.Return.TypeDefinition)
-      else *)
+
+      if Assigned(SubTreeNode.Left) and (SubTreeNode.Left.TreeNodeType = ttntTYPECONV) and
+        (SubTreeNode.Left.Return.TypeDefinition = ttdLongstring) then
+       TranslateStringCode(SubTreeNode.Left.Left, SubTreeNode.Left.Return)
+      else
        TranslateCode(SubTreeNode.Left);
       if SubTreeNode.ReferenceParameter then begin
        FProcCode.Add(')))');

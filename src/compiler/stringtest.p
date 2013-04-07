@@ -17,8 +17,10 @@ var AString: string;
     AShortstring: shortstring;
 
 procedure TestA(const s: String);
+var s2: string;
 begin
-  Writeln(s);
+  s2 := s;
+  Writeln(s2);
 end;
 
 procedure TestB(var s: String);
@@ -37,9 +39,9 @@ end;
 
 begin
   AString := ConstString1;
-  TestA(AString);
+  TestA(AString + AString);
   TestB(AString);
-  TestC(ConstString1);
+  TestC(ConstString1  + AString);
 
   Writeln(ConstString1);
   Writeln(ConstString2);
