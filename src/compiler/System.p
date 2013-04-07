@@ -270,13 +270,15 @@ void FreeLongstring(pasLongstring *str);
 uint32_t LengthLongstring(pasLongstring str);
 void AssignLongstring(pasLongstring *target, pasLongstring newStr);
 void UniqueLongstring(pasLongstring *target);
+pasLongstring ConvertLongstring(uint32_t codePage, uint32_t elementSize, pasLongstring strInput);
 
 #define pasWriteInt(x) printf("%i", x);
 #define pasWriteUInt(x) printf("%u", x);
 #define pasWriteChar(x) printf("%c", x);
 #define pasWriteFloat(x) printf("%f", x);
 #define pasWriteBool(x) if(x) printf("TRUE"); else printf("FALSE");
-#define pasWriteLongString(x) printf(x); CheckRefLongstring(x);
+
+void pasWriteLongString(pasLongstring x);
 #define pasWritePChar(x) printf(x);
 
 #define pasTRUNC(x) floor(x);
@@ -446,6 +448,8 @@ end;
 #include "stdlib.h"
 #include "stdio.h"
 
+uint32_t stringRefCount;
+
 void* pasGetMem(size_t size){
   return malloc(size);
 }
@@ -461,6 +465,7 @@ void pasFreeMem(void* ptr){
 void pasZeroMem(void* ptr,size_t size){
   memset(ptr, size, 0);
 }
+
 
 void* pasObjectDMTDispatch(void** object,size_t index){
   pasObjectVirtualMethodTable* VMT = (void*)*object;
@@ -509,24 +514,34 @@ typedef void* pasLongstring;
 
 void CheckRefLongstring(pasLongstring str) {
 	LongstringRefHeader* header;
-	
+
 	if(str == NULL)
 		return;
 	header = (void*)((uint32_t)(str) - LongstringRefHeaderSize);
-	if(0xffffffff == header->refCount) 
+
+	if(0xffffffff == header->refCount)
 		return;
-   	if((header->refCount) == 0)
+
+   	if((header->refCount) == 0) {
+                stringRefCount--;
 	 	free(&header);
+        }
+}
+
+void pasWriteLongString(pasLongstring x) {
+  printf(x);
+  CheckRefLongstring(x);
 }
 
 pasLongstring CreateLongstring(uint32_t codePage, uint32_t elementSize, uint32_t length, void* data) {
 	LongstringRefHeader* header;
 	char* ref;
 	uint32_t* zero;
-	
+
 	if(length == 0)
 		return NULL;
 
+        stringRefCount++;
 	header = (LongstringRefHeader*)malloc(LongstringRefHeaderSize + (sizeof(uint32_t) + (length * elementSize)));
 	ref = ((char*)header) + LongstringRefHeaderSize;
 	header->codePage=codePage;
@@ -535,6 +550,9 @@ pasLongstring CreateLongstring(uint32_t codePage, uint32_t elementSize, uint32_t
 	header->length=length;
 	if(NULL!=data)
 		memcpy(ref, data, length * elementSize);
+        else
+                header->refCount=0;
+
     zero = (void*)(&(((uint8_t*)ref)[length * elementSize]));
     *zero = 0;
 	return ref;
@@ -544,22 +562,23 @@ void DecRefLongstring(pasLongstring *str) {
 	LongstringRefHeader* header;
 	if(*str == NULL)
 		return;
-	
+
 	header = (pasLongstring)((uint32_t)(*str) - LongstringRefHeaderSize);
-	if(0xffffffff == header->refCount) 
+	if(0xffffffff == header->refCount)
 		return;
-	
-	if(--(header->refCount) == 0) 
+	if((--(header->refCount)) == 0) {
+                stringRefCount--;
 	 	free(header);
-   	}
+        }
+}
 
 void IncRefLongstring(pasLongstring *str) {
 	LongstringRefHeader* header;
-	
+
 	if(*str == NULL)
 		return;
     header = (LongstringRefHeader*)((uint32_t)(*str) - LongstringRefHeaderSize);
-	if(0xffffffff == header->refCount) 
+	if(0xffffffff == header->refCount)
 		return;
 	header->refCount++;
 }
@@ -652,8 +671,45 @@ pasLongstring ConvertLongstring(uint32_t codePage, uint32_t elementSize, pasLong
           }
           temp += elementSize;
         }
-
 	CheckRefLongstring(strInput);
+
+    return newtarget;
+}
+
+pasLongstring ConvertShortstring(uint32_t codePage, uint32_t elementSize, char* strInput) {
+    pasLongstring newtarget;
+    uint32_t i,v,len;
+    char* temp;
+
+    if(strInput == NULL)
+        return strInput;
+
+    len = strInput[0];
+
+    newtarget = CreateLongstring(codePage, elementSize, len, NULL);
+
+    temp = newtarget;
+
+    for(i=1;i<=len;i++) {
+        v = ((uint8_t*)(strInput))[i];
+
+        switch(elementSize){
+            case 1:{
+              *((uint8_t*)temp) = v;
+              break;
+            }
+            case 2:{
+              *((uint16_t*)temp) = v;
+              break;
+            }
+            case 4:{
+              *((uint32_t*)temp) = v;
+              break;
+            }
+          }
+          temp += elementSize;
+        }
+
     return newtarget;
 }
 
@@ -666,18 +722,17 @@ pasLongstring AddLongstring(pasLongstring left, pasLongstring right) {
     uint32_t v;
     pasLongstring result;
 
-    a = LengthLongstring(left);
-    b = LengthLongstring(right);
-    if(a + b == 0)
-    	return NULL;
-    if(b == 0)
-    	return left;
-    if(a == 0)
-    	return right;
+    if(NULL == left)
+        return right;
+
+    if(NULL == right)
+        return left;
 
     headerA = (LongstringRefHeader*)((uint32_t)(left) - LongstringRefHeaderSize);
     headerB = (LongstringRefHeader*)((uint32_t)(right) - LongstringRefHeaderSize);
 
+    a = headerA->length;
+    b = headerB->length;
     // TODO: Codepage handling
 
     if(headerA->elementSize == headerB->elementSize){
@@ -916,5 +971,12 @@ begin
 end;
 {$hints on}
 
-begin
+initialization
+[[[
+ stringRefCount = 0;
+]]]
+finalization
+[[[
+ printf("string references left: %i\n", stringRefCount);
+]]]
 end.

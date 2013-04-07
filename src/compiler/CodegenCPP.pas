@@ -1526,7 +1526,7 @@ begin
             end;
            end;
            ttdBoolean: FProcCode.Add('pasWriteBool(');
-           ttdShortString: FProcCode.Add('pasWriteShortString(');
+           ttdShortString,
            ttdLongString: FProcCode.Add('pasWriteLongString((pasLongstring)');
            ttdFloat: FProcCode.Add('pasWriteFloat(');
            ttdPointer: FProcCode.Add('pasWritePChar(');
@@ -1542,7 +1542,8 @@ begin
          end;
 
          if Assigned(SubTreeNode.Left)and(Assigned(SubTreeNode.Left.Return))and
-           (SubTreeNode.Left.Return.TypeDefinition = ttdLongstring) then begin
+           ((SubTreeNode.Left.Return.TypeDefinition = ttdLongstring)or
+            (SubTreeNode.Left.Return.TypeDefinition = ttdShortString)) then begin
           TranslateStringCode(SubTreeNode.Left, @AnsistringType)
          end else begin
           TranslateCode(SubTreeNode.Left);
@@ -2074,8 +2075,10 @@ begin
   ttntAdd:begin
    if assigned(TreeNode.Left) and assigned(TreeNode.Right) and
    Assigned(TreeNode.Left.Return) and Assigned(TreeNode.Right.Return) and
-   (TreeNode.Left.Return.TypeDefinition = ttdLongString)and
-   (TreeNode.Right.Return.TypeDefinition = ttdLongString) then begin
+   ((TreeNode.Left.Return.TypeDefinition = ttdLongString) or
+    (TreeNode.Left.Return.TypeDefinition = ttdShortString)) and
+   ((TreeNode.Right.Return.TypeDefinition = ttdLongString) or
+    (TreeNode.Right.Return.TypeDefinition = ttdShortString))then begin
     FProcCode.Add('AddLongstring((pasLongstring)');
     TranslateStringCode(TreeNode.Left, DesiredStringType);
     FProcCode.Add(', (pasLongstring)');
@@ -2091,11 +2094,26 @@ begin
     or ((TreeNode.Left.Return.TypeDefinition <> ttdLongString)and(TreeNode.Left.Return.TypeDefinition <> ttdShortString)) then
      Error.InternalError(20130406173437);
 
+    if TreeNode.Left.TreeNodeType = ttntAdd then
+     TranslateStringCode(TreeNode.Left, DesiredStringType)
+    else
     // this is either clever or extremely stupid: we directly convert into the desired string type
     // or skip conversion if the types are the same
     if TreeNode.Left.Return = DesiredStringType then
      TranslateCode(TreeNode.Left)
-    else begin
+    else if (TreeNode.Left.Return.TypeDefinition = ttdShortString) and
+         (DesiredStringType.TypeDefinition = ttdLongString) then
+    begin
+     FProcCode.Add('ConvertShortstring('+ IntToStr(DesiredStringType^.LongStringCodePage)+',');
+     case DesiredStringType^.LongStringType of
+      tstUnsignedChar: FProcCode.Add('1');
+      tstUnsignedWideChar: FProcCode.Add('2');
+      tstUnsignedHugeChar: FProcCode.Add('4');
+     end;
+     FProcCode.Add(',&');
+     TranslateCode(TreeNode.Left);
+     FProcCode.Add(')');
+    end else begin
      FProcCode.Add('ConvertLongstring('+ IntToStr(DesiredStringType^.LongStringCodePage)+',');
      case DesiredStringType^.LongStringType of
       tstUnsignedChar: FProcCode.Add('1');
@@ -2113,17 +2131,29 @@ begin
   begin
    // for string consts, we could actually just convert them into the right string type
 
-   DoConversion :=(TreeNode.Return.LongStringType <> DesiredStringType^.LongStringType) or
-                  (TreeNode.Return.LongStringCodePage <> DesiredStringType^.LongStringCodePage);
+   if (DesiredStringType.TypeDefinition = ttdLongString)and
+      (TreeNode.Return.TypeDefinition = ttdShortString)then begin
+    DoConversion := True;
+     FProcCode.Add('ConvertShortstring('+ IntToStr(DesiredStringType^.LongStringCodePage)+',');
+     case DesiredStringType^.LongStringType of
+      tstUnsignedChar: FProcCode.Add('1');
+      tstUnsignedWideChar: FProcCode.Add('2');
+      tstUnsignedHugeChar: FProcCode.Add('4');
+     end;
+     FProcCode.Add(',&');
+   end else begin
+    DoConversion :=(TreeNode.Return.LongStringType <> DesiredStringType^.LongStringType) or
+                   (TreeNode.Return.LongStringCodePage <> DesiredStringType^.LongStringCodePage);
 
-   if DoConversion then begin
-    FProcCode.Add('ConvertLongstring('+ IntToStr(DesiredStringType^.LongStringCodePage)+',');
-    case DesiredStringType^.LongStringType of
-     tstUnsignedChar: FProcCode.Add('1');
-     tstUnsignedWideChar: FProcCode.Add('2');
-     tstUnsignedHugeChar: FProcCode.Add('4');
+    if DoConversion then begin
+     FProcCode.Add('ConvertLongstring('+ IntToStr(DesiredStringType^.LongStringCodePage)+',');
+     case DesiredStringType^.LongStringType of
+      tstUnsignedChar: FProcCode.Add('1');
+      tstUnsignedWideChar: FProcCode.Add('2');
+      tstUnsignedHugeChar: FProcCode.Add('4');
+     end;
+     FProcCode.Add(',');
     end;
-    FProcCode.Add(',');
    end;
 
    TranslateCode(TreeNode);
@@ -2428,7 +2458,7 @@ begin
    Target.Add('}');
   end;
 
-  ttdShortString: Target.Add('{ '+AnsiStringEscape(Constant.ShortStringValue)+' }',spacesBOTH);
+  ttdShortString: Target.Add('{ "\x'+IntToHex(Length(Constant.ShortStringValue), 2)+'" '+AnsiStringEscape(Constant.ShortStringValue)+' }',spacesBOTH);
   ttdLongString:begin
    case AType^.LongStringType of
     tstUnsignedChar:begin
