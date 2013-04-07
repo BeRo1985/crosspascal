@@ -298,12 +298,15 @@ begin
  begin
   if not (tsaMapped in Sym^.Attributes) then begin
 
-   if(Sym.SymbolType=tstVariable)and(Sym.TypedConstant) then begin
+   if(Sym.SymbolType=tstVariable) then begin
     case Sym.TypeDefinition.TypeDefinition of
      ttdLongString:
      begin
       Target.Add(GetSymbolName(Sym)+' =',spacesRIGHT);
-      ProcessTypedConstant(Sym.Constant,Sym.TypeDefinition,Target);
+      if (Sym.TypedConstant) then
+       ProcessTypedConstant(Sym.Constant,Sym.TypeDefinition,Target)
+      else
+       Target.Add('NULL');
      end;
     end;
    end;
@@ -592,17 +595,6 @@ begin
  else
   ParameterSymbol := nil;
 
- while Assigned(ParameterSymbol) do
- begin
-  if(ParameterSymbol^.SymbolType = Symbols.tstVariable) and
-    ((parameterSymbol.VariableType = tvtParameterValue)or(parameterSymbol.VariableType = tvtParameterConstant)) and
-    (parameterSymbol.TypeDefinition.TypeDefinition = ttdLongstring) then
-  begin
-   FProcCode.AddLn('IncRefLongstring(&'+GetSymbolName(ParameterSymbol)+');');
-  end;
-  ParameterSymbol := ParameterSymbol.Next;
- end;
-
  if FNeedNestedStack then begin
   if SymbolManager.LexicalScopeLevel<=1 then begin
    FProcCode.AddLn('void* nestedLevelStack['+IntToStr(SymbolManager.LexicalScopeLevelCount)+'];');
@@ -623,11 +615,22 @@ begin
   end;
  end;
 
- InitializeSymbolList(SymbolManager.CurrentList, FProcCode);
-
  Inc(FDepth);
  TranslateSymbolList(SymbolManager.CurrentList, false, FProcCode);
  Dec(FDepth);
+
+ InitializeSymbolList(SymbolManager.CurrentList, FProcCode);
+
+ while Assigned(ParameterSymbol) do
+ begin
+  if(ParameterSymbol^.SymbolType = Symbols.tstVariable) and
+    ((parameterSymbol.VariableType = tvtParameterValue)or(parameterSymbol.VariableType = tvtParameterConstant)) and
+    (parameterSymbol.TypeDefinition.TypeDefinition = ttdLongstring) then
+  begin
+   FProcCode.AddLn('IncRefLongstring(&'+GetSymbolName(ParameterSymbol)+');');
+  end;
+  ParameterSymbol := ParameterSymbol.Next;
+ end;
 
  FInProc:=true;
 
