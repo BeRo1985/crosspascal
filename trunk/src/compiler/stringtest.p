@@ -7,7 +7,7 @@ const ConstString1 = '"const string" ';
       ConstString5 : Unicodestring = '"unicodestring" ';
       ConstString6 : PChar = '"Pchar" ';
       ConstString7 : shortstring = '"shortstring" ';
-//      ConstString8 : string[24] = '"string[24]" '+ConstString1;
+      ConstString8 : string[64] = '"string[24]" '+ConstString1;
 
 var AString: string;
     AAnsistring: ansistring;

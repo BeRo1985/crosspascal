@@ -256,7 +256,7 @@ void pasFreeMem(void* ptr);
 
 void pasZeroMem(void* ptr,size_t size);
 
-void* pasObjectDMTDispatch(void* object,size_t index);
+void* pasObjectDMTDispatch(void** object,size_t index);
 
 void* pasClassDMTDispatch(void* classVMT,size_t index);
 
@@ -353,7 +353,7 @@ end;
 
 procedure GetMem(var p;Size:ptrint);
 begin
-[[[ (void*)<<<p>>> = pasGetMem(<<<Size>>>); ]]]
+[[[ <<<p>>> = pasGetMem(<<<Size>>>); ]]]
 end;
 
 procedure FreeMem(var p);
@@ -462,7 +462,7 @@ void pasZeroMem(void* ptr,size_t size){
   memset(ptr, size, 0);
 }
 
-void* pasObjectDMTDispatch(void* object,size_t index){
+void* pasObjectDMTDispatch(void** object,size_t index){
   pasObjectVirtualMethodTable* VMT = (void*)*object;
   while(VMT){
     pasObjectDynamicMethodTableItem* DMT = VMT->dynamicMethodTable;
@@ -765,7 +765,9 @@ pasLongstring AddLongstring(pasLongstring left, pasLongstring right) {
 
     }
 
-	return result;
+    CheckRefLongstring(left);
+    CheckRefLongstring(right);
+    return result;
 }
 ]]]
 
