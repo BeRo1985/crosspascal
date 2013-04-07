@@ -16,11 +16,37 @@ var AString: string;
     APChar: PChar;
     AShortstring: shortstring;
 
+procedure TestA(const s: String);
 begin
+  Writeln(s);
+end;
+
+procedure TestB(var s: String);
+begin
+  Write(s,' is now known as ');
+  s := 'Chocolate';
+  Writeln(s);
+end;
+
+procedure TestC(s: string);
+begin
+  Writeln(s);
+  s := 'I AM FREE!';
+  Writeln(s);
+end;
+
+begin
+  AString := ConstString1;
+  TestA(AString);
+  TestB(AString);
+  TestC(ConstString1);
+
   Writeln(ConstString1);
   Writeln(ConstString2);
   Writeln(ConstString3);
   Writeln(ConstString4);
+  Writeln(1);
+
   Writeln(ConstString5);
   Writeln(ConstString6);
 
@@ -28,22 +54,30 @@ begin
 
   Writeln(ConstString1 + ConstString2);
   Writeln(ConstString1 + ConstString3);
-  Writeln(ConstString1 + ConstString4);
-  Writeln(ConstString1 + ConstString5);
+  AString := ConstString1 + ConstString4;
+  //Writeln(AString);
 
+  Writeln(ConstString1 + ConstString5);
   Writeln(ConstString2 + ConstString3);
   Writeln(ConstString2 + ConstString4);
   Writeln(ConstString2 + ConstString5);
-
   Writeln(ConstString3 + ConstString4);
   Writeln(ConstString3 + ConstString5);
   Writeln(ConstString4 + ConstString5);
 
-  // Writeln(ConstString1 + ConstString6);
-  // Writeln(ConstString2 + ConstString6);
-  // Writeln(ConstString3 + ConstString6);
-  // Writeln(ConstString4 + ConstString6);
-  // Writeln(ConstString5 + ConstString6);
+  Writeln(Conststring7);
+  Writeln(Conststring8);
+  AString := ConstString7 + ConstString8;
+  Writeln(AString,'***');
+
+  Writeln(ConstString7 + ConstString8,Length(AString));
+
+//   Writeln(ConstString1 + string(ConstString6));
+//   Writeln(ConstString2 + ConstString6);
+//   Writeln(ConstString3 + ConstString6);
+//   Writeln(ConstString4 + ConstString6);
+//   Writeln(ConstString5 + ConstString6);
+
   Writeln('-------------');
 
   AString := ConstString2;
