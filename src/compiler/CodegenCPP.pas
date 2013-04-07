@@ -82,6 +82,7 @@ type TCodeWriter = class
        procedure ProcessFunctionType(Symbol:PSymbol; ReturnType: PType; Parameter: TSymbolList; const funcName: ansistring; Target: TCodeWriter);
 
        function TranslateStringConstant(ConstantStr: THugeString): ansistring;
+       procedure TranslateStringCode(TreeNode: TTreeNode; DesiredStringType: PType);
 
        procedure TranslateCode(TreeNode:TTreeNode);
 
@@ -127,6 +128,8 @@ type TCodeWriter = class
 
 
 implementation
+
+var AnsistringType: TType;
 
 function FloatToStr(f:{$ifdef HAS_TYPE_EXTENDED}extended{$else}double{$endif}):ansistring;
 begin
@@ -799,8 +802,8 @@ begin
      begin
       FProcCode.Add('AssignLongstring(&');
       TranslateCode(TreeNode.Left);
-      FProcCode.Add(',',spacesRIGHT);
-      TranslateCode(TreeNode.Right);
+      FProcCode.Add(', (pasLongstring)',spacesRIGHT);
+      TranslateStringCode(TreeNode.Right, TreeNode.Left.Return);
       FProcCode.Add(')');
      end else begin
       TranslateCode(TreeNode.Left);
@@ -882,11 +885,8 @@ begin
      if Assigned(TreeNode.Left.Return) and Assigned(TreeNode.Right.Return) and
         (TreeNode.Left.Return.TypeDefinition = ttdLongString)and
         (TreeNode.Right.Return.TypeDefinition = ttdLongString) then begin
-       FProcCode.Add('AddLongstring(');
-       TranslateCode(TreeNode.Left);
-       FProcCode.Add(', ');
-       TranslateCode(TreeNode.Right);
-       FProcCode.Add(')');
+       // this should happen in TranslateStringCode now and there only
+       Error.InternalError(201304063283622);
      end else begin
        FProcCode.Add('(');
        TranslateCode(TreeNode.Left);
@@ -1527,12 +1527,7 @@ begin
            end;
            ttdBoolean: FProcCode.Add('pasWriteBool(');
            ttdShortString: FProcCode.Add('pasWriteShortString(');
-           ttdLongString:
-           begin
-            FProcCode.Add('pasWriteLongString(');
-            if SubTreeNode.Left.Return.LongStringType <> tstUnsignedChar then
-             FProcCode.Add('ConvertLongstring(65535, 1,');
-           end;
+           ttdLongString: FProcCode.Add('pasWriteLongString((pasLongstring)');
            ttdFloat: FProcCode.Add('pasWriteFloat(');
            ttdPointer: FProcCode.Add('pasWritePChar(');
            else
@@ -1545,10 +1540,14 @@ begin
          end else if assigned(SubTreeNode.Left.Return) and (SubTreeNode.Left.Return^.TypeDefinition=ttdPointer) then begin
           FProcCode.Add('((void*)(');
          end;
-         TranslateCode(SubTreeNode.Left);
-         if Assigned(SubTreeNode.Left)and(Assigned(SubTreeNode.Left.Return)) then
-          if(SubTreeNode.Left.Return.TypeDefinition = ttdLongstring)and(SubTreeNode.Left.Return.LongStringType <> tstUnsignedChar) then
-           FProcCode.Add(')');
+
+         if Assigned(SubTreeNode.Left)and(Assigned(SubTreeNode.Left.Return))and
+           (SubTreeNode.Left.Return.TypeDefinition = ttdLongstring) then begin
+          TranslateStringCode(SubTreeNode.Left, @AnsistringType)
+         end else begin
+          TranslateCode(SubTreeNode.Left);
+         end;
+
          if SubTreeNode.ReferenceParameter then begin
           FProcCode.Add(')))');
          end else if assigned(SubTreeNode.Left.Return) and (SubTreeNode.Left.Return^.TypeDefinition=ttdPointer) then begin
@@ -1836,7 +1835,7 @@ begin
           end else if assigned(TreeNode.MethodSymbol) and (tpaDynamic in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
            if assigned(ObjectClassType) and (ObjectClassType^.TypeDefinition=ttdOBJECT) then begin
             // OBJECT
-            FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasObjectDMTDispatch((void*)&(');
+            FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+'*)pasObjectDMTDispatch((void*)&(');
             TranslateCode(TreeNode.Right);
             FProcCode.Add('),'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+'))');
            end else begin
@@ -2054,6 +2053,89 @@ begin
    else begin
     Error.InternalError(201302222201000);
    end;
+  end;
+ end;
+end;
+
+procedure TCodegenCPP.TranslateStringCode(TreeNode: TTreeNode;
+  DesiredStringType: PType);
+{ this function enforces a specific string type, used for stringvar assignments
+  and string parameter passing. }
+var DoConversion: Boolean;
+
+begin
+ if (not assigned(TreeNode.Return)) or
+   ( (TreeNode.Return.TypeDefinition <> ttdLongString) and
+     (TreeNode.Return.TypeDefinition <> ttdShortString) ) then
+  Error.InternalError(20130406173842);
+
+ case TreeNode.TreeNodeType of
+  // string concat
+  ttntAdd:begin
+   if assigned(TreeNode.Left) and assigned(TreeNode.Right) and
+   Assigned(TreeNode.Left.Return) and Assigned(TreeNode.Right.Return) and
+   (TreeNode.Left.Return.TypeDefinition = ttdLongString)and
+   (TreeNode.Right.Return.TypeDefinition = ttdLongString) then begin
+    FProcCode.Add('AddLongstring((pasLongstring)');
+    TranslateStringCode(TreeNode.Left, DesiredStringType);
+    FProcCode.Add(', (pasLongstring)');
+    TranslateStringCode(TreeNode.Right, DesiredStringType);
+    FProcCode.Add(')');
+   end else begin
+    Error.InternalError(20130406173827);
+   end;
+  end;
+  ttntTYPECONV:begin
+   if assigned(TreeNode.Return) and assigned(TreeNode.Left.Return) and (TreeNode.Left.Return<>TreeNode.Return) then begin
+   if ((TreeNode.Return.TypeDefinition <> ttdLongString)and(TreeNode.Return.TypeDefinition <> ttdShortString))
+    or ((TreeNode.Left.Return.TypeDefinition <> ttdLongString)and(TreeNode.Left.Return.TypeDefinition <> ttdShortString)) then
+     Error.InternalError(20130406173437);
+
+    // this is either clever or extremely stupid: we directly convert into the desired string type
+    // or skip conversion if the types are the same
+    if TreeNode.Left.Return = DesiredStringType then
+     TranslateCode(TreeNode.Left)
+    else begin
+     FProcCode.Add('ConvertLongstring('+ IntToStr(DesiredStringType^.LongStringCodePage)+',');
+     case DesiredStringType^.LongStringType of
+      tstUnsignedChar: FProcCode.Add('1');
+      tstUnsignedWideChar: FProcCode.Add('2');
+      tstUnsignedHugeChar: FProcCode.Add('4');
+     end;
+     FProcCode.Add(',');
+     TranslateCode(TreeNode.Left);
+     FProcCode.Add(')');
+    end;
+   end;
+  end;
+
+  ttntSTRINGConst, ttntVar, ttntCHARConst:
+  begin
+   // for string consts, we could actually just convert them into the right string type
+
+   DoConversion :=(TreeNode.Return.LongStringType <> DesiredStringType^.LongStringType) or
+                  (TreeNode.Return.LongStringCodePage <> DesiredStringType^.LongStringCodePage);
+
+   if DoConversion then begin
+    FProcCode.Add('ConvertLongstring('+ IntToStr(DesiredStringType^.LongStringCodePage)+',');
+    case DesiredStringType^.LongStringType of
+     tstUnsignedChar: FProcCode.Add('1');
+     tstUnsignedWideChar: FProcCode.Add('2');
+     tstUnsignedHugeChar: FProcCode.Add('4');
+    end;
+    FProcCode.Add(',');
+   end;
+
+   TranslateCode(TreeNode);
+
+   if DoConversion then begin
+    FProcCode.Add(')');
+   end;
+  end;
+  else
+  begin
+   Error.InternalError(20130406143876);
+   Writeln(Integer(TreeNode.TreeNodeType));
   end;
  end;
 end;
@@ -2346,7 +2428,7 @@ begin
    Target.Add('}');
   end;
 
-  ttdShortString: Target.Add(AnsiStringEscape(Constant.ShortStringValue),spacesBOTH);
+  ttdShortString: Target.Add('{ '+AnsiStringEscape(Constant.ShortStringValue)+' }',spacesBOTH);
   ttdLongString:begin
    case AType^.LongStringType of
     tstUnsignedChar:begin
@@ -3025,7 +3107,7 @@ begin
     end;
     ttdShortString:begin
      Type_^.Dumped:=true;
-     Target.AddLn('typedef uint8_t '+Name+'['+IntToStr(Type_^.Length+1)+'];');
+     Target.AddLn('typedef struct { uint8_t data['+IntToStr(Type_^.Length+1)+']; } '+Name+';');
     end;
     ttdLongString:begin
      Type_^.Dumped:=true;
@@ -3488,4 +3570,9 @@ begin
  end;
 end;
 
+initialization
+ AnsistringType.TypeDefinition:=ttdLongString;
+ AnsistringType.LongStringType:=tstUnsignedChar;
+ AnsistringType.LongStringCodePage:=65535;
+ AnsistringType.LongStringReferenceCounted:=True;
 end.
