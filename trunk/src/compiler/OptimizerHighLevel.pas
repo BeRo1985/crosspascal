@@ -1468,6 +1468,10 @@ var CompareTypesEqual:TCompareTypesEqual;
 begin
  OptimizeTree(TreeNode.Left);
  if assigned(Symbol) then begin
+  TreeNode.ParameterSymbol:=Symbol;
+  if assigned(TreeNode.Left) then begin
+   TreeNode.Left.ParameterSymbol:=Symbol;
+  end;
   if LocalSwitches^.VarStringChecks then begin
    if assigned(TreeNode.Left) and assigned(TreeNode.Left.Return) and assigned(Symbol^.TypeDefinition) then begin
     if (TreeNode.Left.Return^.TypeDefinition=ttdSHORTSTRING) and
@@ -1533,6 +1537,7 @@ begin
      TreeNode.Left.Return:=Symbol^.TypeDefinition;
     end;
    end;
+   TreeNode.Return:=TreeNode.Left.Return;
   end;
  end;
  if assigned(Symbol) then begin
