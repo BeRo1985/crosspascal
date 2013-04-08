@@ -76,7 +76,7 @@ type PSetArray=^TSetArray;
       TypedAddress:boolean;
      end;
 
-     TTargetArchitecture=(taARM,taARMEABI,taX86,taX86WIN32,taX64,taX64WIN64);
+     TTargetArchitecture=(taARM,taARMEABI,taX86,taX86WIN32,taX64,taX64WIN64,taEMSCRIPTEN);
 
      POptions=^TOptions;
      TOptions=record
