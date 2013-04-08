@@ -40,7 +40,7 @@ type TTreeNodeType=(ttntEmpty,
        LineNumber,WithLevel:longint;
        FileName:ansistring;
        TreeNodeType:TTreeNodeType;
-       Symbol,MethodSymbol,SymbolField:PSymbol;
+       Symbol,MethodSymbol,SymbolField,ParameterSymbol:PSymbol;
        Return,CheckType,CompareType,InheritedType,WithType:PType;
        ItemType:TTreeNodeItemType;
        ItemValue:int64;
@@ -176,6 +176,7 @@ begin
  Symbol:=nil;
  MethodSymbol:=nil;
  SymbolField:=nil;
+ ParameterSymbol:=nil;
  Return:=nil;
 //CastedType:=NIL;
  CheckType:=nil;
@@ -226,6 +227,7 @@ begin
   Symbol:=From.Symbol;
   MethodSymbol:=From.MethodSymbol;
   SymbolField:=From.SymbolField;
+  ParameterSymbol:=From.ParameterSymbol;
   Return:=From.Return;
 //CastedType:=From.CastedType;
   CheckType:=From.CheckType;
