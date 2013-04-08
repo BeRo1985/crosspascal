@@ -522,7 +522,7 @@ begin
  result:=(Symbol^.VariableType in [tvtParameterVariable{VAR},tvtParameterResult{OUT}]) or
          ((Symbol^.VariableType=tvtParameterConstant{CONST}) and
           ((Symbol^.TypeDefinition^.TypeDefinition=ttdEmpty) or not
-           (Symbol^.TypeDefinition^.TypeDefinition in [ttdEnumerated,ttdBoolean,ttdSubRange,ttdCurrency,ttdFloat,ttdLongstring])));
+           (Symbol^.TypeDefinition^.TypeDefinition in [ttdEnumerated,ttdBoolean,ttdSubRange,ttdCurrency,ttdFloat,ttdLongstring,ttdShortstring])));
 end;
 
 constructor TSymbolList.Create(TheSymbolManager:TSymbolManager);

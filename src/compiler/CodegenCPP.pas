@@ -2009,11 +2009,13 @@ begin
        FProcCode.Add('((void*)(');
       end;
 
-      if Assigned(SubTreeNode.Left) and (SubTreeNode.Left.TreeNodeType = ttntTYPECONV) and
-        (SubTreeNode.Left.Return.TypeDefinition = ttdLongstring) then
-       TranslateStringCode(SubTreeNode.Left.Left, SubTreeNode.Left.Return)
+      if Assigned(SubTreeNode.Left) and (not SubTreeNode.ReferenceParameter) and
+        ((SubTreeNode.Left.Return.TypeDefinition = ttdLongstring) or
+         (SubTreeNode.Left.Return.TypeDefinition = ttdShortString)) then
+       TranslateStringCode(SubTreeNode.Left, SubTreeNode.Return)
       else
        TranslateCode(SubTreeNode.Left);
+
       if SubTreeNode.ReferenceParameter then begin
        FProcCode.Add(')))');
       end else if assigned(SubTreeNode.Left.Return) and (SubTreeNode.Left.Return^.TypeDefinition=ttdPointer) then begin
@@ -2135,6 +2137,36 @@ begin
      (TreeNode.Return.TypeDefinition <> ttdShortString) ) then
   Error.InternalError(20130406173842);
 
+ if DesiredStringType.TypeDefinition = ttdShortString then
+ begin
+  case TreeNode.TreeNodeType of
+   ttntVAR:begin
+    if TreeNode.Return.TypeDefinition = ttdShortString then begin
+     TranslateCode(TreeNode);
+    end else
+    begin
+     FProcCode.Add('pasToShortstring(');
+     TranslateCode(TreeNode);
+     FProcCode.Add(')');
+    end;
+   end;
+   ttntAdd:begin
+    FProcCode.Add('pasToShortstring(');
+    TranslateStringCode(TreeNode, @AnsistringType);
+    FProcCode.Add(')');
+   end;
+   ttntTypeConv:
+   begin
+    FProcCode.Add('pasToShortstring(');
+    TranslateStringCode(TreeNode.Left, @AnsistringType);
+    FProcCode.Add(')');
+   end;
+   else begin
+    Error.InternalError(20130408100827);
+    Writeln(Cardinal(TreeNode.TreeNodeType));
+   end;
+  end;
+ end else
  case TreeNode.TreeNodeType of
   // string concat
   ttntAdd:begin
@@ -3202,7 +3234,7 @@ begin
     end;
     ttdShortString:begin
      Type_^.Dumped:=true;
-     Target.AddLn('typedef struct { uint8_t data['+IntToStr(Type_^.Length+1)+']; } '+Name+';');
+     Target.AddLn('typedef pasShortstring'+IntToStr(Type_^.Length)+' '+Name+';');
     end;
     ttdLongString:begin
      Type_^.Dumped:=true;
