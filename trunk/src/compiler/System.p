@@ -250,6 +250,262 @@ typedef struct {
 	uint32_t dummy;
 } pasFile;
 
+typedef struct { uint8_t data[2]; } pasShortstring1;
+typedef struct { uint8_t data[3]; } pasShortstring2;
+typedef struct { uint8_t data[4]; } pasShortstring3;
+typedef struct { uint8_t data[5]; } pasShortstring4;
+typedef struct { uint8_t data[6]; } pasShortstring5;
+typedef struct { uint8_t data[7]; } pasShortstring6;
+typedef struct { uint8_t data[8]; } pasShortstring7;
+typedef struct { uint8_t data[9]; } pasShortstring8;
+typedef struct { uint8_t data[10]; } pasShortstring9;
+typedef struct { uint8_t data[11]; } pasShortstring10;
+typedef struct { uint8_t data[12]; } pasShortstring11;
+typedef struct { uint8_t data[13]; } pasShortstring12;
+typedef struct { uint8_t data[14]; } pasShortstring13;
+typedef struct { uint8_t data[15]; } pasShortstring14;
+typedef struct { uint8_t data[16]; } pasShortstring15;
+typedef struct { uint8_t data[17]; } pasShortstring16;
+typedef struct { uint8_t data[18]; } pasShortstring17;
+typedef struct { uint8_t data[19]; } pasShortstring18;
+typedef struct { uint8_t data[20]; } pasShortstring19;
+typedef struct { uint8_t data[21]; } pasShortstring20;
+typedef struct { uint8_t data[22]; } pasShortstring21;
+typedef struct { uint8_t data[23]; } pasShortstring22;
+typedef struct { uint8_t data[24]; } pasShortstring23;
+typedef struct { uint8_t data[25]; } pasShortstring24;
+typedef struct { uint8_t data[26]; } pasShortstring25;
+typedef struct { uint8_t data[27]; } pasShortstring26;
+typedef struct { uint8_t data[28]; } pasShortstring27;
+typedef struct { uint8_t data[29]; } pasShortstring28;
+typedef struct { uint8_t data[30]; } pasShortstring29;
+typedef struct { uint8_t data[31]; } pasShortstring30;
+typedef struct { uint8_t data[32]; } pasShortstring31;
+typedef struct { uint8_t data[33]; } pasShortstring32;
+typedef struct { uint8_t data[34]; } pasShortstring33;
+typedef struct { uint8_t data[35]; } pasShortstring34;
+typedef struct { uint8_t data[36]; } pasShortstring35;
+typedef struct { uint8_t data[37]; } pasShortstring36;
+typedef struct { uint8_t data[38]; } pasShortstring37;
+typedef struct { uint8_t data[39]; } pasShortstring38;
+typedef struct { uint8_t data[40]; } pasShortstring39;
+typedef struct { uint8_t data[41]; } pasShortstring40;
+typedef struct { uint8_t data[42]; } pasShortstring41;
+typedef struct { uint8_t data[43]; } pasShortstring42;
+typedef struct { uint8_t data[44]; } pasShortstring43;
+typedef struct { uint8_t data[45]; } pasShortstring44;
+typedef struct { uint8_t data[46]; } pasShortstring45;
+typedef struct { uint8_t data[47]; } pasShortstring46;
+typedef struct { uint8_t data[48]; } pasShortstring47;
+typedef struct { uint8_t data[49]; } pasShortstring48;
+typedef struct { uint8_t data[50]; } pasShortstring49;
+typedef struct { uint8_t data[51]; } pasShortstring50;
+typedef struct { uint8_t data[52]; } pasShortstring51;
+typedef struct { uint8_t data[53]; } pasShortstring52;
+typedef struct { uint8_t data[54]; } pasShortstring53;
+typedef struct { uint8_t data[55]; } pasShortstring54;
+typedef struct { uint8_t data[56]; } pasShortstring55;
+typedef struct { uint8_t data[57]; } pasShortstring56;
+typedef struct { uint8_t data[58]; } pasShortstring57;
+typedef struct { uint8_t data[59]; } pasShortstring58;
+typedef struct { uint8_t data[60]; } pasShortstring59;
+typedef struct { uint8_t data[61]; } pasShortstring60;
+typedef struct { uint8_t data[62]; } pasShortstring61;
+typedef struct { uint8_t data[63]; } pasShortstring62;
+typedef struct { uint8_t data[64]; } pasShortstring63;
+typedef struct { uint8_t data[65]; } pasShortstring64;
+typedef struct { uint8_t data[66]; } pasShortstring65;
+typedef struct { uint8_t data[67]; } pasShortstring66;
+typedef struct { uint8_t data[68]; } pasShortstring67;
+typedef struct { uint8_t data[69]; } pasShortstring68;
+typedef struct { uint8_t data[70]; } pasShortstring69;
+typedef struct { uint8_t data[71]; } pasShortstring70;
+typedef struct { uint8_t data[72]; } pasShortstring71;
+typedef struct { uint8_t data[73]; } pasShortstring72;
+typedef struct { uint8_t data[74]; } pasShortstring73;
+typedef struct { uint8_t data[75]; } pasShortstring74;
+typedef struct { uint8_t data[76]; } pasShortstring75;
+typedef struct { uint8_t data[77]; } pasShortstring76;
+typedef struct { uint8_t data[78]; } pasShortstring77;
+typedef struct { uint8_t data[79]; } pasShortstring78;
+typedef struct { uint8_t data[80]; } pasShortstring79;
+typedef struct { uint8_t data[81]; } pasShortstring80;
+typedef struct { uint8_t data[82]; } pasShortstring81;
+typedef struct { uint8_t data[83]; } pasShortstring82;
+typedef struct { uint8_t data[84]; } pasShortstring83;
+typedef struct { uint8_t data[85]; } pasShortstring84;
+typedef struct { uint8_t data[86]; } pasShortstring85;
+typedef struct { uint8_t data[87]; } pasShortstring86;
+typedef struct { uint8_t data[88]; } pasShortstring87;
+typedef struct { uint8_t data[89]; } pasShortstring88;
+typedef struct { uint8_t data[90]; } pasShortstring89;
+typedef struct { uint8_t data[91]; } pasShortstring90;
+typedef struct { uint8_t data[92]; } pasShortstring91;
+typedef struct { uint8_t data[93]; } pasShortstring92;
+typedef struct { uint8_t data[94]; } pasShortstring93;
+typedef struct { uint8_t data[95]; } pasShortstring94;
+typedef struct { uint8_t data[96]; } pasShortstring95;
+typedef struct { uint8_t data[97]; } pasShortstring96;
+typedef struct { uint8_t data[98]; } pasShortstring97;
+typedef struct { uint8_t data[99]; } pasShortstring98;
+typedef struct { uint8_t data[100]; } pasShortstring99;
+typedef struct { uint8_t data[101]; } pasShortstring100;
+typedef struct { uint8_t data[102]; } pasShortstring101;
+typedef struct { uint8_t data[103]; } pasShortstring102;
+typedef struct { uint8_t data[104]; } pasShortstring103;
+typedef struct { uint8_t data[105]; } pasShortstring104;
+typedef struct { uint8_t data[106]; } pasShortstring105;
+typedef struct { uint8_t data[107]; } pasShortstring106;
+typedef struct { uint8_t data[108]; } pasShortstring107;
+typedef struct { uint8_t data[109]; } pasShortstring108;
+typedef struct { uint8_t data[110]; } pasShortstring109;
+typedef struct { uint8_t data[111]; } pasShortstring110;
+typedef struct { uint8_t data[112]; } pasShortstring111;
+typedef struct { uint8_t data[113]; } pasShortstring112;
+typedef struct { uint8_t data[114]; } pasShortstring113;
+typedef struct { uint8_t data[115]; } pasShortstring114;
+typedef struct { uint8_t data[116]; } pasShortstring115;
+typedef struct { uint8_t data[117]; } pasShortstring116;
+typedef struct { uint8_t data[118]; } pasShortstring117;
+typedef struct { uint8_t data[119]; } pasShortstring118;
+typedef struct { uint8_t data[120]; } pasShortstring119;
+typedef struct { uint8_t data[121]; } pasShortstring120;
+typedef struct { uint8_t data[122]; } pasShortstring121;
+typedef struct { uint8_t data[123]; } pasShortstring122;
+typedef struct { uint8_t data[124]; } pasShortstring123;
+typedef struct { uint8_t data[125]; } pasShortstring124;
+typedef struct { uint8_t data[126]; } pasShortstring125;
+typedef struct { uint8_t data[127]; } pasShortstring126;
+typedef struct { uint8_t data[128]; } pasShortstring127;
+typedef struct { uint8_t data[129]; } pasShortstring128;
+typedef struct { uint8_t data[130]; } pasShortstring129;
+typedef struct { uint8_t data[131]; } pasShortstring130;
+typedef struct { uint8_t data[132]; } pasShortstring131;
+typedef struct { uint8_t data[133]; } pasShortstring132;
+typedef struct { uint8_t data[134]; } pasShortstring133;
+typedef struct { uint8_t data[135]; } pasShortstring134;
+typedef struct { uint8_t data[136]; } pasShortstring135;
+typedef struct { uint8_t data[137]; } pasShortstring136;
+typedef struct { uint8_t data[138]; } pasShortstring137;
+typedef struct { uint8_t data[139]; } pasShortstring138;
+typedef struct { uint8_t data[140]; } pasShortstring139;
+typedef struct { uint8_t data[141]; } pasShortstring140;
+typedef struct { uint8_t data[142]; } pasShortstring141;
+typedef struct { uint8_t data[143]; } pasShortstring142;
+typedef struct { uint8_t data[144]; } pasShortstring143;
+typedef struct { uint8_t data[145]; } pasShortstring144;
+typedef struct { uint8_t data[146]; } pasShortstring145;
+typedef struct { uint8_t data[147]; } pasShortstring146;
+typedef struct { uint8_t data[148]; } pasShortstring147;
+typedef struct { uint8_t data[149]; } pasShortstring148;
+typedef struct { uint8_t data[150]; } pasShortstring149;
+typedef struct { uint8_t data[151]; } pasShortstring150;
+typedef struct { uint8_t data[152]; } pasShortstring151;
+typedef struct { uint8_t data[153]; } pasShortstring152;
+typedef struct { uint8_t data[154]; } pasShortstring153;
+typedef struct { uint8_t data[155]; } pasShortstring154;
+typedef struct { uint8_t data[156]; } pasShortstring155;
+typedef struct { uint8_t data[157]; } pasShortstring156;
+typedef struct { uint8_t data[158]; } pasShortstring157;
+typedef struct { uint8_t data[159]; } pasShortstring158;
+typedef struct { uint8_t data[160]; } pasShortstring159;
+typedef struct { uint8_t data[161]; } pasShortstring160;
+typedef struct { uint8_t data[162]; } pasShortstring161;
+typedef struct { uint8_t data[163]; } pasShortstring162;
+typedef struct { uint8_t data[164]; } pasShortstring163;
+typedef struct { uint8_t data[165]; } pasShortstring164;
+typedef struct { uint8_t data[166]; } pasShortstring165;
+typedef struct { uint8_t data[167]; } pasShortstring166;
+typedef struct { uint8_t data[168]; } pasShortstring167;
+typedef struct { uint8_t data[169]; } pasShortstring168;
+typedef struct { uint8_t data[170]; } pasShortstring169;
+typedef struct { uint8_t data[171]; } pasShortstring170;
+typedef struct { uint8_t data[172]; } pasShortstring171;
+typedef struct { uint8_t data[173]; } pasShortstring172;
+typedef struct { uint8_t data[174]; } pasShortstring173;
+typedef struct { uint8_t data[175]; } pasShortstring174;
+typedef struct { uint8_t data[176]; } pasShortstring175;
+typedef struct { uint8_t data[177]; } pasShortstring176;
+typedef struct { uint8_t data[178]; } pasShortstring177;
+typedef struct { uint8_t data[179]; } pasShortstring178;
+typedef struct { uint8_t data[180]; } pasShortstring179;
+typedef struct { uint8_t data[181]; } pasShortstring180;
+typedef struct { uint8_t data[182]; } pasShortstring181;
+typedef struct { uint8_t data[183]; } pasShortstring182;
+typedef struct { uint8_t data[184]; } pasShortstring183;
+typedef struct { uint8_t data[185]; } pasShortstring184;
+typedef struct { uint8_t data[186]; } pasShortstring185;
+typedef struct { uint8_t data[187]; } pasShortstring186;
+typedef struct { uint8_t data[188]; } pasShortstring187;
+typedef struct { uint8_t data[189]; } pasShortstring188;
+typedef struct { uint8_t data[190]; } pasShortstring189;
+typedef struct { uint8_t data[191]; } pasShortstring190;
+typedef struct { uint8_t data[192]; } pasShortstring191;
+typedef struct { uint8_t data[193]; } pasShortstring192;
+typedef struct { uint8_t data[194]; } pasShortstring193;
+typedef struct { uint8_t data[195]; } pasShortstring194;
+typedef struct { uint8_t data[196]; } pasShortstring195;
+typedef struct { uint8_t data[197]; } pasShortstring196;
+typedef struct { uint8_t data[198]; } pasShortstring197;
+typedef struct { uint8_t data[199]; } pasShortstring198;
+typedef struct { uint8_t data[200]; } pasShortstring199;
+typedef struct { uint8_t data[201]; } pasShortstring200;
+typedef struct { uint8_t data[202]; } pasShortstring201;
+typedef struct { uint8_t data[203]; } pasShortstring202;
+typedef struct { uint8_t data[204]; } pasShortstring203;
+typedef struct { uint8_t data[205]; } pasShortstring204;
+typedef struct { uint8_t data[206]; } pasShortstring205;
+typedef struct { uint8_t data[207]; } pasShortstring206;
+typedef struct { uint8_t data[208]; } pasShortstring207;
+typedef struct { uint8_t data[209]; } pasShortstring208;
+typedef struct { uint8_t data[210]; } pasShortstring209;
+typedef struct { uint8_t data[211]; } pasShortstring210;
+typedef struct { uint8_t data[212]; } pasShortstring211;
+typedef struct { uint8_t data[213]; } pasShortstring212;
+typedef struct { uint8_t data[214]; } pasShortstring213;
+typedef struct { uint8_t data[215]; } pasShortstring214;
+typedef struct { uint8_t data[216]; } pasShortstring215;
+typedef struct { uint8_t data[217]; } pasShortstring216;
+typedef struct { uint8_t data[218]; } pasShortstring217;
+typedef struct { uint8_t data[219]; } pasShortstring218;
+typedef struct { uint8_t data[220]; } pasShortstring219;
+typedef struct { uint8_t data[221]; } pasShortstring220;
+typedef struct { uint8_t data[222]; } pasShortstring221;
+typedef struct { uint8_t data[223]; } pasShortstring222;
+typedef struct { uint8_t data[224]; } pasShortstring223;
+typedef struct { uint8_t data[225]; } pasShortstring224;
+typedef struct { uint8_t data[226]; } pasShortstring225;
+typedef struct { uint8_t data[227]; } pasShortstring226;
+typedef struct { uint8_t data[228]; } pasShortstring227;
+typedef struct { uint8_t data[229]; } pasShortstring228;
+typedef struct { uint8_t data[230]; } pasShortstring229;
+typedef struct { uint8_t data[231]; } pasShortstring230;
+typedef struct { uint8_t data[232]; } pasShortstring231;
+typedef struct { uint8_t data[233]; } pasShortstring232;
+typedef struct { uint8_t data[234]; } pasShortstring233;
+typedef struct { uint8_t data[235]; } pasShortstring234;
+typedef struct { uint8_t data[236]; } pasShortstring235;
+typedef struct { uint8_t data[237]; } pasShortstring236;
+typedef struct { uint8_t data[238]; } pasShortstring237;
+typedef struct { uint8_t data[239]; } pasShortstring238;
+typedef struct { uint8_t data[240]; } pasShortstring239;
+typedef struct { uint8_t data[241]; } pasShortstring240;
+typedef struct { uint8_t data[242]; } pasShortstring241;
+typedef struct { uint8_t data[243]; } pasShortstring242;
+typedef struct { uint8_t data[244]; } pasShortstring243;
+typedef struct { uint8_t data[245]; } pasShortstring244;
+typedef struct { uint8_t data[246]; } pasShortstring245;
+typedef struct { uint8_t data[247]; } pasShortstring246;
+typedef struct { uint8_t data[248]; } pasShortstring247;
+typedef struct { uint8_t data[249]; } pasShortstring248;
+typedef struct { uint8_t data[250]; } pasShortstring249;
+typedef struct { uint8_t data[251]; } pasShortstring250;
+typedef struct { uint8_t data[252]; } pasShortstring251;
+typedef struct { uint8_t data[253]; } pasShortstring252;
+typedef struct { uint8_t data[254]; } pasShortstring253;
+typedef struct { uint8_t data[255]; } pasShortstring254;
+typedef struct { uint8_t data[256]; } pasShortstring255;
+
 void* pasGetMem(size_t size);
 void pasReallocMem(void** ptr,size_t size);
 void pasFreeMem(void* ptr);
@@ -259,6 +515,8 @@ void pasZeroMem(void* ptr,size_t size);
 void* pasObjectDMTDispatch(void** object,size_t index);
 
 void* pasClassDMTDispatch(void* classVMT,size_t index);
+
+pasShortstring255 pasToShortstring(pasLongstring str);
 
 void CheckRefLongstring(pasLongstring str);
 pasLongstring AddLongstring(pasLongstring left, pasLongstring right);
@@ -620,6 +878,47 @@ void UniqueLongstring(pasLongstring *target) {
     newtarget = CreateLongstring(header->codePage, header->elementSize, header->length, *target);
     DecRefLongstring(target);
     *target = newtarget;
+}
+
+pasShortstring255 pasToShortstring(pasLongstring str) {
+    pasShortstring255 result;
+    uint32_t length,i,v;
+    LongstringRefHeader* header;
+
+    ((uint8_t*)(&result))[0] = 0;
+    if(NULL == str)
+        return result;
+
+    header = (LongstringRefHeader*)((uint32_t)(str) - LongstringRefHeaderSize);
+
+    if(header->length>255)
+        length = 255;
+    else
+        length = header->length;
+
+    ((uint8_t*)(&result))[0] = length;
+
+    for(i=0;i<length;i++) {
+        switch(header->elementSize){
+            case 1:{
+              v = ((uint8_t*)(str))[i];
+              break;
+            }
+            case 2:{
+              v = ((uint16_t*)(str))[i];
+              break;
+            }
+            case 4:{
+              v = ((uint32_t*)(str))[i];
+              break;
+            }
+        }
+        ((uint8_t*)(&result))[i+1] = v;
+    }
+//    if(length<255)
+//        ((uint8_t*)(result))[length-1] = 0;
+    CheckRefLongstring(str);
+    return result;
 }
 
 void AssignShortstring(uint8_t* target, uint32_t maxLength, pasLongstring strInput) {
