@@ -1111,7 +1111,7 @@ begin
      taX64,taX64WIN64:begin
       result:=8;
      end;
-     else {taARM,taARMEABI,taX86,taX86WIN32:}begin
+     else {taARM,taARMEABI,taX86,taX86WIN32,taEMSCRIPTEN:}begin
       result:=4;
      end;
     end;
@@ -1233,7 +1233,7 @@ begin
      taX64,taX64WIN64:begin
       result:=8;
      end;
-     else {taARM,taARMEABI,taX86,taX86WIN32:}begin
+     else {taARM,taARMEABI,taX86,taX86WIN32,taEMSCRIPTEN:}begin
       result:=4;
      end;
     end;
@@ -1254,7 +1254,7 @@ begin
        taARMEABI,taX86WIN32:begin
         result:=8;
        end;
-       taARM,taX86:begin
+       taARM,taX86,taEMSCRIPTEN:begin
         result:=4;
        end;
        else begin
@@ -1309,7 +1309,7 @@ begin
        taARMEABI,taX86WIN32:begin
         result:=8;
        end;
-       taARM,taX86:begin
+       taARM,taX86,taEMSCRIPTEN:begin
         result:=4;
        end;
        else begin
@@ -1338,10 +1338,24 @@ begin
    ttdFile:begin
     case AType^.FileType of
      tftText:begin
-      result:=512;
+      case Options^.TargetArchitecture of
+       taX64,taX64WIN64:begin
+        result:=8;
+       end;
+       else {taARM,taARMEABI,taX86,taX86WIN32,taEMSCRIPTEN:}begin
+        result:=4;
+       end;
+      end;
      end;
      tftUntyped:begin
-      result:=256;
+      case Options^.TargetArchitecture of
+       taX64,taX64WIN64:begin
+        result:=8;
+       end;
+       else {taARM,taARMEABI,taX86,taX86WIN32,taEMSCRIPTEN:}begin
+        result:=4;
+       end;
+      end;
      end;
      else begin
       result:=0;
