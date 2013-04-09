@@ -2145,21 +2145,21 @@ begin
      TranslateCode(TreeNode);
     end else
     begin
-     FProcCode.Add('pasToShortstring(');
-     TranslateCode(TreeNode);
+     FProcCode.Add('pasToShortstring'+IntToStr(DesiredStringType.Length)+'(');
+     TranslateStringCode(TreeNode, @AnsistringType);
      FProcCode.Add(')');
     end;
    end;
-   ttntAdd:begin
-    FProcCode.Add('pasToShortstring(');
+   ttntAdd,ttntStringconst:begin
+    FProcCode.Add('pasToShortstring'+IntToStr(DesiredStringType.Length)+'(');
     TranslateStringCode(TreeNode, @AnsistringType);
     FProcCode.Add(')');
    end;
    ttntTypeConv:
    begin
-    FProcCode.Add('pasToShortstring(');
-    TranslateStringCode(TreeNode.Left, @AnsistringType);
-    FProcCode.Add(')');
+    //FProcCode.Add('pasToShortstring'+IntToStr(DesiredStringType.Length)+'(');
+    TranslateStringCode(TreeNode.Left, DesiredStringtype);
+    //FProcCode.Add(')');
    end;
    else begin
     Error.InternalError(20130408100827);
@@ -2403,7 +2403,7 @@ begin
   FProcCode.InsertAtMark('static const char '+result+'_DATA['+IntToStr(Length(AStr)+17)+'] = "' + UIntToCString(65535)+UIntToCSTring(1)
                          +UIntToCString($FFFFFFFF)+UIntToCString(Length(AStr))+'" "' +
                          AnsiStringEscape(AStr,False)+'\x00";');
-  FProcCode.InsertAtMark('void* '+result+' = (void*)(&'+result+'_DATA[16]);');
+  FProcCode.InsertAtMark('void* '+result+' = (void*)((uint32_t)(&'+result+'_DATA)+16);');
 end;
 
 procedure TCodegenCPP.TranslateMethodList(List: TSymbolList; ATarget: TCodeWriter = nil);
