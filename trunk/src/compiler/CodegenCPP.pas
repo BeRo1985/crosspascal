@@ -3288,6 +3288,11 @@ begin
     CodeTarget.AddLn('pasTypeInfo '+Name+'_TYPEINFO={');
     CodeTarget.IncTab;
     CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
+    if Type_^.TypeDefinition=ttdLongString then begin
+     CodeTarget.AddLn(IntToStr(Type_^.LongStringCodePage)+',');
+    end else begin
+     CodeTarget.AddLn('0,');
+    end;
     if assigned(Type_.Symbol) then begin
      TranslateShortStringConstant(Type_.Symbol.OriginalCaseName,CodeTarget);
     end else begin
