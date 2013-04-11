@@ -3110,7 +3110,7 @@ var TypeItems:TTypeItems;
    SetLength(CopyTypeItems,0);
   end;
  end;
-var i,j:longint;
+var i,j,k:longint;
     Type_,CurrentType:PType;
     TypeChain:TPointerList;
     Name:ansistring;
@@ -3155,9 +3155,120 @@ begin
   Target.AddLn('// Type info definitions');
   for i:=0 to length(TypeItems)-1 do begin
    Type_:=TypeItems[i];
-   if Type_^.RuntimeTypeInfo and (Type_^.NeedTypeInfo or not (Type_.TypeKind in [TypeKindUnknown,TypeKindRecord,TypeKindArray])) then begin
+   if Type_^.RuntimeTypeInfo {and (Type_^.NeedTypeInfo or not (Type_.TypeKind in [TypeKindUnknown,TypeKindRecord,TypeKindArray]))} and not (Type_^.TypeDefinition in [ttdCEXPRESSION]) then begin
     Name:=GetTypeName(Type_);
     Target.AddLn('extern pasTypeInfo '+Name+'_TYPEINFO;');
+    case Type_.TypeDefinition of
+     ttdRecord,ttdObject,ttdClass:begin
+      k:=0;
+      TypeChain:=TPointerList.Create;
+      try
+       CurrentType:=Type_;
+       while assigned(CurrentType) do begin
+        TypeChain.Add(CurrentType);
+        if assigned(CurrentType^.ChildOf) then begin
+         CurrentType:=CurrentType^.ChildOf^.TypeDefinition;
+        end else begin
+         break;
+        end;
+       end;            
+       for j:=TypeChain.Count-1 downto 0 do begin
+        CurrentType:=TypeChain.Items[j];
+        if assigned(CurrentType^.RecordTable) then begin
+         Symbol:=CurrentType^.RecordTable.First;
+         while assigned(Symbol) do begin
+          case Symbol^.SymbolType of
+           tstVariable:begin
+            if not (tsaInternalField in Symbol^.Attributes) then begin
+             inc(k);
+            end;
+           end;
+          end;
+          Symbol:=Symbol^.Next;
+         end;
+        end;
+       end;
+       Target.AddLn('typedef struct {');
+       Target.IncTab;
+       Target.AddLn('pasFieldTable fieldTable;');
+       Target.AddLn('pasFieldInfo fields['+IntToStr(k)+'];');
+       Target.DecTab;
+       Target.AddLn('} '+Name+'_FIELDTABLE_TYPE;');
+       CodeTarget.AddLn(Name+'_FIELDTABLE_TYPE '+Name+'_FIELDTABLE={');
+       CodeTarget.IncTab;
+       CodeTarget.AddLn('{');
+       CodeTarget.IncTab;
+       CodeTarget.AddLn('0,');
+       CodeTarget.AddLn(IntToStr(SymbolManager.GetSize(Type_))+',');
+       CodeTarget.AddLn(IntToStr(k));
+       CodeTarget.DecTab;
+       CodeTarget.AddLn('},');
+       CodeTarget.AddLn('{');
+       CodeTarget.IncTab;
+       for j:=TypeChain.Count-1 downto 0 do begin
+        CurrentType:=TypeChain.Items[j];
+        if assigned(CurrentType^.RecordTable) then begin
+         Symbol:=CurrentType^.RecordTable.First;
+         while assigned(Symbol) do begin
+          case Symbol^.SymbolType of
+           tstVariable:begin
+            if not (tsaInternalField in Symbol^.Attributes) then begin
+             CodeTarget.AddLn('{');
+             CodeTarget.IncTab;
+             CodeTarget.AddLn('(void*)&'+GetTypeName(Symbol^.TypeDefinition)+'_TYPEINFO,');
+             CodeTarget.AddLn(IntToStr(Symbol^.Offset));
+             CodeTarget.DecTab;
+             if k>1 then begin
+              CodeTarget.AddLn('},');
+             end else begin
+              CodeTarget.AddLn('}');
+             end;
+             dec(k);
+            end;
+           end;
+          end;
+          Symbol:=Symbol^.Next;
+         end;
+        end;
+       end;
+       CodeTarget.DecTab;
+       CodeTarget.AddLn('}');
+       CodeTarget.DecTab;
+       CodeTarget.AddLn('};');
+      finally
+       TypeChain.Free;
+      end;
+     end;
+     ttdArray:begin
+      Target.AddLn('typedef struct {');
+      Target.IncTab;
+      Target.AddLn('pasFieldTable fieldTable;');
+      Target.AddLn('pasFieldInfo fields[1];');
+      Target.DecTab;
+      Target.AddLn('} '+Name+'_FIELDTABLE_TYPE;');
+      CodeTarget.AddLn(Name+'_FIELDTABLE_TYPE '+Name+'_FIELDTABLE={');
+      CodeTarget.IncTab;
+      CodeTarget.AddLn('{');
+      CodeTarget.IncTab;
+      CodeTarget.AddLn('0,');
+      CodeTarget.AddLn(IntToStr(SymbolManager.GetSize(Type_))+',');
+      CodeTarget.AddLn(IntToStr((Type_^.UpperLimit-Type_^.LowerLimit)-1));
+      CodeTarget.DecTab;
+      CodeTarget.AddLn('},');
+      CodeTarget.AddLn('{');
+      CodeTarget.IncTab;
+      CodeTarget.AddLn('{');
+      CodeTarget.IncTab;
+      CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.Definition)+'_TYPEINFO,');
+      CodeTarget.AddLn(IntToStr(0));
+      CodeTarget.DecTab;
+      CodeTarget.AddLn('}');
+      CodeTarget.DecTab;
+      CodeTarget.AddLn('}');
+      CodeTarget.DecTab;
+      CodeTarget.AddLn('};');
+     end;
+    end;
     if assigned(Type_.Symbol) then begin
      TranslateShortStringConstant(Name+'_TYPENAME',Type_.Symbol.OriginalCaseName,CodeTarget);
     end else begin
@@ -3167,7 +3278,14 @@ begin
     CodeTarget.IncTab;
     CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
     CodeTarget.AddLn('(void*)&'+Name+'_TYPENAME,');
-    CodeTarget.AddLn('NULL');
+    case Type_.TypeDefinition of
+     ttdRecord,ttdObject,ttdClass,ttdArray:begin
+      CodeTarget.AddLn('(void*)&'+Name+'_TYPEINFO');
+     end;
+     else begin
+      CodeTarget.AddLn('NULL');
+     end;
+    end;
     CodeTarget.DecTab;
     CodeTarget.AddLn('};');
    end;

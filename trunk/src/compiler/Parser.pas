@@ -6157,7 +6157,11 @@ begin
    CurrentType:=StartType;
    while assigned(CurrentType) do begin
     CurrentType^.NeedTypeInfo:=SymbolManager.TypeDoNeedTypeInfo(CurrentType);
-    CurrentType:=CurrentType^.Definition;
+    if CurrentType^.TypeDefinition=ttdArray then begin
+     CurrentType:=CurrentType^.Definition;
+    end else begin
+     break;
+    end;
    end;
    CurrentType:=StartType;
   end;
