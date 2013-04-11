@@ -135,28 +135,6 @@ type TCodeWriter = class
 
 implementation
 
-const TypeKindUnknown=0;
-      TypeKindInteger=1;
-      TypeKindAnsiChar=2;
-      TypeKindEnumeration=3;
-      TypeKindFloat=4;
-      TypeKindString=5;
-      TypeKindSet=6;
-      TypeKindClass=7;
-      TypeKindMethod=8;
-      TypeKindWideChar=9;
-      TypeKindLString=10;
-      TypeKindWString=11;
-      TypeKindVariant=12;
-      TypeKindArray=13;
-      TypeKindRecord=14;
-      TypeKindInterface=15;
-      TypeKindInt64=16;
-      TypeKindDynArray=17;
-      TypeKindHugeChar=18;
-      TypeKindUString=19;
-      TypeKindHString=20;
-
 var AnsistringType: TType;
 
 function FloatToStr(f:{$ifdef HAS_TYPE_EXTENDED}extended{$else}double{$endif}):ansistring;

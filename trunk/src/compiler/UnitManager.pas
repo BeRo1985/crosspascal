@@ -937,6 +937,17 @@ begin
     exit;
    end;
   end;
+  AType^.NeedTypeInfo:=(Flags and 128)<>0;
+  if Stream.Read(Flags,SizeOf(byte))<>SizeOf(byte) then begin
+   SetLength(UsedUnits,0);
+   exit;
+  end;
+  if (Flags and 1)<>0 then begin
+   if Stream.Read(AType^.TypeKind,SizeOf(longint))<>SizeOf(longint) then begin
+    SetLength(UsedUnits,0);
+    exit;
+   end;
+  end;
   case AType^.TypeDefinition of
    ttdEnumerated,ttdBoolean,ttdSubRange,ttdCurrency:begin
     if Stream.Read(Flags,SizeOf(byte))<>SizeOf(byte) then begin
@@ -1820,6 +1831,9 @@ begin
   if AType^.ID<>0 then begin
    Flags:=Flags or 64;
   end;
+  if AType^.NeedTypeInfo then begin
+   Flags:=Flags or 128;
+  end;
   Stream.WriteByte(Flags);
   if (Flags and 1)<>0 then begin
    if Stream.Write(AType^.TypeDefinition,SizeOf(TTypeDefinition))<>SizeOf(TTypeDefinition) then begin
@@ -1839,6 +1853,16 @@ begin
   end;
   if (Flags and 64)<>0 then begin
    if Stream.Write(AType^.ID,SizeOf(longword))<>SizeOf(longword) then begin
+    exit;
+   end;
+  end;
+  Flags:=0;
+  if AType^.TypeKind<>0 then begin
+   Flags:=Flags or 1;
+  end;
+  Stream.WriteByte(Flags);
+  if (Flags and 1)<>0 then begin
+   if Stream.Write(AType^.TypeKind,SizeOf(longint))<>SizeOf(longint) then begin
     exit;
    end;
   end;
