@@ -226,6 +226,8 @@ typedef struct pasTypeInfo {
   void* data;
 } pasTypeInfo;
 
+extern pasTypeInfo pasTypeInfoUnknown;
+
 typedef pasTypeInfo* pasTypeInfoPointer;
 typedef pasTypeInfoPointer* pasTypeInfoPointerPointer;
 
@@ -488,6 +490,12 @@ end;
 #include "string.h"
 #include "stdlib.h"
 #include "stdio.h"
+
+pasTypeInfo pasTypeInfoUnknown={
+  pastkUnknown,
+  "\x03???",
+  NULL
+};
 
 typedef struct {
     uint32_t refCount;
