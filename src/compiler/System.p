@@ -222,6 +222,7 @@ procedure Move(var Src; var Dst; Size: Cardinal);
 
 typedef struct pasTypeInfo {
   size_t kind;
+  size_t codePage;
   char* name;
   void* data;
 } pasTypeInfo;
@@ -493,6 +494,7 @@ end;
 
 pasTypeInfo pasTypeInfoUnknown={
   pastkUnknown,
+  0,
   "\x03???",
   NULL
 };
