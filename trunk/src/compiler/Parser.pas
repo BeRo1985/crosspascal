@@ -58,6 +58,7 @@ type TParser=class
        procedure Parse;
        function ParseCallParameter:TTreeNode;
        function ParseNewDisposeParameter(IsNew:boolean):TTreeNode;
+       function ParseTypeInfoParameter:TTreeNode;
        function ParseFactor:TTreeNode;
        function ParseTerm:TTreeNode;
        function ParseSimpleExpression:TTreeNode;
@@ -1017,6 +1018,14 @@ begin
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
 
+ Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+ Symbol^.Name:=tpsIdentifier+'TYPEINFO';
+ Symbol^.OriginalCaseName:='TypeInfo';
+ Symbol^.SymbolType:=Symbols.tstFUNCTION;
+ Symbol^.InternalProcedure:=tipTYPEINFO;
+ Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
+ SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+
 end;
 
 procedure TParser.GetDefaultTypes;
@@ -1144,6 +1153,26 @@ begin
   end;
  end;
  result:=LastTreeNode;
+end;
+
+function TParser.ParseTypeInfoParameter:TTreeNode;
+var AType:PType;
+begin
+ result:=nil;
+ AType:=ParseTypeDefinition('');
+ if assigned(AType) then begin
+  if AType^.NeedTypeInfo then begin
+   result:=TreeManager.GenerateParameterNode(TreeManager.GenerateTypeInfoNode(AType),nil);
+  end else begin
+   if assigned(AType^.Symbol) then begin
+    Error.AbortCode(138,CorrectSymbolName(AType^.Symbol^.Name));
+   end else begin
+    Error.AbortCode(138,'???');
+   end;
+  end;
+ end else begin
+  Error.AbortCode(115);
+ end;
 end;
 
 procedure TParser.CheckDefaultParameters(FirstNeededDefaultSymbol:PSymbol;var Parameters:TTreeNode);
@@ -1430,11 +1459,17 @@ begin
       NewTreeNode:=TreeManager.GenerateCallNode(Symbol);
       if (Scanner.CurrentToken=tstLeftParen) or MustHaveParens then begin
        Scanner.Match(tstLeftParen);
-       if Symbol^.InternalProcedure in [tipNew,tipDispose] then begin
-        NewTreeNode.Left:=ParseNewDisposeParameter(Symbol^.InternalProcedure=tipNew);
-       end else begin
-        NewTreeNode.Left:=ParseCallParameter;
-        SearchOverloadedSymbolAndCheckParameters(NewTreeNode.Symbol,NewTreeNode.Left);
+       case Symbol^.InternalProcedure of
+        tipNEW,tipDISPOSE:begin
+         NewTreeNode.Left:=ParseNewDisposeParameter(Symbol^.InternalProcedure=tipNew);
+        end;
+        tipTYPEINFO:begin
+         NewTreeNode.Left:=ParseTypeInfoParameter;
+        end;
+        else begin
+         NewTreeNode.Left:=ParseCallParameter;
+         SearchOverloadedSymbolAndCheckParameters(NewTreeNode.Symbol,NewTreeNode.Left);
+        end;
        end;
        Scanner.Match(tstRightParen);
       end else begin

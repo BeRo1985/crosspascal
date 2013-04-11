@@ -1,4 +1,4 @@
-unit Tree; 
+unit Tree;
 {$i Compiler.inc}
 
 interface
@@ -13,7 +13,7 @@ type TTreeNodeType=(ttntEmpty,
                     ttntMul,ttntSlash,ttntDiv,ttntMod,ttntAnd,ttntShl,ttntShr,ttntMinus,ttntNot,
                     ttntNil,ttntFloat,
                     ttntBlock,ttntStatement,ttntASM,
-                    ttntVAR,ttntTYPE,ttntTYPECONV,ttntTYPECHECK,
+                    ttntVAR,ttntTYPE,ttntTYPEINFO,ttntTYPECONV,ttntTYPECHECK,
                     ttntFOR,ttntWHILE,ttntREPEAT,ttntIF,ttntWITH,
                     ttntCASE,ttntCASEBLOCK,ttntCASEValue,
                     ttntBREAK,ttntCONTINUE,ttntEXIT,ttntFAIL,
@@ -77,6 +77,7 @@ type TTreeNodeType=(ttntEmpty,
        function GenerateLeftNode(T:TTreeNodeType;Left:TTreeNode):TTreeNode;
        function GenerateVarNode(Symbol:PSymbol):TTreeNode;
        function GenerateTypeNode(AType:PType):TTreeNode;
+       function GenerateTypeInfoNode(AType:PType):TTreeNode;
        function GenerateTypeConvNode(Left:TTreeNode;CastedType:PType;Forced:boolean):TTreeNode;
        function GenerateTypeCheckNode(Left:TTreeNode;CheckType:PType):TTreeNode;
        function GeneratePointerNode(Left:TTreeNode;PointerToType:PType):TTreeNode;
@@ -429,6 +430,9 @@ begin
    ttntTYPE:begin
     WriteType('TYPE');
    end;
+   ttntTYPEINFO:begin
+    WriteType('TYPEINFO');
+   end;
    ttntTYPECONV:begin
     WriteType('TYPECONV');
    end;
@@ -627,6 +631,13 @@ function TTreeManager.GenerateTypeNode(AType:PType):TTreeNode;
 begin
  result:=NewNode;
  result.TreeNodeType:=ttntTYPE;
+ result.Return:=AType;
+end;
+
+function TTreeManager.GenerateTypeInfoNode(AType:PType):TTreeNode;
+begin
+ result:=NewNode;
+ result.TreeNodeType:=ttntTYPEINFO;
  result.Return:=AType;
 end;
 

@@ -1912,12 +1912,19 @@ begin
         if (TreeNode.Left.Left.Return^.TypeDefinition=ttdOBJECT) and TreeNode.Left.Left.Return^.HasVirtualTable then begin
          FProcCode.Add('((void*)((');
          TranslateCode(TreeNode.Left.Left);
-         FProcCode.Add(').INTERNAL_FIELD_VMT))',spacesLEFT);
+         FProcCode.Add(').INTERNAL_FIELD_VMT))');
         end else begin
          Error.AddErrorCode(86);
         end;
        end else begin
         Error.InternalError(201304050127000);
+       end;
+      end;
+      tipTYPEINFO:begin
+       if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and not assigned(TreeNode.Left.Right) then begin
+        FProcCode.Add('((void*)(&'+GetTypeName(TreeNode.Left.Left.Return)+'_TYPEINFO))');
+       end else begin
+        Error.InternalError(201304111953000);
        end;
       end;
       else {tipNone:}begin
