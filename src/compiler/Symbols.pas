@@ -513,6 +513,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
        function AreConstSymbolEqual(SymbolA,SymbolB:PSymbol):boolean;
        procedure AlignRecord(RecordType:PType;DefaultAlignment:longint);
        function SearchProcedureSymbol(Symbol,FirstSymbol:PSymbol;var OK:boolean):PSymbol;
+       function TypeDoNeedTypeInfo(AType:PType):boolean;
      end;
 
 const ProcedureCallingConventionAttributes:TProcedureAttributes=[tpaSTDCALL,tpaPASCAL,tpaCDECL,tpaSAFECALL,tpaFASTCALL,tpaRegister];
@@ -2112,4 +2113,89 @@ begin
  OK:=OK and assigned(result);
 end;
 
+function TSymbolManager.TypeDoNeedTypeInfo(AType:PType):boolean;
+var Symbol:PSymbol;
+begin
+ result:=false;
+ if assigned(AType) then begin
+  case AType^.TypeDefinition of
+   ttdEmpty:begin
+   end;
+   ttdEnumerated:begin
+    result:=true;
+   end;
+   ttdBoolean:begin
+    result:=true;
+   end;
+   ttdSubRange:begin
+    result:=true;
+   end;
+   ttdCurrency:begin
+    result:=true;
+   end;
+   ttdVariant:begin
+    result:=true;
+   end;
+   ttdArray:begin
+    result:=AType^.DynamicArray or TypeDoNeedTypeInfo(AType^.Definition);
+   end;
+   ttdRecord:begin
+    result:=false;
+    if assigned(AType^.RecordTable) then begin
+     Symbol:=AType^.RecordTable.First;
+     while assigned(Symbol) do begin
+      case Symbol^.SymbolType of
+       tstVariable:begin
+        if assigned(Symbol^.TypeDefinition) and
+           (Symbol^.TypeDefinition^.TypeDefinition in [ttdVariant,ttdArray,ttdRecord,ttdLongString,ttdObject,ttdClass,ttdInterface]) and
+           TypeDoNeedTypeInfo(Symbol^.TypeDefinition) then begin
+         result:=true;
+        end;
+       end;
+      end;
+      Symbol:=Symbol^.Next;
+     end;
+    end;
+   end;
+   ttdShortString:begin
+    result:=true;
+   end;
+   ttdLongString:begin
+    result:=true;
+   end;
+   ttdFile:begin
+    result:=false;
+   end;
+   ttdPointer:begin
+    result:=false;
+   end;
+   ttdSet:begin
+    result:=true;
+   end;
+   ttdProcedure:begin
+    result:=false;
+   end;
+   ttdObject:begin
+    result:=false;
+   end;
+   ttdClass:begin
+    result:=true;
+   end;
+   ttdClassRef:begin
+    result:=false;
+   end;
+   ttdInterface:begin
+    result:=true;
+   end;
+   ttdFloat:begin
+    result:=true;
+   end;
+   ttdCExpression:begin
+    result:=false;
+   end;
+  end;
+ end;
+end;
+
 end.
+
