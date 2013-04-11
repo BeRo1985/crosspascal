@@ -2176,7 +2176,22 @@ begin
     result:=false;
    end;
    ttdObject:begin
-    result:=false;
+    result:=AType^.HasVirtualTable;
+    if assigned(AType^.RecordTable) and not result then begin
+     Symbol:=AType^.RecordTable.First;
+     while assigned(Symbol) do begin
+      case Symbol^.SymbolType of
+       tstVariable:begin
+        if assigned(Symbol^.TypeDefinition) and
+           (Symbol^.TypeDefinition^.TypeDefinition in [ttdVariant,ttdArray,ttdRecord,ttdLongString,ttdObject,ttdClass,ttdInterface]) and
+           TypeDoNeedTypeInfo(Symbol^.TypeDefinition) then begin
+         result:=true;
+        end;
+       end;
+      end;
+      Symbol:=Symbol^.Next;
+     end;
+    end;
    end;
    ttdClass:begin
     result:=true;
