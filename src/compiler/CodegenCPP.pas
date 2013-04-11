@@ -23,6 +23,7 @@ type TCodeWriter = class
        FIncludes: array of ansistring;
        FRootNestedStartPosition: longint;
        FMarker: longint;
+       FIgnoreNextToken: Boolean;
       public
        constructor Create;
        destructor Destroy; override;
@@ -865,7 +866,17 @@ begin
       FProcCode.Add(', (pasLongstring)',spacesRIGHT);
       TranslateStringCode(TreeNode.Right, @Ansistringtype);
       FProcCode.Add(')');
-     end else begin
+     end else
+     if(TreeNode.Left.TreeNodeType=ttntVAR)and(TreeNode.Left.Symbol.TypeDefinition.TypeDefinition=ttdArray)and
+       (TreeNode.Left.Symbol.TypeDefinition.DynamicArray) then
+     begin
+      FProcCode.Add('pasAssignArray(&');
+      TranslateCode(TreeNode.Left);
+      FProcCode.Add(', (pasDynArray)',spacesRIGHT);
+      TranslateCode(TreeNode.Right);
+      FProcCode.Add(')');
+     end else
+     begin
       TranslateCode(TreeNode.Left);
       FProcCode.Add('=',spacesBOTH);
       TranslateCode(TreeNode.Right);
@@ -1811,6 +1822,13 @@ begin
        begin
         if Assigned(TreeNode.Left.Left.Return) then
          case TreeNode.Left.Left.Return.TypeDefinition of
+          ttdArray: begin
+           if TreeNode.Left.Left.Return.DynamicArray then begin
+            FProcCode.Add('pasLengthArray(');
+            TranslateCode(TreeNode.Left.Left);
+            FProcCode.Add(')');
+           end;
+          end;
           ttdLongString: begin
            FProcCode.Add('LengthLongstring(');
            TranslateStringCode(TreeNode.Left.Left, TreeNode.Left.Left.Return);
@@ -2056,7 +2074,8 @@ begin
    ttntIndex:begin
     if (TreeNode.Left.Return.TypeDefinition = ttdArray)and
        (TreeNode.Left.Return.DynamicArray = True) then begin
-     FProcCode.Add('*((' + GetTypeName(TreeNode.Left.Return.Definition)+'*)(');
+     FProcCode.Add('*');
+     FProcCode.Add('((' + GetTypeName(TreeNode.Left.Return.Definition)+'*)(');
      TranslateCode(TreeNode.Left);
      FProcCode.Add(' + ('+IntToStr(GetTypeSize(TreeNode.Left.Return.Definition))+'*(');
      TranslateCode(TreeNode.Right);
@@ -2081,13 +2100,16 @@ begin
    ttntField:begin
     if assigned(TreeNode.Left) then begin
      FProcCode.Add('',spacesLEFT);
-     if TreeNode.Left.TreeNodeType = ttntPointer then
+     if (TreeNode.Left.TreeNodeType = ttntPointer) then
      begin
-       // pointer type field access in c is "myPointerTypeVar->myFieldEntry"
-       TranslateCode(TreeNode.Left.Left);
-       FProcCode.Add('->');
-     end else
-     begin
+      // pointer type field access in c is "myPointerTypeVar->myFieldEntry"
+      TranslateCode(TreeNode.Left.Left);
+      FProcCode.Add('->');
+     end else if (TreeNode.Left.TreeNodeType = ttntIndex) then begin
+      FProcCode.FIgnoreNextToken := True;
+      TranslateCode(TreeNode.Left);
+      FProcCode.Add('->');
+     end else begin
        TranslateCode(TreeNode.Left);
        FProcCode.Add('.');
      end;
@@ -3596,6 +3618,12 @@ end;
 
 procedure TCodeWriter.Add(const s: ansistring; Spaces: longint = spacesNONE);
 begin
+ if FIgnoreNextToken then
+ begin
+  FIgnoreNextToken := False;
+  Exit;
+ end;
+
  if ((Spaces and spacesLEFT)<>0) and ((length(FCurrentLine)>0) and not (FCurrentLine[length(FCurrentLine)] in [#0..#32,'(','[','{'])) then
    FCurrentLine := FCurrentLine + ' ';
 (*if (length(s)>0) and (s[1] in [',',';',')',']','}']) then begin
