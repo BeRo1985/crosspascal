@@ -220,13 +220,30 @@ procedure Move(var Src; var Dst; Size: Cardinal);
 #define pastkUString 19
 #define pastkHString 20
 
-typedef struct pasTypeInfo;
-
 typedef struct pasTypeInfo {
- uint8_t kind;
- char* name;
- void* data; 
+  size_t kind;
+  char* name;
+  void* data;
 } pasTypeInfo;
+
+typedef pasTypeInfo* pasTypeInfoPointer;
+typedef pasTypeInfoPointer* pasTypeInfoPointerPointer;
+
+typedef struct pasFieldInfo {
+ pasTypeInfoPointerPointer typeInfo;
+ size_t offset;
+} pasFieldInfo;
+
+typedef pasFieldInfo* pasFieldInfoPointer;
+
+typedef struct pasFieldTable {
+ size_t x;
+ size_t size;
+ size_t count;
+ pasFieldInfo fields[0];
+} pasFieldTable;
+
+typedef pasFieldTable* pasFieldTablePointer;
 
 typedef struct pasObjectDynamicMethodTable;
 
