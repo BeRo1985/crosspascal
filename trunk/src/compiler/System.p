@@ -198,6 +198,28 @@ procedure Move(var Src; var Dst; Size: Cardinal);
 #endif
 #endif
 
+#define pastkUnknown 0
+#define pastkInteger 1
+#define pastkAnsiChar 2
+#define pastkEnumeration 3
+#define pastkFloat 4
+#define pastkString 5
+#define pastkSet 6
+#define pastkClass 7
+#define pastkMethod 8
+#define pastkWideChar 9
+#define pastkLString 10
+#define pastkWString 11
+#define pastkVariant 12
+#define pastkArray 13
+#define pastkRecord 14
+#define pastkInterface 15
+#define pastkInt64 16
+#define pastkDynArray 17
+#define pastkHugeChar 18
+#define pastkUString 19
+#define pastkHString 20
+
 typedef struct pasObjectDynamicMethodTable;
 
 typedef struct pasObjectDynamicMethodTableItem {
