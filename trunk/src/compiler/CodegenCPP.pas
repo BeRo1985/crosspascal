@@ -65,6 +65,8 @@ type TCodeWriter = class
        FBreakLabelNeeded: array of Integer;
        FContinueLabelNeeded: array of Integer;
       protected
+       function GetTypeSize(AType: PType): Cardinal;
+
        function GetModuleName(Sym: PSymbol): ansistring;
        function GetSymbolName(Sym: PSymbol): ansistring;
        function GetTypeName(Type_:PType):ansistring;
@@ -288,6 +290,11 @@ begin
  end;
 end;
 
+function TCodegenCPP.GetTypeSize(AType: PType): Cardinal;
+begin
+  result := SymbolManager.GetSize(AType);
+end;
+
 procedure TCodegenCPP.InitializeSymbolList(List: TSymbolList;
   Target: TCodeWriter);
 var sym: PSymbol;
@@ -507,6 +514,12 @@ begin
      begin
       Target.Add('FreeLongstring(&'+GetSymbolName(Sym)+')');
      end;
+     ttdArray:
+     begin
+      // todo: string-ref checks for arrays
+      if Sym.TypeDefinition.DynamicArray then
+        Target.Add('pasFreeArray(&'+GetSymbolName(Sym)+')');
+     end;
     end;
    Target.AddLn(';');
   end;
@@ -704,7 +717,7 @@ begin
  FHeader.AddHeader('#ifdef __cplusplus');
  FHeader.AddHeader('extern "C" {');
  FHeader.AddHeader('#endif');
-
+  FHeader.AddHeader('#include "SYSTEM.h"');
  FCode.AddLn('//program ' + ProgramSymbol.Name);
  FCode.AddHeader('#define __OBJPAS2CMAIN__');
  FSelf := ProgramSymbol;
@@ -1780,7 +1793,17 @@ begin
        end;
       end;
       tipSETLENGTH:begin
-       // TODO: Implement it!
+       if Assigned(TreeNode.Left)and(Assigned(TreeNode.Left.Left)) then
+       begin
+        if (TreeNode.Left.Left.Return.TypeDefinition = ttdArray)and
+           (TreeNode.Left.Left.Return.DynamicArray) then begin
+         FProcCode.Add('pasSetLengthArray(&');
+         TranslateCode(TreeNode.Left);
+         FProcCode.Add(',');
+         FProcCode.Add(IntToStr(GetTypeSize(TreeNode.Left.Left.Return.Definition)));
+         FProcCode.Add(')');
+        end;
+       end;
       end;
       tipLENGTH:begin
        // TODO: Implement it!
@@ -2031,10 +2054,19 @@ begin
     end;
    end;
    ttntIndex:begin
-    TranslateCode(TreeNode.Left);
-    FProcCode.Add('[');
-    TranslateCode(TreeNode.Right);
-    FProcCode.Add(']');
+    if (TreeNode.Left.Return.TypeDefinition = ttdArray)and
+       (TreeNode.Left.Return.DynamicArray = True) then begin
+     FProcCode.Add('*((' + GetTypeName(TreeNode.Left.Return.Definition)+'*)(');
+     TranslateCode(TreeNode.Left);
+     FProcCode.Add(' + ('+IntToStr(GetTypeSize(TreeNode.Left.Return.Definition))+'*(');
+     TranslateCode(TreeNode.Right);
+     FProcCode.Add('))))');
+    end else begin
+     TranslateCode(TreeNode.Left);
+     FProcCode.Add('[');
+     TranslateCode(TreeNode.Right);
+     FProcCode.Add(']');
+    end;
    end;
    ttntPointer:begin
     FProcCode.Add('(*(');
@@ -3106,7 +3138,8 @@ begin
     end;
     ttdArray:begin
      if Type_^.DynamicArray then begin
-      Target.Add('// dynArray');
+      Type_^.Dumped:=true;
+      Target.AddLn('typedef pasDynArray '+Name+';');
      end else begin
       Type_^.Dumped:=true;
       if assigned(Type_^.Definition) and ((Type_^.Definition^.TypeDefinition=ttdPointer) and assigned(Type_^.Definition^.PointerTo)) and (Type_^.Definition^.PointerTo^.TypeDefinition=Type_) then begin
