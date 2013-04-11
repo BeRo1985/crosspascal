@@ -6,6 +6,28 @@ interface
 uses BeRoStringHashMap,Globals,Error,BeRoGUIDTools,PointerList,StringList,CRC32,
      BeRoStream,HugeString;
 
+const TypeKindUnknown=0;
+      TypeKindInteger=1;
+      TypeKindAnsiChar=2;
+      TypeKindEnumeration=3;
+      TypeKindFloat=4;
+      TypeKindString=5;
+      TypeKindSet=6;
+      TypeKindClass=7;
+      TypeKindMethod=8;
+      TypeKindWideChar=9;
+      TypeKindLString=10;
+      TypeKindWString=11;
+      TypeKindVariant=12;
+      TypeKindArray=13;
+      TypeKindRecord=14;
+      TypeKindInterface=15;
+      TypeKindInt64=16;
+      TypeKindDynArray=17;
+      TypeKindHugeChar=18;
+      TypeKindUString=19;
+      TypeKindHString=20;
+
 type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
                        tsaOOPStrictPrivate,tsaOOPPrivate,tsaOOPProtected,
                        tsaOOPPublic,tsaOOPPublished,tsaPublicUnitSymbol,
@@ -110,10 +132,14 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
 
       PortabilityDirectives:TPortabilityDirectives;
 
+      TypeKind:longint;
+
+      NeedTypeInfo:boolean;
+
       RuntimeTypeInfo:boolean;
 
       Dumped:boolean;
-      
+
       case TypeDefinition:TTypeDefinition of
        ttdEnumerated,ttdBoolean,ttdSubRange,ttdCurrency:(
         SubRangeType:TStandardType;
@@ -1468,6 +1494,9 @@ function TSymbolManager.NewType(ModuleSymbol:PSymbol=nil;ObjectClassType:PType=n
 begin
  New(result);
  FillChar(result^,SizeOf(TType),#0);
+ result^.TypeKind:=0;
+ result^.NeedTypeInfo:=false;
+ result^.RuntimeTypeInfo:=false;
  result^.Dumped:=false;
  result^.OwnerModule:=ModuleSymbol;
  result^.OwnerObjectClass:=ObjectClassType;
