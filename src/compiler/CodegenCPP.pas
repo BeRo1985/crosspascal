@@ -85,6 +85,9 @@ type TCodeWriter = class
        procedure ProcessFunctionType(Symbol:PSymbol; ReturnType: PType; Parameter: TSymbolList; const funcName: ansistring; Target: TCodeWriter);
 
        function TranslateStringConstant(ConstantStr: THugeString): ansistring;
+
+       procedure TranslateShortStringConstant(const Name:ansistring; const ConstantStr: ShortString; ATarget: TCodeWriter);
+
        procedure TranslateStringCode(TreeNode: TTreeNode; DesiredStringType: PType);
 
        procedure TranslateCode(TreeNode:TTreeNode);
@@ -2442,10 +2445,10 @@ var AStr: ansistring;
 
   function UIntToCString(const Value: Cardinal): ansistring;
   begin
-    result := '\x'+IntToHex(Byte(Value div $1), 2) +
-              '\x'+IntToHex(Byte(Value div $100), 2) +
-              '\x'+IntToHex(Byte(Value div $10000), 2) +
-              '\x'+IntToHex(Byte(Value div $1000000), 2);
+    result := '\x'+IntToHex(Byte(Value shr 0), 2) +
+              '\x'+IntToHex(Byte(Value shr 8), 2) +
+              '\x'+IntToHex(Byte(Value shr 16), 2) +
+              '\x'+IntToHex(Byte(Value shr 24), 2);
   end;
 
 begin
@@ -2458,6 +2461,11 @@ begin
                          +UIntToCString($FFFFFFFF)+UIntToCString(Length(AStr))+'" "' +
                          AnsiStringEscape(AStr,False)+'\x00";');
   FProcCode.InsertAtMark('void* '+result+' = (void*)((uint32_t)(&'+result+'_DATA)+16);');
+end;
+
+procedure TCodegenCPP.TranslateShortStringConstant(const Name:ansistring; const ConstantStr: ShortString; ATarget: TCodeWriter);
+begin
+  ATarget.AddLn('static const char '+Name+'['+IntToStr(Length(ConstantStr)+1)+'] = "\x' + IntToHex(Byte(length(ConstantStr)), 2) + AnsiStringEscape(ConstantStr,False) + '";');
 end;
 
 procedure TCodegenCPP.TranslateMethodList(List: TSymbolList; ATarget: TCodeWriter = nil);
@@ -3403,6 +3411,10 @@ begin
        finally
         MethodList.Free;
        end;
+       if (Type_.TypeDefinition=ttdCLASS) and assigned(Type_.Symbol) then begin
+        TranslateShortStringConstant(Name+'_CLASSNAME',Type_.Symbol.OriginalCaseName,CodeTarget);
+        CodeTarget.AddLn('');
+       end;
        Target.AddLn('typedef struct {');
        Target.IncTab;
        if Type_.TypeDefinition=ttdObject then begin
@@ -3452,7 +3464,7 @@ begin
          CodeTarget.AddLn('NULL,');
         end;
         // void* vmtClassName;
-        CodeTarget.AddLn('NULL,');
+        CodeTarget.AddLn('(void*)&'+Name+'_CLASSNAME,');
         // size_t vmtInstanceSize;
         CodeTarget.AddLn(IntToStr(Type_^.RecordSize)+',');
         // void* vmtParent;
