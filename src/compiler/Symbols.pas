@@ -2137,7 +2137,7 @@ begin
     result:=true;
    end;
    ttdArray:begin
-    result:=AType^.DynamicArray or TypeDoNeedTypeInfo(AType^.Definition);
+    result:=AType^.DynamicArray or (assigned(AType) and TypeDoNeedTypeInfo(AType^.Definition));
    end;
    ttdRecord:begin
     result:=false;
