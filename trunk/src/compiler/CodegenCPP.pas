@@ -2472,7 +2472,7 @@ end;
 
 procedure TCodegenCPP.TranslateShortStringConstant(const Name:ansistring; const ConstantStr: ShortString; ATarget: TCodeWriter);
 begin
-  ATarget.AddLn('static const char '+Name+'['+IntToStr(Length(ConstantStr)+1)+'] = "\x' + IntToHex(Byte(length(ConstantStr)), 2) + AnsiStringEscape(ConstantStr,False) + '";');
+  ATarget.AddLn('static const char '+Name+'['+IntToStr(Length(ConstantStr)+1)+'] = "\x' + IntToHex(Byte(length(ConstantStr)), 2) + '" "' + AnsiStringEscape(ConstantStr,False) + '";');
 end;
 
 procedure TCodegenCPP.TranslateMethodList(List: TSymbolList; ATarget: TCodeWriter = nil);
@@ -3148,6 +3148,28 @@ begin
     ttdClass:begin
      Target.AddLn('typedef struct '+Name+'_CLASS;');
     end;
+   end;
+  end;
+  Target.AddLn('');
+
+  Target.AddLn('// Type info definitions');
+  for i:=0 to length(TypeItems)-1 do begin
+   Type_:=TypeItems[i];
+   if Type_^.RuntimeTypeInfo and (Type_^.NeedTypeInfo or not (Type_.TypeKind in [TypeKindUnknown,TypeKindRecord,TypeKindArray])) then begin
+    Name:=GetTypeName(Type_);
+    Target.AddLn('extern pasTypeInfo '+Name+'_TYPEINFO;');
+    if assigned(Type_.Symbol) then begin
+     TranslateShortStringConstant(Name+'_TYPENAME',Type_.Symbol.OriginalCaseName,CodeTarget);
+    end else begin
+     TranslateShortStringConstant(Name+'_TYPENAME','???',CodeTarget);
+    end;
+    CodeTarget.AddLn('pasTypeInfo '+Name+'_TYPEINFO={');
+    CodeTarget.IncTab;
+    CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
+    CodeTarget.AddLn('(void*)&'+Name+'_TYPENAME,');
+    CodeTarget.AddLn('NULL');
+    CodeTarget.DecTab;
+    CodeTarget.AddLn('};');
    end;
   end;
   Target.AddLn('');

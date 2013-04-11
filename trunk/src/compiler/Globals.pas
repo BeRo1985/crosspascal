@@ -133,7 +133,7 @@ const DefaultLocalSwitches:TLocalSwitches=(
        RangeChecks:false;
        RealCompatibility:false;
        RunOnly:false;
-       TypeInfo:false;
+       TypeInfo:true;
        UnicodeStrings:false;
        VarStringChecks:true;
        Warnings:true;

@@ -220,6 +220,14 @@ procedure Move(var Src; var Dst; Size: Cardinal);
 #define pastkUString 19
 #define pastkHString 20
 
+typedef struct pasTypeInfo;
+
+typedef struct pasTypeInfo {
+ uint8_t kind;
+ char* name;
+ void* data; 
+} pasTypeInfo;
+
 typedef struct pasObjectDynamicMethodTable;
 
 typedef struct pasObjectDynamicMethodTableItem {
