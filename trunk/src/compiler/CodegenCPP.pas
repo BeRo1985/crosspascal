@@ -86,7 +86,8 @@ type TCodeWriter = class
 
        function TranslateStringConstant(ConstantStr: THugeString): ansistring;
 
-       procedure TranslateShortStringConstant(const Name:ansistring; const ConstantStr: ShortString; ATarget: TCodeWriter);
+       procedure TranslateShortStringConstant(const Name:ansistring; const ConstantStr: ShortString; ATarget: TCodeWriter); overload;
+       procedure TranslateShortStringConstant(const ConstantStr: ShortString; ATarget: TCodeWriter); overload;
 
        procedure TranslateStringCode(TreeNode: TTreeNode; DesiredStringType: PType);
 
@@ -2475,6 +2476,11 @@ begin
   ATarget.AddLn('static const char '+Name+'['+IntToStr(Length(ConstantStr)+1)+'] = "\x' + IntToHex(Byte(length(ConstantStr)), 2) + '" "' + AnsiStringEscape(ConstantStr,False) + '";');
 end;
 
+procedure TCodegenCPP.TranslateShortStringConstant(const ConstantStr: ShortString; ATarget: TCodeWriter);
+begin
+  ATarget.Add('"\x' + IntToHex(Byte(length(ConstantStr)), 2) + '" "' + AnsiStringEscape(ConstantStr,False) + '"');
+end;
+
 procedure TCodegenCPP.TranslateMethodList(List: TSymbolList; ATarget: TCodeWriter = nil);
 var sym: PSymbol;
     Symbol: PSymbol;
@@ -3155,7 +3161,9 @@ begin
   Target.AddLn('// Type info definitions');
   for i:=0 to length(TypeItems)-1 do begin
    Type_:=TypeItems[i];
-   if Type_^.RuntimeTypeInfo {and (Type_^.NeedTypeInfo or not (Type_.TypeKind in [TypeKindUnknown,TypeKindRecord,TypeKindArray]))} and not (Type_^.TypeDefinition in [ttdCEXPRESSION]) then begin
+   if (Type_^.RuntimeTypeInfo and
+       (Type_^.NeedTypeInfo or not (Type_.TypeKind in [TypeKindUnknown,TypeKindRecord,TypeKindArray]))) and
+       not (Type_^.TypeDefinition in [ttdCEXPRESSION]) then begin
     Name:=GetTypeName(Type_);
     Target.AddLn('extern pasTypeInfo '+Name+'_TYPEINFO;');
     case Type_.TypeDefinition of
@@ -3215,7 +3223,11 @@ begin
             if not (tsaInternalField in Symbol^.Attributes) then begin
              CodeTarget.AddLn('{');
              CodeTarget.IncTab;
-             CodeTarget.AddLn('(void*)&'+GetTypeName(Symbol^.TypeDefinition)+'_TYPEINFO,');
+             if assigned(Symbol^.TypeDefinition) and Symbol^.TypeDefinition^.NeedTypeInfo then begin
+              CodeTarget.AddLn('(void*)&'+GetTypeName(Symbol^.TypeDefinition)+'_TYPEINFO,');
+             end else begin
+              CodeTarget.AddLn('(void*)&pasTypeInfoUnknown,');
+             end;
              CodeTarget.AddLn(IntToStr(Symbol^.Offset));
              CodeTarget.DecTab;
              if k>1 then begin
@@ -3259,7 +3271,11 @@ begin
       CodeTarget.IncTab;
       CodeTarget.AddLn('{');
       CodeTarget.IncTab;
-      CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.Definition)+'_TYPEINFO,');
+      if assigned(Type_^.Definition) and Type_^.Definition^.NeedTypeInfo then begin
+       CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.Definition)+'_TYPEINFO,');
+      end else begin
+       CodeTarget.AddLn('(void*)&pasTypeInfoUnknown,');
+      end;
       CodeTarget.AddLn(IntToStr(0));
       CodeTarget.DecTab;
       CodeTarget.AddLn('}');
@@ -3269,15 +3285,15 @@ begin
       CodeTarget.AddLn('};');
      end;
     end;
-    if assigned(Type_.Symbol) then begin
-     TranslateShortStringConstant(Name+'_TYPENAME',Type_.Symbol.OriginalCaseName,CodeTarget);
-    end else begin
-     TranslateShortStringConstant(Name+'_TYPENAME','???',CodeTarget);
-    end;
     CodeTarget.AddLn('pasTypeInfo '+Name+'_TYPEINFO={');
     CodeTarget.IncTab;
     CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
-    CodeTarget.AddLn('(void*)&'+Name+'_TYPENAME,');
+    if assigned(Type_.Symbol) then begin
+     TranslateShortStringConstant(Type_.Symbol.OriginalCaseName,CodeTarget);
+    end else begin
+     TranslateShortStringConstant('???',CodeTarget);
+    end;
+    CodeTarget.AddLn(',');
     case Type_.TypeDefinition of
      ttdRecord,ttdObject,ttdClass,ttdArray:begin
       CodeTarget.AddLn('(void*)&'+Name+'_TYPEINFO');
