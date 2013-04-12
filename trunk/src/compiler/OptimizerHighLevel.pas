@@ -1562,6 +1562,8 @@ begin
     OptimizeParameter(TreeNode.Left,TreeNode.Symbol^.Parameter.First);
    end;
   end;
+  tipDEC,tipINC:begin
+  end;
   tipSUCC,tipPRED:begin
    if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and not assigned(TreeNode.Left.Right) then begin
     OptimizeTree(TreeNode.Left.Left);
