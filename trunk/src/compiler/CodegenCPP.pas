@@ -1504,8 +1504,9 @@ begin
      end;
      FProcCode.AddLn('goto '+GetSymbolName(FSelf)+'_CONTINUELABEL'+IntToStr(FContinueLabelNeeded[FNestedBreakCount-1])+';');
     end;
-   end;
+   end;             
    ttntEXIT:begin
+    FinalizeSymbolList(SymbolManager.CurrentList, FProcCode);
     if assigned(FProcSymbol.ReturnType) then begin
      FProcCode.AddLn('return '+GetSymbolName(FProcSymbol.ResultSymbol)+';',spacesBOTH);
     end else if assigned(FProcSymbol) and (tpaConstructor in FProcSymbol^.ProcedureAttributes) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
@@ -1516,6 +1517,7 @@ begin
    end;
    ttntFAIL:begin
     if assigned(FProcSymbol) and (tpaConstructor in FProcSymbol^.ProcedureAttributes) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition in [ttdOBJECT,ttdCLASS]) then begin
+     FinalizeSymbolList(SymbolManager.CurrentList, FProcCode);
      case FProcSymbol^.OwnerObjectClass^.TypeDefinition of
       ttdOBJECT:begin
        FProcCode.AddLn('return 1;');
