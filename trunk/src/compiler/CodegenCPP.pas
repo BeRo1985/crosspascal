@@ -1740,6 +1740,9 @@ begin
          FProcCode.IncTab;
          FProcCode.AddLn('pasZeroMem(tempObject, '+IntToStr(SymbolManager.GetSize(TreeNode.Left.Left.Return.PointerTo.TypeDefinition))+');');
          FProcCode.AddLn('(('+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'*)tempObject)->INTERNAL_FIELD_VMT = (void*)&'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_VMT;');
+         if SymbolManager.TypeDoNeedInitialization(TreeNode.Left.Left.Return.PointerTo.TypeDefinition) then begin
+          FProcCode.AddLn('pasInitialize(tempObject, &'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_TYPEINFO);');
+         end;
          FProcCode.DecTab;
          FProcCode.AddLn('}');
          TranslateCode(TreeNode.Left.Left);
@@ -1759,6 +1762,9 @@ begin
          FProcCode.IncTab;
          FProcCode.AddLn('pasZeroMem(tempObject, '+IntToStr(SymbolManager.GetSize(TreeNode.Left.Left.Return.PointerTo.TypeDefinition))+');');
          FProcCode.AddLn('(('+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'*)tempObject)->INTERNAL_FIELD_VMT = (void*)&'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_VMT;');
+         if SymbolManager.TypeDoNeedInitialization(TreeNode.Left.Left.Return.PointerTo.TypeDefinition) then begin
+          FProcCode.AddLn('pasInitialize(tempObject, &'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_TYPEINFO);');
+         end;
          FProcCode.Add('if(');
          TranslateCode(TreeNode.Left.Right);
          FProcCode.AddLn('){');
@@ -1795,6 +1801,9 @@ begin
          FProcCode.AddLn(';');
          TranslateCode(TreeNode.Left.Right);
          FProcCode.AddLn(';');
+         if SymbolManager.TypeDoNeedInitialization(TreeNode.Left.Left.Return.PointerTo.TypeDefinition) then begin
+          FProcCode.AddLn('pasFinalize(tempObject, &'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_TYPEINFO);');
+         end;
          FProcCode.AddLn('pasFreeMem(tempObject);');
          FProcCode.DecTab;
          FProcCode.AddLn('}');
