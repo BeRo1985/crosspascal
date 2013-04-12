@@ -235,17 +235,17 @@ extern pasTypeInfo pasTypeInfoUnknown;
 extern pasTypeInfoPointer pasTypeInfoUnknownPointer;
 
 typedef struct pasFieldInfo {
- pasTypeInfoPointerPointer typeInfo;
- size_t offset;
+  pasTypeInfoPointerPointer typeInfo;
+  size_t offset;
 } pasFieldInfo;
 
 typedef pasFieldInfo* pasFieldInfoPointer;
 
 typedef struct pasFieldTable {
- size_t x;
- size_t size;
- size_t count;
- pasFieldInfo fields[0];
+  size_t x;
+  size_t size;
+  size_t count;
+  pasFieldInfo fields[0];
 } pasFieldTable;
 
 typedef pasFieldTable* pasFieldTablePointer;
@@ -274,6 +274,16 @@ typedef struct pasClassDynamicMethodTableItem {
   size_t index;
   void* method;
 } pasClassDynamicMethodTableItem;
+
+typedef struct pasClassMethodTableItem {
+ void* address;
+ char* name;
+} pasClassMethodTableItem;
+
+typedef struct pasClassMethodTable {
+  size_t count;
+  pasClassMethodTableItem methods[0];
+} pasClassMethodTable;
 
 typedef struct pasClassVirtualMethodTable;
 
