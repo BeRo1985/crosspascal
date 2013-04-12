@@ -3166,6 +3166,7 @@ begin
        not (Type_^.TypeDefinition in [ttdCEXPRESSION]) then begin
     Name:=GetTypeName(Type_);
     Target.AddLn('extern pasTypeInfo '+Name+'_TYPEINFO;');
+    Target.AddLn('extern pasTypeInfoPointer '+Name+'_TYPEINFO_POINTER;');
     case Type_.TypeDefinition of
      ttdRecord,ttdObject,ttdClass:begin
       k:=0;
@@ -3224,9 +3225,9 @@ begin
              CodeTarget.AddLn('{');
              CodeTarget.IncTab;
              if assigned(Symbol^.TypeDefinition) and Symbol^.TypeDefinition^.NeedTypeInfo then begin
-              CodeTarget.AddLn('(void*)&'+GetTypeName(Symbol^.TypeDefinition)+'_TYPEINFO,');
+              CodeTarget.AddLn('(void*)&'+GetTypeName(Symbol^.TypeDefinition)+'_TYPEINFO_POINTER,');
              end else begin
-              CodeTarget.AddLn('(void*)&pasTypeInfoUnknown,');
+              CodeTarget.AddLn('(void*)&pasTypeInfoUnknownPointer,');
              end;
              CodeTarget.AddLn(IntToStr(Symbol^.Offset));
              CodeTarget.DecTab;
@@ -3272,9 +3273,9 @@ begin
       CodeTarget.AddLn('{');
       CodeTarget.IncTab;
       if assigned(Type_^.Definition) and Type_^.Definition^.NeedTypeInfo then begin
-       CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.Definition)+'_TYPEINFO,');
+       CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.Definition)+'_TYPEINFO_POINTER,');
       end else begin
-       CodeTarget.AddLn('(void*)&pasTypeInfoUnknown,');
+       CodeTarget.AddLn('(void*)&pasTypeInfoUnknownPointer,');
       end;
       CodeTarget.AddLn(IntToStr(0));
       CodeTarget.DecTab;
@@ -3301,7 +3302,7 @@ begin
     CodeTarget.AddLn(',');
     case Type_.TypeDefinition of
      ttdRecord,ttdObject,ttdClass,ttdArray:begin
-      CodeTarget.AddLn('(void*)&'+Name+'_TYPEINFO');
+      CodeTarget.AddLn('(void*)&'+Name+'_FIELDTABLE');
      end;
      else begin
       CodeTarget.AddLn('NULL');
@@ -3309,6 +3310,7 @@ begin
     end;
     CodeTarget.DecTab;
     CodeTarget.AddLn('};');
+    CodeTarget.AddLn('pasTypeInfoPointer '+Name+'_TYPEINFO_POINTER = &'+Name+'_TYPEINFO;');
    end;
   end;
   Target.AddLn('');

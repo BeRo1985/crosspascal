@@ -227,10 +227,11 @@ typedef struct pasTypeInfo {
   void* data;
 } pasTypeInfo;
 
-extern pasTypeInfo pasTypeInfoUnknown;
-
 typedef pasTypeInfo* pasTypeInfoPointer;
 typedef pasTypeInfoPointer* pasTypeInfoPointerPointer;
+
+extern pasTypeInfo pasTypeInfoUnknown;
+extern pasTypeInfoPointer pasTypeInfoUnknownPointer;
 
 typedef struct pasFieldInfo {
  pasTypeInfoPointerPointer typeInfo;
@@ -305,6 +306,18 @@ void pasReallocMem(void** ptr,size_t size);
 void pasFreeMem(void* ptr);
 
 void pasZeroMem(void* ptr,size_t size);
+
+void pasInitializeRecord(void* p, pasTypeInfo* t);
+
+void pasInitializeArray(void* p, pasTypeInfo* t, size_t count);
+
+void pasInitialize(void* p, pasTypeInfo* t);
+
+void pasFinalizeRecord(void* p, pasTypeInfo* t);
+
+void pasFinalizeArray(void* p, pasTypeInfo* t, size_t count);
+
+void pasFinalize(void* p, pasTypeInfo* t);
 
 void* pasObjectDMTDispatch(void** object,size_t index);
 
@@ -492,12 +505,14 @@ end;
 #include "stdlib.h"
 #include "stdio.h"
 
-pasTypeInfo pasTypeInfoUnknown={
+pasTypeInfo pasTypeInfoUnknown = {
   pastkUnknown,
   0,
   "\x03???",
   NULL
 };
+
+pasTypeInfoPointer pasTypeInfoUnknownPointer = (void*)&pasTypeInfoUnknown;
 
 typedef struct {
     uint32_t refCount;
@@ -568,7 +583,7 @@ void* pasGetMem(size_t size){
   return malloc(size);
 }
 
-void pasReallocMem(void** ptr,size_t size){
+void pasReallocMem(void** ptr, size_t size){
   *ptr = realloc(*ptr, size);
 }
 
@@ -576,11 +591,166 @@ void pasFreeMem(void* ptr){
   free(ptr);
 }
 
-void pasZeroMem(void* ptr,size_t size){
+void pasZeroMem(void* ptr, size_t size){
   memset(ptr, size, 0);
 }
 
-void* pasObjectDMTDispatch(void** object,size_t index){
+void pasInitializeRecord(void* p, pasTypeInfo* t){
+  pasFieldTable* ft = t->data;
+  size_t count = ft->count;
+  while(count--){
+    pasInitializeArray(p + ft->fields[count].offset, (void*)(*ft->fields[count].typeInfo), 1);
+  }
+}
+
+void pasInitializeArray(void* p, pasTypeInfo* t, size_t count){
+  pasFieldTable* ft;
+  if(count){
+    switch(t->kind){
+      case pastkLString:
+      case pastkWString:
+      case pastkUString:
+      case pastkHString:
+      case pastkInterface:
+      case pastkDynArray:{
+        while(count--){
+          *((void**)p) = NULL;
+          p += sizeof(void*);
+        }
+        break;
+      }
+      case pastkVariant:{
+        count *= 4;
+        while(count--){
+          *((void**)p) = NULL;
+          p += sizeof(void*);
+        }
+        break;
+      }
+      case pastkArray:{
+        ft = t->data;
+        while(count--){
+          pasInitializeArray(p, (void*)(*ft->fields[0].typeInfo), ft->count);
+          p += ft->size;
+        }
+        break;
+      }
+      case pastkRecord:{
+        ft = t->data;
+        while(count--){
+          pasInitializeRecord(p, t);
+          p += ft->size;
+        }
+        break;
+      }
+      default:{
+        break;
+      }
+    }
+  }
+}
+
+void pasInitialize(void* p, pasTypeInfo* t){
+  pasInitializeArray(p, t, 1);
+}
+
+void pasFinalizeRecord(void* p, pasTypeInfo* t){
+  pasFieldTable* ft = t->data;
+  size_t count = ft->count;
+  while(count--){
+    pasFinalizeArray(p + ft->fields[count].offset, (void*)(*ft->fields[count].typeInfo), 1);
+  }
+}
+
+void pasFinalizeArray(void* p, pasTypeInfo* t, size_t count){
+  pasFieldTable* ft;
+  if(count){
+    switch(t->kind){
+      case pastkLString:{
+        while(count--){
+          // red, your task!  
+          *((void**)p) = NULL;
+          p += sizeof(void*);
+        }
+        break;
+      }
+      case pastkWString:{
+        while(count--){
+          // red, your task!
+          *((void**)p) = NULL;
+          p += sizeof(void*);
+        }
+        break;
+      }
+      case pastkUString:{
+        while(count--){
+          // red, your task!
+          *((void**)p) = NULL;
+          p += sizeof(void*);
+        }
+        break;
+      }
+      case pastkHString:{
+        while(count--){
+          // red, your task!
+          *((void**)p) = NULL;
+          p += sizeof(void*);
+        }
+        break;
+      }
+      case pastkInterface:{
+        while(count--){
+          // BeRo, your task!
+          *((void**)p) = NULL;
+          p += sizeof(void*);
+        }
+        break;
+      }
+      case pastkDynArray:{
+        while(count--){
+          // red, your task!
+          *((void**)p) = NULL;
+          p += sizeof(void*);
+        }
+        break;
+      }
+      case pastkVariant:{
+        count *= 4;
+        while(count--){
+          // BeRo and/or red, yours task!
+          *((void**)p) = NULL;
+          p += sizeof(void*);
+        }
+        break;
+      }
+      case pastkArray:{
+        ft = t->data;
+        while(count--){
+          pasFinalizeArray(p, (void*)(*ft->fields[0].typeInfo), ft->count);
+          p += ft->size;
+        }
+        break;
+      }
+      case pastkRecord:{
+        ft = t->data;
+        while(count--){
+          pasFinalizeRecord(p, t);
+          p += ft->size;
+        }
+        break;
+      }
+      default:{
+        break;
+      }
+    }
+  }
+}
+
+void pasFinalize(void* p, pasTypeInfo* t){
+  pasFinalizeArray(p, t, 1);
+}
+
+void* pasObjectDMTDispatch(void** object, size_t index){
   pasObjectVirtualMethodTable* VMT = (void*)*object;
   while(VMT){
     pasObjectDynamicMethodTableItem* DMT = VMT->dynamicMethodTable;
@@ -597,7 +767,7 @@ void* pasObjectDMTDispatch(void** object,size_t index){
   return NULL;
 }
 
-void* pasClassDMTDispatch(void* classVMT,size_t index){
+void* pasClassDMTDispatch(void* classVMT, size_t index){
   pasClassVirtualMethodTable* VMT = (void*)classVMT;
   while(VMT){
     pasClassDynamicMethodTableItem* DMT = VMT->vmtDynamicTable;
