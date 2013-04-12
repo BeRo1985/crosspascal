@@ -536,7 +536,8 @@ void pasFreeArray(pasDynArray* target) {
     if(1 < header->refCount)
         header->refCount--;
     else{
-        // red TODO: pasFinalize(); you do need to add a array element type info somewhere in the dynarray data structure
+        // red TODO: pasFinalize(); you do need to add a "optional" array element type info somewhere in the dynamic array data
+        // structure, together with a if-check here
         free(header);
     }
 }
