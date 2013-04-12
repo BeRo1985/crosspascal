@@ -56,6 +56,7 @@ type TCompareParametersType=(tcptNONE,tcptVALUEEQUALCONST,tcptALL,tcptPROCVAR);
       tctNormalToSmallSet,
       tctDynArrayToOpenArray,
       tctPWideCharToString,
+      tctPHugeCharToString,
       tctVariantToDynArray,
       tctDynArrayToVariant,
       tctVariantToEnum,
@@ -131,7 +132,7 @@ begin
   ttdSubRange:begin
    case FromType^.TypeDefinition of
     ttdShortString,ttdLongString:begin
-     if ToType^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar] then begin
+     if ToType^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar,tstUnsignedWideChar] then begin
       ConvertType:=tctCharToString;
       result:=tcteConvertCompatible;
      end;
@@ -161,7 +162,7 @@ begin
       if (FromType^.SubRangeType in [tstSigned8Bit,tstSigned16Bit,tstSigned32Bit,
                                      tstSigned64Bit,tstUnsigned8Bit,tstUnsigned16Bit,
                                      tstUnsigned32Bit,tstUnsigned64Bit,tstUnsignedChar,
-                                     tstUnsignedWideChar]) then begin
+                                     tstUnsignedWideChar,tstUnsignedHugeChar]) then begin
        if (FromType^.LowerLimit=ToType^.LowerLimit) and
           (FromType^.UpperLimit=ToType^.UpperLimit) then begin
         result:=tcteEqual;
@@ -186,7 +187,7 @@ begin
           end;
           ConvertType:=tctIntegerToInteger;
          end;
-         tstUnsignedChar,tstUnsignedWideChar:begin
+         tstUnsignedChar,tstUnsignedWideChar,tstUnsignedHugeChar:begin
           if tctoEXPLICIT in CompareTypesOptions then begin
            if SymbolManager.GetSize(FromType)<=SymbolManager.GetSize(ToType) then begin
             result:=tcteConvertCompatible;
@@ -198,7 +199,7 @@ begin
          end;
         end;
        end;
-       tstUnsignedChar,tstUnsignedWideChar:begin
+       tstUnsignedChar,tstUnsignedWideChar,tstUnsignedHugeChar:begin
         case FromType^.SubRangeType of
          tstSigned8Bit,tstSigned16Bit,tstSigned32Bit,tstSigned64Bit,
          tstUnsigned8Bit,tstUnsigned16Bit,tstUnsigned32Bit,tstUnsigned64Bit:begin
@@ -211,7 +212,7 @@ begin
            ConvertType:=tctIntegerToInteger;
           end;
          end;
-         tstUnsignedChar,tstUnsignedWideChar:begin
+         tstUnsignedChar,tstUnsignedWideChar,tstUnsignedHugeChar:begin
           if SymbolManager.GetSize(FromType)<=SymbolManager.GetSize(ToType) then begin
            result:=tcteConvertCompatible;
           end else begin
@@ -315,6 +316,14 @@ begin
        ConvertType:=tctStringToString;
        if (FromType^.TypeDefinition=ttdLongString) and
           (ToType^.TypeDefinition=ttdLongString) and
+          (FromType^.LongStringType=tstUnsignedHugeChar) then begin
+        result:=tcteConvertWithPossibleLossOfData;
+       end else if (FromType^.TypeDefinition=ttdLongString) and
+                    (ToType^.TypeDefinition=ttdLongString) and
+                    (ToType^.LongStringType=tstUnsignedHugeChar) then begin
+        result:=tcteConvertWithLessPreferedConversion;
+       end else if (FromType^.TypeDefinition=ttdLongString) and
+          (ToType^.TypeDefinition=ttdLongString) and
           (FromType^.LongStringType=tstUnsignedWideChar) then begin
         result:=tcteConvertWithPossibleLossOfData;
        end else if (FromType^.TypeDefinition=ttdLongString) and
@@ -347,6 +356,13 @@ begin
        end else begin
         result:=tcteConvertWithPossibleLossOfData;
        end;
+      end else if FromType^.LongStringType=tstUnsignedHugeChar then begin
+       if (ToType^.TypeDefinition=ttdLongString) and
+          (ToType^.LongStringType=tstUnsignedHugeChar) then begin
+        result:=tcteConvertWithLessPreferedConversion;
+       end else begin
+        result:=tcteConvertWithPossibleLossOfData;
+       end;
       end else if FromType^.LongStringType=tstUnsignedWideChar then begin
        if (ToType^.TypeDefinition=ttdLongString) and
           (ToType^.LongStringType=tstUnsignedWideChar) then begin
@@ -365,7 +381,7 @@ begin
      end;
     end;
     ttdSubRange:begin
-     if FromType^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar] then begin
+     if FromType^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar,tstUnsignedHugeChar] then begin
       ConvertType:=tctCharToString;
       result:=tcteConvertCompatible;
      end;
@@ -383,6 +399,8 @@ begin
          result:=tcteEqual;
         end else if (ToType^.TypeDefinition=ttdLongString) and (ToType^.LongStringType=tstUnsignedWideChar) then begin
          result:=tcteConvertWithPossibleLossOfData;
+        end else if (ToType^.TypeDefinition=ttdLongString) and (ToType^.LongStringType=tstUnsignedHugeChar) then begin
+         result:=tcteConvertWithPossibleLossOfData;
         end else begin
          result:=tcteConvertCompatible;
         end;
@@ -392,6 +410,8 @@ begin
          if (ToType^.TypeDefinition=ttdLongString) and (ToType^.LongStringType=tstUnsignedChar) then begin
           result:=tcteConvertCompatible;
          end else if (ToType^.TypeDefinition=ttdLongString) and (ToType^.LongStringType=tstUnsignedWideChar) then begin
+          result:=tcteConvertWithPossibleLossOfData;
+         end else if (ToType^.TypeDefinition=ttdLongString) and (ToType^.LongStringType=tstUnsignedHugeChar) then begin
           result:=tcteConvertWithPossibleLossOfData;
          end else begin
           result:=tcteConvertWithLessPreferedConversion;
@@ -409,6 +429,8 @@ begin
           end;
          end else if (ToType^.TypeDefinition=ttdLongString) and (ToType^.LongStringType=tstUnsignedWideChar) then begin
           result:=tcteConvertWithPossibleLossOfData;
+         end else if (ToType^.TypeDefinition=ttdLongString) and (ToType^.LongStringType=tstUnsignedHugeChar) then begin
+          result:=tcteConvertWithPossibleLossOfData;
          end else begin
           result:=tcteConvertWithLessPreferedConversion;
          end;
@@ -419,8 +441,27 @@ begin
                   (FromType^.Definition^.SubRangeType=tstUnsignedWideChar) then begin
        ConvertType:=tctCharArrayToString;
        if (ToType^.TypeDefinition=ttdLongString) and
-          (ToType^.LongStringType=tstUnsignedWideChar) then begin
+          (ToType^.LongStringType=tstUnsignedHugeChar) then begin
+        result:=tcteConvertWithPossibleLossOfData;
+       end else if (ToType^.TypeDefinition=ttdLongString) and
+                   (ToType^.LongStringType=tstUnsignedWideChar) then begin
         result:=tcteConvertCompatible;
+       end else if (ToType^.TypeDefinition=ttdShortString) and
+                   (FromType^.LowerLimit>(255*sizeof(widechar))) then begin
+        result:=tcteConvertWithLessPreferedConversion;
+       end else begin
+        result:=tcteConvertWithPossibleLossOfData;
+       end;
+      end else if assigned(FromType^.Definition) and
+                  (FromType^.Definition^.TypeDefinition=ttdSubRange) and
+                  (FromType^.Definition^.SubRangeType=tstUnsignedHugeChar) then begin
+       ConvertType:=tctCharArrayToString;
+       if (ToType^.TypeDefinition=ttdLongString) and
+          (ToType^.LongStringType=tstUnsignedHugeChar) then begin
+        result:=tcteConvertCompatible;
+       end else if (ToType^.TypeDefinition=ttdLongString) and
+                   (ToType^.LongStringType=tstUnsignedWideChar) then begin
+        result:=tcteConvertWithPossibleLossOfData;
        end else if (ToType^.TypeDefinition=ttdShortString) and
                    (FromType^.LowerLimit>(255*sizeof(widechar))) then begin
         result:=tcteConvertWithLessPreferedConversion;
@@ -449,8 +490,19 @@ begin
                  assigned(FromType^.PointerTo^.TypeDefinition) and
                  (FromType^.PointerTo^.TypeDefinition^.TypeDefinition=ttdSubRange) and
                  (FromType^.PointerTo^.TypeDefinition^.SubRangeType=tstUnsignedWideChar) then begin
-      ConvertType:=tctPCharToString;
+      ConvertType:=tctPWideCharToString;
       if (ToType^.TypeDefinition=ttdLongString) and (ToType^.LongStringType=tstUnsignedWideChar) then begin
+       result:=tcteConvertCompatible;
+      end else begin
+       result:=tcteConvertWithPossibleLossOfData;
+      end;
+     end else if assigned(FromType^.PointerTo) and
+                 (FromType^.PointerTo^.SymbolType in [tstTemp,tstType,tstVariable]) and
+                 assigned(FromType^.PointerTo^.TypeDefinition) and
+                 (FromType^.PointerTo^.TypeDefinition^.TypeDefinition=ttdSubRange) and
+                 (FromType^.PointerTo^.TypeDefinition^.SubRangeType=tstUnsignedHugeChar) then begin
+      ConvertType:=tctPHugeCharToString;
+      if (ToType^.TypeDefinition=ttdLongString) and (ToType^.LongStringType=tstUnsignedHugeChar) then begin
        result:=tcteConvertCompatible;
       end else begin
        result:=tcteConvertWithPossibleLossOfData;
@@ -624,7 +676,7 @@ begin
      ttdShortString,ttdLongString:begin
       if assigned(ToType^.Definition) and
          (ToType^.Definition^.TypeDefinition=ttdSubRange) and
-         (ToType^.Definition^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar]) and not
+         (ToType^.Definition^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar,tstUnsignedHugeChar]) and not
          (FromType^.OpenArray or FromType^.DynamicArray or
           FromType^.VariantArray or FromType^.ConstructorArray or
           FromType^.ArrayOfConst) then begin
@@ -635,9 +687,9 @@ begin
      ttdSubRange:begin
       if assigned(ToType^.Definition) and
          (ToType^.Definition^.TypeDefinition=ttdSubRange) and
-         (ToType^.Definition^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar]) and
+         (ToType^.Definition^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar,tstUnsignedHugeChar]) and
          (FromType^.TypeDefinition=ttdSubRange) and
-         (FromType^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar]) and
+         (FromType^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar,tstUnsignedHugeChar]) and
          (ToType^.Definition^.SubRangeType=FromType^.SubRangeType) then begin
        result:=tcteConvertCompatible;
        ConvertType:=tctCharToCharArray;
@@ -690,7 +742,7 @@ begin
     ttdShortString,ttdLongString:begin
      if (FromTreeNodeType in [ttntArrayConstructor,ttntSTRINGConst]) and
         (ToType^.TypeDefinition=ttdSubRange) and
-        (ToType^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar]) then begin
+        (ToType^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar,tstUnsignedHugeChar]) then begin
       result:=tcteConvertWithLessPreferedConversion;
       ConvertType:=tctCStringToPChar;
      end else if tctoEXPLICIT in CompareTypesOptions then begin
@@ -698,9 +750,9 @@ begin
          (ToType^.PointerTo^.SymbolType=Symbols.tstType) and
          assigned(ToType^.PointerTo^.TypeDefinition) and
          (ToType^.PointerTo^.TypeDefinition^.TypeDefinition=ttdSubRange) and
-         (ToType^.PointerTo^.TypeDefinition^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar]) and
+         (ToType^.PointerTo^.TypeDefinition^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar,tstUnsignedHugeChar]) and
          (FromType^.TypeDefinition=ttdLongString) and
-         (FromType^.LongStringType in [tstUnsignedChar,tstUnsignedWideChar]) and
+         (FromType^.LongStringType in [tstUnsignedChar,tstUnsignedWideChar,tstUnsignedHugeChar]) and
          (FromType^.LongStringType=ToType^.PointerTo^.TypeDefinition^.SubRangeType) then begin
        result:=tcteConvertCompatible;
        ConvertType:=tctAnsiStringToPChar;
@@ -712,8 +764,8 @@ begin
         (ToType^.PointerTo^.SymbolType=Symbols.tstType) and
         assigned(ToType^.PointerTo^.TypeDefinition) and
         (ToType^.PointerTo^.TypeDefinition^.TypeDefinition=ttdSubRange) and
-        (ToType^.PointerTo^.TypeDefinition^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar]) and
-        (FromType^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar]) and
+        (ToType^.PointerTo^.TypeDefinition^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar,tstUnsignedHugeChar]) and
+        (FromType^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar,tstUnsignedHugeChar]) and
         (FromType^.SubRangeType=ToType^.PointerTo^.TypeDefinition^.SubRangeType) then begin
       result:=tcteConvertCompatible;
       ConvertType:=tctCCharToPChar;
@@ -737,7 +789,7 @@ begin
         (ToType^.PointerTo^.SymbolType=Symbols.tstType) and
         assigned(ToType^.PointerTo^.TypeDefinition) and
         (ToType^.PointerTo^.TypeDefinition^.TypeDefinition=ttdSubRange) and
-        (ToType^.PointerTo^.TypeDefinition^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar]) then begin
+        (ToType^.PointerTo^.TypeDefinition^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar,tstUnsignedHugeChar]) then begin
       result:=tcteConvertCompatible;
       ConvertType:=tctCStringToPChar;
      end else begin
@@ -779,7 +831,7 @@ begin
          (FromType^.PointerTo^.SymbolType=Symbols.tstType) and
          assigned(FromType^.PointerTo^.TypeDefinition) and
          (FromType^.PointerTo^.TypeDefinition^.TypeDefinition=ttdSubRange) and
-         (FromType^.PointerTo^.TypeDefinition^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar]) then begin
+         (FromType^.PointerTo^.TypeDefinition^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar,tstUnsignedHugeChar]) then begin
        result:=tcteConvertWithLessPreferedConversion;
       end else begin
        result:=tcteConvertCompatible;
@@ -791,7 +843,7 @@ begin
          (ToType^.PointerTo^.SymbolType=Symbols.tstType) and
          assigned(ToType^.PointerTo^.TypeDefinition) and
          (ToType^.PointerTo^.TypeDefinition^.TypeDefinition=ttdSubRange) and
-         (ToType^.PointerTo^.TypeDefinition^.SubRangeType=tstUnsignedWideChar) then begin
+         (ToType^.PointerTo^.TypeDefinition^.SubRangeType in [tstUnsignedWideChar,tstUnsignedHugeChar]) then begin
        result:=tcteConvertWithLessPreferedConversion;
       end else begin
        result:=tcteConvertCompatible;
@@ -1097,7 +1149,7 @@ begin
                                         tstUnsigned8Bit,tstUnsigned16Bit,
                                         tstUnsigned32Bit,tstUnsigned64Bit];
     end;
-    tstUnsignedChar,tstUnsignedWideChar:begin
+    tstUnsignedChar,tstUnsignedWideChar,tstUnsignedHugeChar:begin
      result:=ToType^.SubRangeType=FromType^.SubRangeType;
     end;
    end;
