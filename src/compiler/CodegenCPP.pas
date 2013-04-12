@@ -88,6 +88,7 @@ type TCodeWriter = class
 
        procedure TranslateShortStringConstant(const Name:ansistring; const ConstantStr: ShortString; ATarget: TCodeWriter); overload;
        procedure TranslateShortStringConstant(const ConstantStr: ShortString; ATarget: TCodeWriter); overload;
+       function GetShortStringConstant(const ConstantStr: ShortString): ansistring;
 
        procedure TranslateStringCode(TreeNode: TTreeNode; DesiredStringType: PType);
 
@@ -2587,6 +2588,11 @@ begin
   ATarget.Add('"\x' + IntToHex(Byte(length(ConstantStr)), 2) + '" "' + AnsiStringEscape(ConstantStr,False) + '"');
 end;
 
+function TCodegenCPP.GetShortStringConstant(const ConstantStr: ShortString): ansistring;
+begin
+  result := '"\x' + IntToHex(Byte(length(ConstantStr)), 2) + '" "' + AnsiStringEscape(ConstantStr,False) + '"';
+end;
+
 procedure TCodegenCPP.TranslateMethodList(List: TSymbolList; ATarget: TCodeWriter = nil);
 var sym: PSymbol;
     Symbol: PSymbol;
@@ -3228,6 +3234,7 @@ var i,j,k:longint;
     Name:ansistring;
     SymbolList:TSymbolList;
     MethodList:TStringList;
+    MethodTableList:TStringList;
     Symbol,OtherSymbol:PSymbol;
     CurrentVariantLevelIndex:longint;
     VariantLevelVariants:array of integer;
@@ -3651,289 +3658,323 @@ begin
    Name:=GetTypeName(Type_);
    case Type_.TypeDefinition of
     ttdObject,ttdClass:begin
-     SymbolList:=Type_^.RecordTable;
-     if assigned(SymbolList) then begin
-      if Type_^.HasVirtualTable then begin
-       CodeTarget.AddLn('');
-       HasDynamicMethods:=false;
-       MethodList:=TStringList.Create;
-       try
-        Symbol:=Type_^.RecordTable.First;
-        while assigned(Symbol) do begin
-         case Symbol^.SymbolType of
-          Symbols.tstProcedure,Symbols.tstFunction:begin
-           if tpaDynamic in Symbol^.ProcedureAttributes then begin
-            HasDynamicMethods:=true;
-            if (tpaAbstract in Symbol^.ProcedureAttributes) and not (tsaMethodDefined in Symbol^.Attributes) then begin
-             MethodList.Add('{'+IntToStr(Symbol^.VirtualIndex)+',NULL},');
-            end else begin
-             MethodList.Add('{'+IntToStr(Symbol^.VirtualIndex)+',(void*)&'+GetSymbolName(Symbol)+'},');
+     MethodTableList:=TStringList.Create;
+     try
+      SymbolList:=Type_^.RecordTable;
+      if assigned(SymbolList) then begin
+       if Type_^.HasVirtualTable then begin
+        CodeTarget.AddLn('');
+        HasDynamicMethods:=false;
+        MethodList:=TStringList.Create;
+        try
+         Symbol:=Type_^.RecordTable.First;
+         while assigned(Symbol) do begin
+          case Symbol^.SymbolType of
+           Symbols.tstProcedure,Symbols.tstFunction:begin
+            if tpaDynamic in Symbol^.ProcedureAttributes then begin
+             HasDynamicMethods:=true;
+             if (tpaAbstract in Symbol^.ProcedureAttributes) and not (tsaMethodDefined in Symbol^.Attributes) then begin
+              MethodList.Add('{'+IntToStr(Symbol^.VirtualIndex)+',NULL},');
+             end else begin
+              MethodList.Add('{'+IntToStr(Symbol^.VirtualIndex)+',(void*)&'+GetSymbolName(Symbol)+'},');
+             end;
+            end else if tpaVirtual in Symbol^.ProcedureAttributes then begin
+            end else if tsaOOPPublished in Symbol^.Attributes then begin
+             MethodTableList.Add('{(void*)&'+GetSymbolName(Symbol)+',' + GetShortStringConstant(Symbol^.OriginalCaseName) + '},');
             end;
            end;
           end;
+          Symbol:=Symbol^.Next;
          end;
-         Symbol:=Symbol^.Next;
+         if HasDynamicMethods then begin
+          if Type_.TypeDefinition=ttdObject then begin
+           CodeTarget.AddLn('pasObjectDynamicMethodTableItem '+Name+'_DMT['+IntToStr(MethodList.Count+1)+']={');
+          end else begin
+           CodeTarget.AddLn('pasClassDynamicMethodTableItem '+Name+'_DMT['+IntToStr(MethodList.Count+1)+']={');
+          end;
+          CodeTarget.IncTab;
+          for j:=0 to MethodList.Count-1 do begin
+           CodeTarget.AddLn(MethodList[j]);
+          end;
+          CodeTarget.AddLn('{-1,NULL}');
+          CodeTarget.DecTab;
+          CodeTarget.AddLn('};');
+          CodeTarget.AddLn('');
+         end;
+        finally
+         MethodList.Free;
         end;
-        if HasDynamicMethods then begin
-         if Type_.TypeDefinition=ttdObject then begin
-          CodeTarget.AddLn('pasObjectDynamicMethodTableItem '+Name+'_DMT['+IntToStr(MethodList.Count+1)+']={');
-         end else begin
-          CodeTarget.AddLn('pasClassDynamicMethodTableItem '+Name+'_DMT['+IntToStr(MethodList.Count+1)+']={');
-         end;
+{       if (Type_.TypeDefinition=ttdCLASS) and assigned(Type_.Symbol) then begin
+         TranslateShortStringConstant(Name+'_CLASSNAME',Type_.Symbol.OriginalCaseName,CodeTarget);
+         CodeTarget.AddLn('');
+        end;{}
+        if (Type_.TypeDefinition=ttdCLASS) and (MethodTableList.Count>0) then begin
+         Target.AddLn('typedef struct {');
+         Target.IncTab;
+         Target.AddLn('size_t count;');
+         Target.AddLn('pasClassMethodTableItem methods['+IntToStr(MethodTableList.Count)+'];');
+         Target.DecTab;
+         Target.AddLn('} '+Name+'_METHOD_TABLE_TYPE;');
+         Target.AddLn('extern '+Name+'_METHOD_TABLE_TYPE '+Name+'_METHOD_TABLE;');
+         CodeTarget.AddLn(Name+'_METHOD_TABLE_TYPE '+Name+'_METHOD_TABLE = {');
          CodeTarget.IncTab;
-         for j:=0 to MethodList.Count-1 do begin
-          CodeTarget.AddLn(MethodList[j]);
+         CodeTarget.AddLn(IntToStr(MethodTableList.Count)+',');
+         for j:=0 to MethodTableList.Count-1 do begin
+          CodeTarget.AddLn(MethodTableList[j]);
          end;
-         CodeTarget.AddLn('{-1,NULL}');
          CodeTarget.DecTab;
          CodeTarget.AddLn('};');
-         CodeTarget.AddLn('');
         end;
-       finally
-        MethodList.Free;
-       end;
-       if (Type_.TypeDefinition=ttdCLASS) and assigned(Type_.Symbol) then begin
-        TranslateShortStringConstant(Name+'_CLASSNAME',Type_.Symbol.OriginalCaseName,CodeTarget);
-        CodeTarget.AddLn('');
-       end;
-       Target.AddLn('typedef struct {');
-       Target.IncTab;
-       if Type_.TypeDefinition=ttdObject then begin
-        Target.AddLn('pasObjectVirtualMethodTable VMT;');
-       end else begin
-        Target.AddLn('pasClassVirtualMethodTable VMT;');
-       end;
-       Target.AddLn('void* virtualMethods['+IntToStr(Type_^.VirtualIndexCount)+'];');
-       Target.DecTab;
-       Target.AddLn('} '+Name+'_VMT_TYPE;');
-       Target.AddLn('extern '+Name+'_VMT_TYPE '+Name+'_VMT;');
-       CodeTarget.AddLn(Name+'_VMT_TYPE '+Name+'_VMT={');
-       CodeTarget.IncTab;
-       CodeTarget.AddLn('{');
-       CodeTarget.IncTab;
-       if Type_.TypeDefinition=ttdObject then begin
-        CodeTarget.AddLn(IntToStr(Type_^.RecordSize)+',');
-        if HasDynamicMethods then begin
-         CodeTarget.AddLn('(void*)&'+Name+'_DMT,');
+        Target.AddLn('typedef struct {');
+        Target.IncTab;
+        if Type_.TypeDefinition=ttdObject then begin
+         Target.AddLn('pasObjectVirtualMethodTable VMT;');
         end else begin
+         Target.AddLn('pasClassVirtualMethodTable VMT;');
+        end;
+        Target.AddLn('void* virtualMethods['+IntToStr(Type_^.VirtualIndexCount)+'];');
+        Target.DecTab;
+        Target.AddLn('} '+Name+'_VMT_TYPE;');
+        Target.AddLn('extern '+Name+'_VMT_TYPE '+Name+'_VMT;');
+        CodeTarget.AddLn(Name+'_VMT_TYPE '+Name+'_VMT={');
+        CodeTarget.IncTab;
+        CodeTarget.AddLn('{');
+        CodeTarget.IncTab;
+        if Type_.TypeDefinition=ttdObject then begin
+         CodeTarget.AddLn(IntToStr(Type_^.RecordSize)+',');
+         if HasDynamicMethods then begin
+          CodeTarget.AddLn('(void*)&'+Name+'_DMT,');
+         end else begin
+          CodeTarget.AddLn('NULL,');
+         end;
+         if assigned(Type_^.ChildOf) then begin
+          CodeTarget.AddLn('(void*)&'+GetSymbolName(Type_^.ChildOf)+'_VMT');
+         end else begin
+          CodeTarget.AddLn('NULL');
+         end;
+        end else begin
+         // void* vmtSelfPtr;
+         CodeTarget.AddLn('(void*)&'+Name+'_VMT,');
+         // void* vmtIntfTable;
          CodeTarget.AddLn('NULL,');
-        end;
-        if assigned(Type_^.ChildOf) then begin
-         CodeTarget.AddLn('(void*)&'+GetSymbolName(Type_^.ChildOf)+'_VMT');
-        end else begin
-         CodeTarget.AddLn('NULL');
-        end;
-       end else begin
-        // void* vmtSelfPtr;
-        CodeTarget.AddLn('(void*)&'+Name+'_VMT,');
-        // void* vmtIntfTable;
-        CodeTarget.AddLn('NULL,');
-        // void* vmtAutoTable;
-        CodeTarget.AddLn('NULL,');
-        // void* vmtInitTable;
-        CodeTarget.AddLn('NULL,');
-        // void* vmtTypeInfo;
-        CodeTarget.AddLn('NULL,');
-        // void* vmtFieldTable;
-        CodeTarget.AddLn('NULL,');
-        // void* vmtMethodTable;
-        CodeTarget.AddLn('NULL,');
-        // void* vmtDynamicTable;
-        if HasDynamicMethods then begin
-         CodeTarget.AddLn('(void*)&'+Name+'_DMT,');
-        end else begin
+         // void* vmtAutoTable;
          CodeTarget.AddLn('NULL,');
-        end;
-        // void* vmtClassName;
-        CodeTarget.AddLn('(void*)&'+Name+'_CLASSNAME,');
-        // size_t vmtInstanceSize;
-        CodeTarget.AddLn(IntToStr(Type_^.RecordSize)+',');
-        // void* vmtParent;
-        if assigned(Type_^.ChildOf) then begin
-         CodeTarget.AddLn('(void*)&'+GetSymbolName(Type_^.ChildOf)+'_VMT,');
-        end else begin
+         // void* vmtInitTable;
          CodeTarget.AddLn('NULL,');
-        end;
-        // void* vmtSafeCallException;
-        Symbol:=Type_^.RecordTable.GetSymbol('SAFECALLEXCEPTION');
-        if assigned(Symbol) then begin
-         CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
-        end else begin
+         // void* vmtTypeInfo;
          CodeTarget.AddLn('NULL,');
-        end;
-        // void* vmtAfterConstruction;
-        Symbol:=Type_^.RecordTable.GetSymbol('AFTERCONSTRUCTION');
-        if assigned(Symbol) then begin
-         CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
-        end else begin
+         // void* vmtFieldTable;
          CodeTarget.AddLn('NULL,');
+         // void* vmtMethodTable;
+         if MethodTableList.Count>0 then begin
+          CodeTarget.AddLn('(void*)&'+Name+'_METHOD_TABLE,');
+         end else begin
+          CodeTarget.AddLn('NULL,');
+         end;
+         // void* vmtDynamicTable;
+         if HasDynamicMethods then begin
+          CodeTarget.AddLn('(void*)&'+Name+'_DMT,');
+         end else begin
+          CodeTarget.AddLn('NULL,');
+         end;
+         // void* vmtClassName;
+//        CodeTarget.AddLn('(void*)&'+Name+'_CLASSNAME,');
+         if assigned(Type_^.Symbol) then begin
+          CodeTarget.AddLn(GetShortStringConstant(Type_^.Symbol^.OriginalCaseName)+',');
+         end else begin
+          CodeTarget.AddLn('NULL,');
+         end;
+         // size_t vmtInstanceSize;
+         CodeTarget.AddLn(IntToStr(Type_^.RecordSize)+',');
+         // void* vmtParent;
+         if assigned(Type_^.ChildOf) then begin
+          CodeTarget.AddLn('(void*)&'+GetSymbolName(Type_^.ChildOf)+'_VMT,');
+         end else begin
+          CodeTarget.AddLn('NULL,');
+         end;
+         // void* vmtSafeCallException;
+         Symbol:=Type_^.RecordTable.GetSymbol('SAFECALLEXCEPTION');
+         if assigned(Symbol) then begin
+          CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
+         end else begin
+          CodeTarget.AddLn('NULL,');
+         end;
+         // void* vmtAfterConstruction;
+         Symbol:=Type_^.RecordTable.GetSymbol('AFTERCONSTRUCTION');
+         if assigned(Symbol) then begin
+          CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
+         end else begin
+          CodeTarget.AddLn('NULL,');
+         end;
+         // void* vmtBeforeDestruction;
+         Symbol:=Type_^.RecordTable.GetSymbol('BEFOREDESTRUCTION');
+         if assigned(Symbol) then begin
+          CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
+         end else begin
+          CodeTarget.AddLn('NULL,');
+         end;
+         // void* vmtDispatch;
+         Symbol:=Type_^.RecordTable.GetSymbol('DISPATCH');
+         if assigned(Symbol) then begin
+          CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
+         end else begin
+          CodeTarget.AddLn('NULL,');
+         end;
+         // void* vmtDefaultHandler;
+         Symbol:=Type_^.RecordTable.GetSymbol('DEFAULTHANDLER');
+         if assigned(Symbol) then begin
+          CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
+         end else begin
+          CodeTarget.AddLn('NULL,');
+         end;
+         // void* vmtNewInstance;
+         Symbol:=Type_^.RecordTable.GetSymbol('NEWINSTANCE');
+         if assigned(Symbol) then begin
+          CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
+         end else begin
+          CodeTarget.AddLn('NULL,');
+         end;
+         // void* vmtFreeInstance;
+         Symbol:=Type_^.RecordTable.GetSymbol('FREEINSTANCE');
+         if assigned(Symbol) then begin
+          CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
+         end else begin
+          CodeTarget.AddLn('NULL,');
+         end;
+         // void* vmtDestroy;
+         Symbol:=Type_^.RecordTable.GetSymbol('DESTROY');
+         if assigned(Symbol) then begin
+          CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+'');
+         end else begin
+          CodeTarget.AddLn('NULL');
+         end;
         end;
-        // void* vmtBeforeDestruction;
-        Symbol:=Type_^.RecordTable.GetSymbol('BEFOREDESTRUCTION');
-        if assigned(Symbol) then begin
-         CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
-        end else begin
-         CodeTarget.AddLn('NULL,');
-        end;
-        // void* vmtDispatch;
-        Symbol:=Type_^.RecordTable.GetSymbol('DISPATCH');
-        if assigned(Symbol) then begin
-         CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
-        end else begin
-         CodeTarget.AddLn('NULL,');
-        end;
-        // void* vmtDefaultHandler;
-        Symbol:=Type_^.RecordTable.GetSymbol('DEFAULTHANDLER');
-        if assigned(Symbol) then begin
-         CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
-        end else begin
-         CodeTarget.AddLn('NULL,');
-        end;
-        // void* vmtNewInstance;
-        Symbol:=Type_^.RecordTable.GetSymbol('NEWINSTANCE');
-        if assigned(Symbol) then begin
-         CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
-        end else begin
-         CodeTarget.AddLn('NULL,');
-        end;
-        // void* vmtFreeInstance;
-        Symbol:=Type_^.RecordTable.GetSymbol('FREEINSTANCE');
-        if assigned(Symbol) then begin
-         CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
-        end else begin
-         CodeTarget.AddLn('NULL,');
-        end;
-        // void* vmtDestroy;
-        Symbol:=Type_^.RecordTable.GetSymbol('DESTROY');
-        if assigned(Symbol) then begin
-         CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+'');
-        end else begin
-         CodeTarget.AddLn('NULL');
-        end;
-       end;
-       CodeTarget.DecTab;
-       CodeTarget.AddLn('},');
-       CodeTarget.AddLn('{');
-       CodeTarget.IncTab;
-       HasLast:=false;
-       MethodList:=TStringList.Create;
-       try
-        TypeChain:=TPointerList.Create;
+        CodeTarget.DecTab;
+        CodeTarget.AddLn('},');
+        CodeTarget.AddLn('{');
+        CodeTarget.IncTab;
+        HasLast:=false;
+        MethodList:=TStringList.Create;
         try
-         for j:=0 to Type_^.VirtualIndexCount-1 do begin
-          MethodList.Add('NULL');
-         end;
-         CurrentType:=Type_;
-         while assigned(CurrentType) do begin
-          TypeChain.Add(CurrentType);
-          if assigned(CurrentType^.ChildOf) then begin
-           CurrentType:=CurrentType^.ChildOf^.TypeDefinition;
-          end else begin
-           break;
+         TypeChain:=TPointerList.Create;
+         try
+          for j:=0 to Type_^.VirtualIndexCount-1 do begin
+           MethodList.Add('NULL');
           end;
-         end;
-         for j:=TypeChain.Count-1 downto 0 do begin
-          CurrentType:=TypeChain.Items[j];
-          if assigned(CurrentType^.RecordTable) then begin
-           Symbol:=CurrentType^.RecordTable.First;
-           while assigned(Symbol) do begin
-            case Symbol^.SymbolType of
-             Symbols.tstProcedure,Symbols.tstFunction:begin
-              if tpaVirtual in Symbol^.ProcedureAttributes then begin
-               if (tpaAbstract in Symbol^.ProcedureAttributes) and not (tsaMethodDefined in Symbol^.Attributes) then begin
-                MethodList[Symbol^.VirtualIndex]:='NULL';
-               end else begin
-                MethodList[Symbol^.VirtualIndex]:='(void*)&'+GetSymbolName(Symbol);
+          CurrentType:=Type_;
+          while assigned(CurrentType) do begin
+           TypeChain.Add(CurrentType);
+           if assigned(CurrentType^.ChildOf) then begin
+            CurrentType:=CurrentType^.ChildOf^.TypeDefinition;
+           end else begin
+            break;
+           end;
+          end;
+          for j:=TypeChain.Count-1 downto 0 do begin
+           CurrentType:=TypeChain.Items[j];
+           if assigned(CurrentType^.RecordTable) then begin
+            Symbol:=CurrentType^.RecordTable.First;
+            while assigned(Symbol) do begin
+             case Symbol^.SymbolType of
+              Symbols.tstProcedure,Symbols.tstFunction:begin
+               if tpaVirtual in Symbol^.ProcedureAttributes then begin
+                if (tpaAbstract in Symbol^.ProcedureAttributes) and not (tsaMethodDefined in Symbol^.Attributes) then begin
+                 MethodList[Symbol^.VirtualIndex]:='NULL';
+                end else begin
+                 MethodList[Symbol^.VirtualIndex]:='(void*)&'+GetSymbolName(Symbol);
+                end;
                end;
               end;
              end;
+             Symbol:=Symbol^.Next;
             end;
-            Symbol:=Symbol^.Next;
            end;
           end;
-         end;
-         for j:=0 to MethodList.Count-1 do begin
-          if HasLast then begin
-           CodeTarget.AddLn(',');
+          for j:=0 to MethodList.Count-1 do begin
+           if HasLast then begin
+            CodeTarget.AddLn(',');
+           end;
+           HasLast:=true;
+           CodeTarget.Add(MethodList[j]);
           end;
-          HasLast:=true;
-          CodeTarget.Add(MethodList[j]);
+         finally
+          TypeChain.Free;
          end;
         finally
-         TypeChain.Free;
+         MethodList.Free;
         end;
-       finally
-        MethodList.Free;
+        if HasLast then begin
+         CodeTarget.AddLn('');
+        end;
+        CodeTarget.DecTab;
+        CodeTarget.AddLn('}');
+        CodeTarget.DecTab;
+        CodeTarget.AddLn('};');
        end;
-       if HasLast then begin
-        CodeTarget.AddLn('');
-       end;
-       CodeTarget.DecTab;
-       CodeTarget.AddLn('}');
-       CodeTarget.DecTab;
-       CodeTarget.AddLn('};');
-      end;
-      Symbol:=SymbolList.First;
-      while assigned(Symbol) do begin
-       case Symbol^.SymbolType of
-        Symbols.tstProcedure,Symbols.tstFunction:begin
-         if tpaVirtual in Symbol^.ProcedureAttributes then begin
-          Target.Add('typedef',spacesRIGHT);
-          if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
-           Target.Add('int',spacesRIGHT);
-          end else begin
-           ProcessTypeOrName(Symbol^.ReturnType, Target, nil);
-          end;
-          Target.Add('(*',spacesLEFT);
-          Target.Add(Name+'_VMT_'+IntToStr(Symbol^.VirtualIndex));
-          Target.Add(')(');
-          Target.Add(GetSymbolName(Symbol^.OwnerObjectClass^.Symbol)+'*');
-          if assigned(Symbol.Parameter) then
-          begin
-            OtherSymbol:=Symbol.Parameter.First;
-            while Assigned(OtherSymbol) do
-            begin
-             Target.Add(',',spacesRIGHT);
-             ProcessTypeOrName(OtherSymbol.TypeDefinition, Target, nil);
-             if IsSymbolReference(OtherSymbol) then begin
-              Target.Add('*',spacesRIGHT);
+       Symbol:=SymbolList.First;
+       while assigned(Symbol) do begin
+        case Symbol^.SymbolType of
+         Symbols.tstProcedure,Symbols.tstFunction:begin
+          if tpaVirtual in Symbol^.ProcedureAttributes then begin
+           Target.Add('typedef',spacesRIGHT);
+           if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
+            Target.Add('int',spacesRIGHT);
+           end else begin
+            ProcessTypeOrName(Symbol^.ReturnType, Target, nil);
+           end;
+           Target.Add('(*',spacesLEFT);
+           Target.Add(Name+'_VMT_'+IntToStr(Symbol^.VirtualIndex));
+           Target.Add(')(');
+           Target.Add(GetSymbolName(Symbol^.OwnerObjectClass^.Symbol)+'*');
+           if assigned(Symbol.Parameter) then
+           begin
+             OtherSymbol:=Symbol.Parameter.First;
+             while Assigned(OtherSymbol) do
+             begin
+              Target.Add(',',spacesRIGHT);
+              ProcessTypeOrName(OtherSymbol.TypeDefinition, Target, nil);
+              if IsSymbolReference(OtherSymbol) then begin
+               Target.Add('*',spacesRIGHT);
+              end;
+              OtherSymbol := OtherSymbol.Next;
              end;
-             OtherSymbol := OtherSymbol.Next;
-            end;
-          end;
-          Target.Add(')',spacesRIGHT);
-          Target.AddLn(';');
-         end else if tpaDynamic in Symbol^.ProcedureAttributes then begin
-          Target.Add('typedef',spacesRIGHT);
-          if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
-           Target.Add('int',spacesRIGHT);
-          end else begin
-           ProcessTypeOrName(Symbol^.ReturnType, Target, nil);
-          end;
-          Target.Add('*',spacesRIGHT);
-          Target.Add(Name+'_DMT_'+IntToStr(Symbol^.VirtualIndex));
-          Target.Add('(');
-          Target.Add(GetSymbolName(Symbol^.OwnerObjectClass^.Symbol)+'*');
-          if assigned(Symbol.Parameter) then
-          begin
-            OtherSymbol:=Symbol.Parameter.First;
-            while Assigned(OtherSymbol) do
-            begin
-             Target.Add(',',spacesRIGHT);
-             ProcessTypeOrName(OtherSymbol.TypeDefinition, Target, nil);
-             if IsSymbolReference(OtherSymbol) then begin
-              Target.Add('*',spacesRIGHT);
+           end;
+           Target.Add(')',spacesRIGHT);
+           Target.AddLn(';');
+          end else if tpaDynamic in Symbol^.ProcedureAttributes then begin
+           Target.Add('typedef',spacesRIGHT);
+           if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
+            Target.Add('int',spacesRIGHT);
+           end else begin
+            ProcessTypeOrName(Symbol^.ReturnType, Target, nil);
+           end;
+           Target.Add('*',spacesRIGHT);
+           Target.Add(Name+'_DMT_'+IntToStr(Symbol^.VirtualIndex));
+           Target.Add('(');
+           Target.Add(GetSymbolName(Symbol^.OwnerObjectClass^.Symbol)+'*');
+           if assigned(Symbol.Parameter) then
+           begin
+             OtherSymbol:=Symbol.Parameter.First;
+             while Assigned(OtherSymbol) do
+             begin
+              Target.Add(',',spacesRIGHT);
+              ProcessTypeOrName(OtherSymbol.TypeDefinition, Target, nil);
+              if IsSymbolReference(OtherSymbol) then begin
+               Target.Add('*',spacesRIGHT);
+              end;
+              OtherSymbol := OtherSymbol.Next;
              end;
-             OtherSymbol := OtherSymbol.Next;
-            end;
+           end;
+           Target.Add(')',spacesRIGHT);
+           Target.AddLn(';');
           end;
-          Target.Add(')',spacesRIGHT);
-          Target.AddLn(';');
          end;
         end;
+        Symbol:=Symbol^.Next;
        end;
-       Symbol:=Symbol^.Next;
       end;
+     finally
+      MethodTableList.Free;
      end;
     end;
    end;
