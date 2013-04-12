@@ -1026,6 +1026,22 @@ begin
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
 
+ Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+ Symbol^.Name:=tpsIdentifier+'INITIALIZE';
+ Symbol^.OriginalCaseName:='Initialize';
+ Symbol^.SymbolType:=Symbols.tstPROCEDURE;
+ Symbol^.InternalProcedure:=tipINITIALIZE;
+ Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
+ SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+
+ Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+ Symbol^.Name:=tpsIdentifier+'FINIALIZE';
+ Symbol^.OriginalCaseName:='Finalize';
+ Symbol^.SymbolType:=Symbols.tstPROCEDURE;
+ Symbol^.InternalProcedure:=tipFINALIZE;
+ Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
+ SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+
 end;
 
 procedure TParser.GetDefaultTypes;
