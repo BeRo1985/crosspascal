@@ -514,6 +514,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
        procedure AlignRecord(RecordType:PType;DefaultAlignment:longint);
        function SearchProcedureSymbol(Symbol,FirstSymbol:PSymbol;var OK:boolean):PSymbol;
        function TypeDoNeedTypeInfo(AType:PType):boolean;
+       function TypeDoNeedInitialization(AType:PType):boolean;
      end;
 
 const ProcedureCallingConventionAttributes:TProcedureAttributes=[tpaSTDCALL,tpaPASCAL,tpaCDECL,tpaSAFECALL,tpaFASTCALL,tpaRegister];
@@ -2204,6 +2205,105 @@ begin
    end;
    ttdFloat:begin
     result:=true;
+   end;
+   ttdCExpression:begin
+    result:=false;
+   end;
+  end;
+ end;
+end;
+
+function TSymbolManager.TypeDoNeedInitialization(AType:PType):boolean;
+var Symbol:PSymbol;
+begin
+ result:=false;
+ if assigned(AType) then begin
+  case AType^.TypeDefinition of
+   ttdEmpty:begin
+   end;
+   ttdEnumerated:begin
+    result:=false;
+   end;
+   ttdBoolean:begin
+    result:=false;
+   end;
+   ttdSubRange:begin
+    result:=false;
+   end;
+   ttdCurrency:begin
+    result:=false;
+   end;
+   ttdVariant:begin
+    result:=false;
+   end;
+   ttdArray:begin
+    result:=AType^.DynamicArray or (assigned(AType) and TypeDoNeedInitialization(AType^.Definition));
+   end;
+   ttdRecord:begin
+    result:=false;
+    if assigned(AType^.RecordTable) then begin
+     Symbol:=AType^.RecordTable.First;
+     while assigned(Symbol) do begin
+      case Symbol^.SymbolType of
+       tstVariable:begin
+        if assigned(Symbol^.TypeDefinition) and
+           (Symbol^.TypeDefinition^.TypeDefinition in [ttdVariant,ttdArray,ttdRecord,ttdLongString,ttdObject,ttdClass,ttdInterface]) and
+           TypeDoNeedInitialization(Symbol^.TypeDefinition) then begin
+         result:=true;
+        end;
+       end;
+      end;
+      Symbol:=Symbol^.Next;
+     end;
+    end;
+   end;
+   ttdShortString:begin
+    result:=false;
+   end;
+   ttdLongString:begin
+    result:=true;
+   end;
+   ttdFile:begin
+    result:=false;
+   end;
+   ttdPointer:begin
+    result:=false;
+   end;
+   ttdSet:begin
+    result:=false;
+   end;
+   ttdProcedure:begin
+    result:=false;
+   end;
+   ttdObject:begin
+    result:=AType^.HasVirtualTable;
+    if assigned(AType^.RecordTable) and not result then begin
+     Symbol:=AType^.RecordTable.First;
+     while assigned(Symbol) do begin
+      case Symbol^.SymbolType of
+       tstVariable:begin
+        if assigned(Symbol^.TypeDefinition) and
+           (Symbol^.TypeDefinition^.TypeDefinition in [ttdVariant,ttdArray,ttdRecord,ttdLongString,ttdObject,ttdClass,ttdInterface]) and
+           TypeDoNeedInitialization(Symbol^.TypeDefinition) then begin
+         result:=true;
+        end;
+       end;
+      end;
+      Symbol:=Symbol^.Next;
+     end;
+    end;
+   end;
+   ttdClass:begin
+    result:=false;
+   end;
+   ttdClassRef:begin
+    result:=false;
+   end;
+   ttdInterface:begin
+    result:=true;
+   end;
+   ttdFloat:begin
+    result:=false;
    end;
    ttdCExpression:begin
     result:=false;
