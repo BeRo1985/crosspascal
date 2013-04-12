@@ -851,6 +851,20 @@ begin
  SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+ Symbol^.Name:=tpsIdentifier+'$EMPTY$';
+ Symbol^.OriginalCaseName:='$Empty$';
+ Symbol^.SymbolType:=Symbols.tstType;
+ Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
+ AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+ AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
+ AType^.TypeKind:=TypeKindUnknown;
+ AType^.NeedTypeInfo:=false;
+ Symbol^.TypeDefinition:=AType;
+ AType^.Symbol:=Symbol;
+ AType^.TypeDefinition:=ttdEmpty;
+ SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+
+ Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'WRITE';
  Symbol^.OriginalCaseName:='Write';
  Symbol^.SymbolType:=Symbols.tstProcedure;
@@ -905,6 +919,7 @@ begin
  Symbol^.SymbolType:=Symbols.tstProcedure;
  Symbol^.InternalProcedure:=tipINC;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
+ SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
 
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.Name:=tpsIdentifier+'SUCC';
@@ -1760,7 +1775,7 @@ begin
        if assigned(NewTreeNode) and (NewTreeNode.TreeNodeType=ttntAddress) and assigned(NewTreeNode.Left) then begin
         AType:=NewTreeNode.Left.Return;
        end else begin
-        AType:=nil;
+        AType:=SymbolManager.TypeEmpty;
        end;
       end;
       NewTreeNode:=TreeManager.GeneratePointerNode(NewTreeNode,AType);
@@ -1814,7 +1829,7 @@ begin
          if assigned(NewTreeNode) and (NewTreeNode.TreeNodeType=ttntAddress) and assigned(NewTreeNode.Left) then begin
           AType:=NewTreeNode.Left.Return;
          end else begin
-          AType:=nil;
+          AType:=SymbolManager.TypeEmpty;
          end;
         end;
         NewTreeNode:=TreeManager.GeneratePointerNode(NewTreeNode,AType);
@@ -1841,7 +1856,7 @@ begin
        if assigned(NewTreeNode) and (NewTreeNode.TreeNodeType=ttntAddress) and assigned(NewTreeNode.Left) then begin
         AType:=NewTreeNode.Left.Return;
        end else begin
-        AType:=nil;
+        AType:=SymbolManager.TypeEmpty;
        end;
       end;
       NewTreeNode:=TreeManager.GeneratePointerNode(NewTreeNode,AType);
