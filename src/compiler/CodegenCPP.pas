@@ -3755,21 +3755,61 @@ begin
          CodeTarget.AddLn('NULL,');
         end;
         // void* vmtSafeCallException;
-        CodeTarget.AddLn('NULL,');
+        Symbol:=Type_^.RecordTable.GetSymbol('SAFECALLEXCEPTION');
+        if assigned(Symbol) then begin
+         CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
+        end else begin
+         CodeTarget.AddLn('NULL,');
+        end;
         // void* vmtAfterConstruction;
-        CodeTarget.AddLn('NULL,');
+        Symbol:=Type_^.RecordTable.GetSymbol('AFTERCONSTRUCTION');
+        if assigned(Symbol) then begin
+         CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
+        end else begin
+         CodeTarget.AddLn('NULL,');
+        end;
         // void* vmtBeforeDestruction;
-        CodeTarget.AddLn('NULL,');
+        Symbol:=Type_^.RecordTable.GetSymbol('BEFOREDESTRUCTION');
+        if assigned(Symbol) then begin
+         CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
+        end else begin
+         CodeTarget.AddLn('NULL,');
+        end;
         // void* vmtDispatch;
-        CodeTarget.AddLn('NULL,');
+        Symbol:=Type_^.RecordTable.GetSymbol('DISPATCH');
+        if assigned(Symbol) then begin
+         CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
+        end else begin
+         CodeTarget.AddLn('NULL,');
+        end;
         // void* vmtDefaultHandler;
-        CodeTarget.AddLn('NULL,');
+        Symbol:=Type_^.RecordTable.GetSymbol('DEFAULTHANDLER');
+        if assigned(Symbol) then begin
+         CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
+        end else begin
+         CodeTarget.AddLn('NULL,');
+        end;
         // void* vmtNewInstance;
-        CodeTarget.AddLn('NULL,');
+        Symbol:=Type_^.RecordTable.GetSymbol('NEWINSTANCE');
+        if assigned(Symbol) then begin
+         CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
+        end else begin
+         CodeTarget.AddLn('NULL,');
+        end;
         // void* vmtFreeInstance;
-        CodeTarget.AddLn('NULL,');
+        Symbol:=Type_^.RecordTable.GetSymbol('FREEINSTANCE');
+        if assigned(Symbol) then begin
+         CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+',');
+        end else begin
+         CodeTarget.AddLn('NULL,');
+        end;
         // void* vmtDestroy;
-        CodeTarget.AddLn('NULL');
+        Symbol:=Type_^.RecordTable.GetSymbol('DESTROY');
+        if assigned(Symbol) then begin
+         CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol)+'');
+        end else begin
+         CodeTarget.AddLn('NULL');
+        end;
        end;
        CodeTarget.DecTab;
        CodeTarget.AddLn('},');
