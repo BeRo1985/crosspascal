@@ -223,6 +223,7 @@ procedure Move(var Src; var Dst; Size: Cardinal);
 typedef struct pasTypeInfo {
   size_t kind;
   size_t codePage;
+  void* vmt;
   char* name;
   void* data;
 } pasTypeInfo;
@@ -264,6 +265,10 @@ typedef struct pasObjectVirtualMethodTable {
   pasObjectVirtualMethodTablePointer ancestorVirtualMethodTable;
   void* virtualMethods[0];
 } pasObjectVirtualMethodTable;
+
+typedef struct pasObjectWithVirtualMethodTable {
+  pasObjectVirtualMethodTablePointer vmt;
+} pasObjectWithVirtualMethodTable;
 
 typedef struct pasClassDynamicMethodTableItem {
   size_t index;
@@ -601,6 +606,9 @@ void pasInitializeRecord(void* p, pasTypeInfo* t){
   while(count--){
     pasInitializeArray(p + ft->fields[count].offset, (void*)(*ft->fields[count].typeInfo), 1);
   }
+  if(t->vmt){
+    ((pasObjectWithVirtualMethodTable*)p)->vmt = t->vmt;
+  } 
 }
 
 void pasInitializeArray(void* p, pasTypeInfo* t, size_t count){

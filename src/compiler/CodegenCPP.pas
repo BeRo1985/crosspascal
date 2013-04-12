@@ -3400,6 +3400,11 @@ begin
     end else begin
      CodeTarget.AddLn('0,');
     end;
+    if (Type_^.TypeDefinition=ttdOBJECT) and Type_^.HasVirtualTable then begin
+     CodeTarget.AddLn('(void*)&'+GetTypeName(Type_)+'_VMT,');
+    end else begin
+     CodeTarget.AddLn('NULL,');
+    end;
     if assigned(Type_.Symbol) then begin
      TranslateShortStringConstant(Type_.Symbol.OriginalCaseName,CodeTarget);
     end else begin
