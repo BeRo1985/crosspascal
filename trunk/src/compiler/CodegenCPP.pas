@@ -3684,12 +3684,12 @@ begin
               MethodList.Add('{'+IntToStr(Symbol^.VirtualIndex)+',(void*)&'+GetSymbolName(Symbol)+'},');
              end;
             end else if tpaVirtual in Symbol^.ProcedureAttributes then begin
-            end else if tsaOOPPublished in Symbol^.Attributes then begin
+            end else if (Type_.TypeDefinition=ttdCLASS) and (tsaOOPPublished in Symbol^.Attributes) then begin
              MethodTableList.Add('{(void*)&'+GetSymbolName(Symbol)+',' + GetShortStringConstant(Symbol^.OriginalCaseName) + '},');
             end;
            end;
            Symbols.tstProperty:begin
-            if tsaOOPPublished in Symbol^.Attributes then begin
+            if (Type_.TypeDefinition=ttdCLASS) and (tsaOOPPublished in Symbol^.Attributes) then begin
              if Symbol^.TypeDefinition^.TypeDefinition=ttdCLASS then begin
               j:=ClassTableList.IndexOf(Symbol^.TypeDefinition);
               if j<0 then begin
