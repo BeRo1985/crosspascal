@@ -1972,6 +1972,68 @@ begin
         Error.InternalError(201304111953000);
        end;
       end;
+      tipINITIALIZE:begin
+       if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and not assigned(TreeNode.Left.Right) then begin
+        if TreeNode.Left.Left.Return^.NeedTypeInfo then begin
+         FProcCode.Add('(pasInitialize((void*)(&(');
+         TranslateCode(TreeNode.Left.Left);
+         FProcCode.AddLn(')), ((void*)(&'+GetTypeName(TreeNode.Left.Left.Return)+'_TYPEINFO)));');
+        end else begin
+         if assigned(TreeNode.Left.Left.Return^.Symbol) then begin
+          Error.AbortCode(138,CorrectSymbolName(TreeNode.Left.Left.Return^.Symbol^.Name));
+         end else begin
+          Error.AbortCode(138,'???');
+         end;
+        end;
+       end else if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and assigned(TreeNode.Left.Right) and assigned(TreeNode.Left.Right.Left) and assigned(TreeNode.Left.Right.Left.Return) and not assigned(TreeNode.Left.Right.Right) then begin
+        if TreeNode.Left.Left.Return^.NeedTypeInfo then begin
+         FProcCode.Add('(pasInitializeArray((void*)(&(');
+         TranslateCode(TreeNode.Left.Left);
+         FProcCode.Add(')), ((void*)(&'+GetTypeName(TreeNode.Left.Left.Return)+'_TYPEINFO)),',spacesRIGHT);
+         TranslateCode(TreeNode.Left.Right.Left);
+         FProcCode.AddLn(');');
+        end else begin
+         if assigned(TreeNode.Left.Left.Return^.Symbol) then begin
+          Error.AbortCode(138,CorrectSymbolName(TreeNode.Left.Left.Return^.Symbol^.Name));
+         end else begin
+          Error.AbortCode(138,'???');
+         end;
+        end;
+       end else begin
+        Error.InternalError(201304120332000);
+       end;
+      end;
+      tipFINALIZE:begin
+       if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and not assigned(TreeNode.Left.Right) then begin
+        if TreeNode.Left.Left.Return^.NeedTypeInfo then begin
+         FProcCode.Add('(pasFinalize((void*)(&(');
+         TranslateCode(TreeNode.Left.Left);
+         FProcCode.AddLn(')), ((void*)(&'+GetTypeName(TreeNode.Left.Left.Return)+'_TYPEINFO)));');
+        end else begin
+         if assigned(TreeNode.Left.Left.Return^.Symbol) then begin
+          Error.AbortCode(138,CorrectSymbolName(TreeNode.Left.Left.Return^.Symbol^.Name));
+         end else begin
+          Error.AbortCode(138,'???');
+         end;
+        end;
+       end else if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and assigned(TreeNode.Left.Right) and assigned(TreeNode.Left.Right.Left) and assigned(TreeNode.Left.Right.Left.Return) and not assigned(TreeNode.Left.Right.Right) then begin
+        if TreeNode.Left.Left.Return^.NeedTypeInfo then begin
+         FProcCode.Add('(pasFinalizeArray((void*)(&(');
+         TranslateCode(TreeNode.Left.Left);
+         FProcCode.Add(')), ((void*)(&'+GetTypeName(TreeNode.Left.Left.Return)+'_TYPEINFO)),',spacesRIGHT);
+         TranslateCode(TreeNode.Left.Right.Left);
+         FProcCode.AddLn(');');
+        end else begin
+         if assigned(TreeNode.Left.Left.Return^.Symbol) then begin
+          Error.AbortCode(138,CorrectSymbolName(TreeNode.Left.Left.Return^.Symbol^.Name));
+         end else begin
+          Error.AbortCode(138,'???');
+         end;
+        end;
+       end else begin
+        Error.InternalError(201304120332001);
+       end;
+      end;
       else {tipNone:}begin
        if assigned(TreeNode.Symbol.OwnerModule) then begin
         if assigned(TreeNode.MethodSymbol) then begin
