@@ -535,8 +535,10 @@ void pasFreeArray(pasDynArray* target) {
     header = (void*)((uint32_t)(*target) - pasDynArrayHeaderSize);
     if(1 < header->refCount)
         header->refCount--;
-    else
+    else{
+        // red TODO: pasFinalize(); you do need to add a array element type info somewhere in the dynarray data structure
         free(header);
+    }
 }
 
 void pasAssignArray(pasDynArray* target, pasDynArray newValue) {
