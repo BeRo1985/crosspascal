@@ -276,22 +276,29 @@ typedef struct pasClassDynamicMethodTableItem {
 } pasClassDynamicMethodTableItem;
 
 typedef struct pasClassMethodTableItem {
- void* address;
- char* name;
+  void* address;
+  char* name;
 } pasClassMethodTableItem;
 
+typedef void** pasClassTableItem;
+
+typedef struct pasClassTable {
+  size_t count;
+  pasClassTableItem classes[0];
+} pasClassTable;
+
 typedef struct pasClassFieldTableItem {
- size_t fieldOffset;
- size_t typeIndex;
- char *Name;
+  size_t fieldOffset;
+  size_t typeIndex;
+  char *Name;
 } pasClassFieldTableItem;
 
 typedef pasClassFieldTableItem* pasClassFieldTableItemPointer;
 
 typedef struct pasClassFieldTable {
- size_t count;
- void* classTable;
- pasClassFieldTableItem fields[0];
+  size_t count;
+  void* classTable;
+  pasClassFieldTableItem fields[0];
 } pasClassFieldTable;
 
 typedef struct pasClassMethodTable {
