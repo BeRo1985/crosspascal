@@ -668,32 +668,28 @@ void pasFinalizeArray(void* p, pasTypeInfo* t, size_t count){
     switch(t->kind){
       case pastkLString:{
         while(count--){
-          // red, your task!  
-          *((void**)p) = NULL;
+          FreeLongstring(*((void**)p));
           p += sizeof(void*);
         }
         break;
       }
       case pastkWString:{
         while(count--){
-          // red, your task!
-          *((void**)p) = NULL;
+          FreeLongstring(*((void**)p));
           p += sizeof(void*);
         }
         break;
       }
       case pastkUString:{
         while(count--){
-          // red, your task!
-          *((void**)p) = NULL;
+          FreeLongstring(*((void**)p));
           p += sizeof(void*);
         }
         break;
       }
       case pastkHString:{
         while(count--){
-          // red, your task!
-          *((void**)p) = NULL;
+          FreeLongstring(*((void**)p));
           p += sizeof(void*);
         }
         break;
@@ -708,8 +704,7 @@ void pasFinalizeArray(void* p, pasTypeInfo* t, size_t count){
       }
       case pastkDynArray:{
         while(count--){
-          // red, your task!
-          *((void**)p) = NULL;
+          pasFreeArray(*((void**)p));
           p += sizeof(void*);
         }
         break;
