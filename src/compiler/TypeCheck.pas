@@ -848,6 +848,15 @@ begin
       end else begin
        result:=tcteConvertCompatible;
       end;
+     end else if assigned(FromType^.PointerTo) and
+                 assigned(ToType^.PointerTo) and
+                 assigned(FromType^.PointerTo^.TypeDefinition) and
+                 assigned(ToType^.PointerTo^.TypeDefinition) and
+                 EqualTypes(Error,SymbolManager,FromType^.PointerTo^.TypeDefinition,ToType^.PointerTo^.TypeDefinition) then begin
+      result:=tcteEqual;
+     end else begin
+      // !!!
+      result:=tcteConvertCompatible;
      end;
     end;
     ttdProcedure:begin
