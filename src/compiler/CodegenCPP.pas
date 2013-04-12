@@ -3760,6 +3760,7 @@ begin
          CodeTarget.AddLn(IntToStr(FieldTableList.Count)+',');
          CodeTarget.AddLn('NULL,');
          for j:=0 to FieldTableList.Count-1 do begin
+          Symbol:=FieldTableList[j];
           CodeTarget.AddLn('{');
           CodeTarget.IncTab;
           CodeTarget.AddLn(IntToStr(Symbol^.Offset)+',');
