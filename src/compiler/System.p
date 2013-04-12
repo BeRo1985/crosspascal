@@ -280,6 +280,20 @@ typedef struct pasClassMethodTableItem {
  char* name;
 } pasClassMethodTableItem;
 
+typedef struct pasClassFieldTableItem {
+ size_t fieldOffset;
+ size_t typeIndex;
+ char *Name;
+} pasClassFieldTableItem;
+
+typedef pasClassFieldTableItem* pasClassFieldTableItemPointer;
+
+typedef struct pasClassFieldTable {
+ size_t count;
+ void* classTable;
+ pasClassFieldTableItem fields[0];
+} pasClassFieldTable;
+
 typedef struct pasClassMethodTable {
   size_t count;
   pasClassMethodTableItem methods[0];

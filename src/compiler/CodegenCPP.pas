@@ -3235,6 +3235,8 @@ var i,j,k:longint;
     SymbolList:TSymbolList;
     MethodList:TStringList;
     MethodTableList:TStringList;
+    FieldTableList:TPointerList;
+    ClassTableList:TPointerList;
     Symbol,OtherSymbol:PSymbol;
     CurrentVariantLevelIndex:longint;
     VariantLevelVariants:array of integer;
@@ -3659,12 +3661,15 @@ begin
    case Type_.TypeDefinition of
     ttdObject,ttdClass:begin
      MethodTableList:=TStringList.Create;
+     FieldTableList:=TPointerList.Create;
+     ClassTableList:=TPointerList.Create;
      try
       SymbolList:=Type_^.RecordTable;
       if assigned(SymbolList) then begin
        if Type_^.HasVirtualTable then begin
         CodeTarget.AddLn('');
         HasDynamicMethods:=false;
+
         MethodList:=TStringList.Create;
         try
          Symbol:=Type_^.RecordTable.First;
@@ -3681,6 +3686,19 @@ begin
             end else if tpaVirtual in Symbol^.ProcedureAttributes then begin
             end else if tsaOOPPublished in Symbol^.Attributes then begin
              MethodTableList.Add('{(void*)&'+GetSymbolName(Symbol)+',' + GetShortStringConstant(Symbol^.OriginalCaseName) + '},');
+            end;
+           end;
+           Symbols.tstProperty:begin
+            if tsaOOPPublished in Symbol^.Attributes then begin
+             if Symbol^.TypeDefinition^.TypeDefinition=ttdCLASS then begin
+              j:=ClassTableList.IndexOf(Symbol^.TypeDefinition);
+              if j<0 then begin
+               ClassTableList.Add(Symbol^.TypeDefinition);
+              end;
+              FieldTableList.Add(Symbol);
+             end else begin
+              Error.InternalError(201304121425000);
+             end;
             end;
            end;
           end;
@@ -3704,10 +3722,12 @@ begin
         finally
          MethodList.Free;
         end;
+
 {       if (Type_.TypeDefinition=ttdCLASS) and assigned(Type_.Symbol) then begin
          TranslateShortStringConstant(Name+'_CLASSNAME',Type_.Symbol.OriginalCaseName,CodeTarget);
          CodeTarget.AddLn('');
         end;{}
+
         if (Type_.TypeDefinition=ttdCLASS) and (MethodTableList.Count>0) then begin
          Target.AddLn('typedef struct {');
          Target.IncTab;
@@ -3725,6 +3745,37 @@ begin
          CodeTarget.DecTab;
          CodeTarget.AddLn('};');
         end;
+
+        if (Type_.TypeDefinition=ttdCLASS) and ((FieldTableList.Count>0) or (ClassTableList.Count>0)) then begin
+         Target.AddLn('typedef struct {');
+         Target.IncTab;
+         Target.AddLn('size_t count;');
+         Target.AddLn('void* classTable;');
+         Target.AddLn('pasClassFieldTableItem fields['+IntToStr(FieldTableList.Count)+'];');
+         Target.DecTab;
+         Target.AddLn('} '+Name+'_FIELLD_TABLE_TYPE;');
+         Target.AddLn('extern '+Name+'_METHOD_TABLE_TYPE '+Name+'_METHOD_TABLE;');
+         CodeTarget.AddLn(Name+'_METHOD_TABLE_TYPE '+Name+'_METHOD_TABLE = {');
+         CodeTarget.IncTab;
+         CodeTarget.AddLn(IntToStr(FieldTableList.Count)+',');
+         CodeTarget.AddLn('NULL,');
+         for j:=0 to FieldTableList.Count-1 do begin
+          CodeTarget.AddLn('{');
+          CodeTarget.IncTab;
+          CodeTarget.AddLn(IntToStr(Symbol^.Offset)+',');
+          CodeTarget.AddLn(IntToStr(ClassTableList.IndexOf(Symbol^.TypeDefinition))+',');
+          CodeTarget.AddLn(GetShortStringConstant(Symbol^.OriginalCaseName));
+          CodeTarget.DecTab;
+          if j<(FieldTableList.Count-1) then begin
+           CodeTarget.AddLn('},');
+          end else begin
+           CodeTarget.AddLn('}');
+          end;
+         end;
+         CodeTarget.DecTab;
+         CodeTarget.AddLn('};');
+        end;
+
         Target.AddLn('typedef struct {');
         Target.IncTab;
         if Type_.TypeDefinition=ttdObject then begin
@@ -3764,7 +3815,11 @@ begin
          // void* vmtTypeInfo;
          CodeTarget.AddLn('NULL,');
          // void* vmtFieldTable;
-         CodeTarget.AddLn('NULL,');
+         if (FieldTableList.Count>0) or (ClassTableList.Count>0) then begin
+          CodeTarget.AddLn('(void*)&'+Name+'_FIELD_TABLE,');
+         end else begin
+          CodeTarget.AddLn('NULL,');
+         end;
          // void* vmtMethodTable;
          if MethodTableList.Count>0 then begin
           CodeTarget.AddLn('(void*)&'+Name+'_METHOD_TABLE,');
@@ -3911,6 +3966,7 @@ begin
         CodeTarget.DecTab;
         CodeTarget.AddLn('};');
        end;
+
        Symbol:=SymbolList.First;
        while assigned(Symbol) do begin
         case Symbol^.SymbolType of
@@ -3972,8 +4028,12 @@ begin
         end;
         Symbol:=Symbol^.Next;
        end;
+
       end;
+
      finally
+      ClassTableList.Free;
+      FieldTableList.Free;
       MethodTableList.Free;
      end;
     end;
