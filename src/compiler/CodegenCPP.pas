@@ -320,6 +320,11 @@ begin
       else
        Target.Add('NULL');
      end;
+     else begin
+      if Sym.TypeDefinition.NeedTypeInfo and SymbolManager.TypeDoNeedInitialization(Sym.TypeDefinition) then begin
+       Target.Add('pasInitialize((void*)&'+GetSymbolName(Sym)+', &'+GetTypeName(Sym.TypeDefinition)+'_TYPEINFO)');
+      end;
+     end;
     end;
    end;
 
@@ -524,6 +529,11 @@ begin
       // todo: string-ref checks for arrays
       if Sym.TypeDefinition.DynamicArray then
         Target.Add('pasFreeArray(&'+GetSymbolName(Sym)+')');
+     end;
+     else begin
+      if Sym.TypeDefinition.NeedTypeInfo and SymbolManager.TypeDoNeedInitialization(Sym.TypeDefinition) then begin
+       Target.Add('pasFinalize((void*)&'+GetSymbolName(Sym)+', &'+GetTypeName(Sym.TypeDefinition)+'_TYPEINFO)');
+      end;
      end;
     end;
    Target.AddLn(';');
