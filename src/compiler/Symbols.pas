@@ -477,7 +477,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
        TypeSingle,TypeDouble,TypeExtended,
        TypePointer,TypeInt64,TypeLongint,TypeLongword,TypeSmallint,TypeWord,TypeShortint,
        TypeByte,TypeBoolean,TypeByteBool,TypeWordBool,TypeLongBool,TypeBool64,
-       TypeTOBJECT,TypeTGUID,TypeCExpression:PType;
+       TypeTOBJECT,TypeTGUID,TypeCExpression,TypeEmpty:PType;
        GlobalSwitches:PGlobalSwitches;
        ConstantIDCounter:longword;
        constructor Create(TheError:TError;TheOptions:POptions;TheGlobalSwitches:PGlobalSwitches);
@@ -1119,6 +1119,12 @@ begin
   TypeCExpression:=Symbol^.TypeDefinition;
  end else begin
   TypeCExpression:=nil;
+ end;
+ Symbol:=GetSymbol(tpsIdentifier+'$EMPTY$');
+ if assigned(Symbol) then begin
+  TypeEmpty:=Symbol^.TypeDefinition;
+ end else begin
+  TypeEmpty:=nil;
  end;
 end;
 

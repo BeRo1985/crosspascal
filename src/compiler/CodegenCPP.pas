@@ -3276,10 +3276,10 @@ begin
   Target.AddLn('// Type info definitions');
   for i:=0 to length(TypeItems)-1 do begin
    Type_:=TypeItems[i];
+   Name:=GetTypeName(Type_);
    if (Type_^.RuntimeTypeInfo and
        (Type_^.NeedTypeInfo or not (Type_.TypeKind in [TypeKindUnknown,TypeKindRecord,TypeKindArray]))) and
-       not (Type_^.TypeDefinition in [ttdCEXPRESSION]) then begin
-    Name:=GetTypeName(Type_);
+       not ((Type_^.TypeDefinition in [ttdCEXPRESSION]) or (Type_=SymbolManager.TypeEmpty) or ((length(Name)>0) and (Name[1]='$'))) then begin
     Target.AddLn('extern pasTypeInfo '+Name+'_TYPEINFO;');
     Target.AddLn('extern pasTypeInfoPointer '+Name+'_TYPEINFO_POINTER;');
     case Type_.TypeDefinition of
@@ -3443,7 +3443,9 @@ begin
    Name:=GetTypeName(Type_);
    case Type_.TypeDefinition of
     ttdEmpty:begin
-     Target.AddLn('typedef void* '+Name+';');
+     if Type_<>SymbolManager.TypeEmpty then begin
+      Target.AddLn('typedef void* '+Name+';');
+     end;
     end;
     ttdEnumerated:begin
      Type_^.Dumped:=true;
