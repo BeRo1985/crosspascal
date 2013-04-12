@@ -3762,59 +3762,61 @@ var AType:PType;
     PortabilityDirectives:TPortabilityDirectives;
 begin
  Scanner.CheckForDirectives(UntilDirectives);
- repeat
-  StartSymbol:=nil;
-  LastSymbol:=nil;
+ if Scanner.CurrentToken=tstIdentifier then begin
   repeat
-   Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
-   if not assigned(StartSymbol) then begin
-    StartSymbol:=Symbol;
+   StartSymbol:=nil;
+   LastSymbol:=nil;
+   repeat
+    Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+    if not assigned(StartSymbol) then begin
+     StartSymbol:=Symbol;
+    end;
+    if assigned(LastSymbol) then begin
+     LastSymbol^.Next:=Symbol;
+    end;
+    LastSymbol:=Symbol;
+    Symbol^.Name:=Scanner.ReadIdentifier(@Symbol^.OriginalCaseName);
+    HashSymbol(Symbol);
+    if Scanner.CurrentToken=tstCOMMA then begin
+     Scanner.Match(tstCOMMA);
+    end else begin
+     break;
+    end;
+   until (Scanner.CurrentToken<>tstIdentifier) or Scanner.IsEOFOrAbortError;
+   Scanner.Match(tstCOLON);
+   AType:=ParseTypeDefinition('');
+   PortabilityDirectives:=ParsePortabilityDirectives;
+   Symbol:=StartSymbol;
+   while assigned(Symbol) do begin
+    NextSymbol:=Symbol^.Next;
+    Symbol^.Next:=nil;
+    Symbol^.SymbolType:=Symbols.tstVARIABLE;
+    Symbol^.TypeDefinition:=AType;
+    Symbol^.Offset:=0;
+    Symbol^.VariantPrefix:=VariantPrefix;
+    Symbol^.VariableType:=SymbolManager.VariableType;
+    Symbol^.TypedConstant:=false;
+    Symbol^.TypedTrueConstant:=false;
+    Symbol^.TypedConstantReadOnly:=false;
+    Symbol^.CaseOfLevel:=CaseOfLevel;
+    Symbol^.CaseOfVariant:=CaseOfVariant;
+    Symbol^.Attributes:=SymbolAttributes+[tsaField];
+    if MakeSymbolsPublic then begin
+     Symbol^.Attributes:=Symbol^.Attributes+[tsaPublic,tsaPublicUnitSymbol];
+    end;
+    Symbol^.PortabilityDirectives:=PortabilityDirectives;
+    Symbol^.OwnerType:=RecordType;
+    RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+    Symbol:=NextSymbol;
    end;
-   if assigned(LastSymbol) then begin
-    LastSymbol^.Next:=Symbol;
-   end;
-   LastSymbol:=Symbol;
-   Symbol^.Name:=Scanner.ReadIdentifier(@Symbol^.OriginalCaseName);
-   HashSymbol(Symbol);
-   if Scanner.CurrentToken=tstCOMMA then begin
-    Scanner.Match(tstCOMMA);
+   if Scanner.CurrentToken=tstSEPARATOR then begin
+    Scanner.Match(tstSEPARATOR);
    end else begin
     break;
    end;
+   Scanner.CheckForDirectives(UntilDirectives);
   until (Scanner.CurrentToken<>tstIdentifier) or Scanner.IsEOFOrAbortError;
-  Scanner.Match(tstCOLON);
-  AType:=ParseTypeDefinition('');
-  PortabilityDirectives:=ParsePortabilityDirectives;
-  Symbol:=StartSymbol;
-  while assigned(Symbol) do begin
-   NextSymbol:=Symbol^.Next;
-   Symbol^.Next:=nil;
-   Symbol^.SymbolType:=Symbols.tstVARIABLE;
-   Symbol^.TypeDefinition:=AType;
-   Symbol^.Offset:=0;
-   Symbol^.VariantPrefix:=VariantPrefix;
-   Symbol^.VariableType:=SymbolManager.VariableType;
-   Symbol^.TypedConstant:=false;
-   Symbol^.TypedTrueConstant:=false;
-   Symbol^.TypedConstantReadOnly:=false;
-   Symbol^.CaseOfLevel:=CaseOfLevel;
-   Symbol^.CaseOfVariant:=CaseOfVariant;
-   Symbol^.Attributes:=SymbolAttributes+[tsaField];
-   if MakeSymbolsPublic then begin
-    Symbol^.Attributes:=Symbol^.Attributes+[tsaPublic,tsaPublicUnitSymbol];
-   end;
-   Symbol^.PortabilityDirectives:=PortabilityDirectives;
-   Symbol^.OwnerType:=RecordType;
-   RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
-   Symbol:=NextSymbol;
-  end;
-  if Scanner.CurrentToken=tstSEPARATOR then begin
-   Scanner.Match(tstSEPARATOR);
-  end else begin
-   break;
-  end;
-  Scanner.CheckForDirectives(UntilDirectives);
- until (Scanner.CurrentToken<>tstIdentifier) or Scanner.IsEOFOrAbortError;
+ end;
  if (Scanner.CurrentToken=tstCASE) and IsRecord then begin
   Scanner.Match(tstCASE);
   TypeName:=tpsIdentifier+Scanner.CurrentIdentifier;

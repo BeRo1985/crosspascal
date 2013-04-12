@@ -92,7 +92,7 @@ type TPreprocessorDirectives=(tdNONE,tdDEFINE,tdELSE,tdELSEIF,tdENDIF,tdIF,
 
      PPreprocessorStack=^TPreprocessorStack;
      TPreprocessorStack=record
-      Previous,Next:PPreprocessorStack;
+      Next:PPreprocessorStack;
       ParentDirective:TPreprocessorDirectives;
       Directive:TPreprocessorDirectives;
       ParentCondition:boolean;
@@ -108,7 +108,8 @@ type TPreprocessorDirectives=(tdNONE,tdDEFINE,tdELSE,tdELSEIF,tdENDIF,tdIF,
        DirectiveStringTree:TBeRoStringTree;
        DefineStringHashMap:TBeRoStringHashMap;
        DefineStringList:TStringList;
-       StackRoot,StackLast:PPreprocessorStack;
+       Stack:PPreprocessorStack;
+       StackFree:PPreprocessorStack;
        FileStackOpenInclude:TPreprocessorFileStackOpenIncludeProc;
        CurrentComment:THugeString;
        CurrentCommentPosition:longint;
@@ -241,8 +242,8 @@ begin
  AddDirective(tdSTACKFRAMES,'STACKFRAMES');
  AddDirective(tdJ,'J');
  AddDirective(tdWRITEABLECONST,'WRITEABLECONST');
- StackRoot:=nil;
- StackLast:=nil;
+ Stack:=nil;
+ StackFree:=nil;
  ModuleSymbol:=nil;
  Reset;
 end;
@@ -257,7 +258,7 @@ begin
 end;
 
 procedure TPreprocessor.Reset;
-var StackCurrent,StackNext:PPreprocessorStack;
+var StackNext:PPreprocessorStack;
 begin
  CurrentComment:=nil;
  DefineStringHashMap.Clear;
@@ -266,14 +267,18 @@ begin
  AddDefine('VER100');
  AddDefine('CPUC');
  AddDefine('CONDITIONALEXPRESSIONS');
- StackCurrent:=StackRoot;
- while assigned(StackCurrent) do begin
-  StackNext:=StackCurrent^.Next;
-  Dispose(StackCurrent);
-  StackCurrent:=StackNext;
+ while assigned(Stack) do begin
+  StackNext:=Stack^.Next;
+  Dispose(Stack);
+  Stack:=StackNext;
  end;
- StackRoot:=nil;
- StackLast:=nil;
+ while assigned(StackFree) do begin
+  StackNext:=StackFree^.Next;
+  Dispose(StackFree);
+  StackFree:=StackNext;
+ end;
+ Stack:=nil;
+ StackFree:=nil;
 end;
 
 procedure TPreprocessor.AddDirective(Directive:TPreprocessorDirectives;Name:ansistring);
@@ -283,39 +288,37 @@ end;
 
 function TPreprocessor.PushStack(Directive,ParentDirective:TPreprocessorDirectives;Condition,ParentCondition:boolean):PPreprocessorStack;
 begin
- New(result);
+ if assigned(StackFree) then begin
+  result:=StackFree;
+  StackFree:=StackFree^.Next;
+ end else begin
+  New(result);
+ end;
  FillChar(result^,SizeOf(TPreprocessorStack),#0);
  result^.ParentDirective:=ParentDirective;
  result^.Directive:=Directive;
  result^.Condition:=Condition and CurrentCondition;
  result^.ParentCondition:=ParentCondition;
- if assigned(StackLast) then begin
-  StackLast^.Next:=result;
-  result^.Previous:=StackLast;
- end else begin
-  StackRoot:=result;
- end;
- StackLast:=result;
+ result^.Next:=Stack;
+ Stack:=result;
 end;
 
 function TPreprocessor.PopStack:boolean;
-var OldStackLast:PPreprocessorStack;
+var StackNext:PPreprocessorStack;
 begin
- result:=assigned(StackLast);
+ result:=assigned(Stack);
  if result then begin
-  OldStackLast:=StackLast;
-  StackLast:=StackLast^.Previous;
-  if OldStackLast=StackRoot then begin
-   StackRoot:=nil;
-  end;
-  Dispose(OldStackLast);
+  StackNext:=Stack^.Next;
+  Stack^.Next:=StackFree;
+  StackFree:=Stack;
+  Stack:=StackNext;
  end;
 end;
 
 function TPreprocessor.CurrentCondition:boolean;
 begin
- if assigned(StackLast) then begin
-  result:=StackLast^.Condition;
+ if assigned(Stack) then begin
+  result:=Stack^.Condition;
  end else begin
   result:=true;
  end;
@@ -323,8 +326,8 @@ end;
 
 function TPreprocessor.SkippingFalseIf:boolean;
 begin
- if assigned(StackLast) then begin
-  result:=not StackLast^.Condition;
+ if assigned(Stack) then begin
+  result:=not Stack^.Condition;
  end else begin
   result:=false;
  end;
@@ -1937,8 +1940,13 @@ begin
      break;
     end;
     tdIFEND:begin
-     if assigned(StackLast) then begin
-      if StackLast^.ParentDirective<>tdIF then begin
+     if assigned(Stack) then begin
+      if Stack^.Directive in [tdIF,tdIFDEF,tdIFNDEF,tdIFOPT] then begin
+       LastDirective:=Stack^.Directive;
+      end else begin
+       LastDirective:=Stack^.ParentDirective;
+      end;
+      if LastDirective<>tdIF then begin
        Error.AbortCode(59,DirectiveName);
       end else begin
        PopStack;
@@ -2046,15 +2054,15 @@ begin
      break;
     end;
     tdELSE:begin
-     if assigned(StackLast) then begin
-      if StackLast^.Directive in [tdIF,tdIFDEF,tdIFNDEF,tdIFOPT] then begin
-       LastDirective:=StackLast^.Directive;
+     if assigned(Stack) then begin
+      if Stack^.Directive in [tdIF,tdIFDEF,tdIFNDEF,tdIFOPT] then begin
+       LastDirective:=Stack^.Directive;
       end else begin
-       LastDirective:=StackLast^.ParentDirective;
+       LastDirective:=Stack^.ParentDirective;
       end;
-      ParentCondition:=StackLast^.ParentCondition;
+      ParentCondition:=Stack^.ParentCondition;
       if ParentCondition then begin
-       Condition:=not StackLast^.Condition;
+       Condition:=not Stack^.Condition;
        PopStack;
        PushStack(tdELSE,LastDirective,Condition,false);
       end else begin
@@ -2066,13 +2074,13 @@ begin
      end;
     end;
     tdELSEIF:begin
-     if assigned(StackLast) then begin
-      if StackLast^.Directive in [tdIF,tdIFDEF,tdIFNDEF,tdIFOPT] then begin
-       LastDirective:=StackLast^.Directive;
+     if assigned(Stack) then begin
+      if Stack^.Directive in [tdIF,tdIFDEF,tdIFNDEF,tdIFOPT] then begin
+       LastDirective:=Stack^.Directive;
       end else begin
-       LastDirective:=StackLast^.ParentDirective;
+       LastDirective:=Stack^.ParentDirective;
       end;
-      ParentCondition:=StackLast^.ParentCondition;
+      ParentCondition:=Stack^.ParentCondition;
       if ParentCondition then begin
        PopStack;
        Condition:=ProcessExpression;
@@ -2087,8 +2095,13 @@ begin
      break;
     end;
     tdENDIF:begin
-     if assigned(StackLast) then begin
-      if not (StackLast^.ParentDirective in [tdIFDEF,tdIFNDEF,tdIFOPT]) then begin
+     if assigned(Stack) then begin
+      if Stack^.Directive in [tdIF,tdIFDEF,tdIFNDEF,tdIFOPT] then begin
+       LastDirective:=Stack^.Directive;
+      end else begin
+       LastDirective:=Stack^.ParentDirective;
+      end;
+      if not (LastDirective in [tdIF,tdIFDEF,tdIFNDEF,tdIFOPT]) then begin
        Error.AbortCode(59,DirectiveName);
       end else begin
        PopStack;
