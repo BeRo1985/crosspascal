@@ -860,6 +860,10 @@ var SubTreeNode,SubTreeNode2:TTreeNode;
     ObjectClassType:PType;
 begin
  if assigned(TreeNode) then begin
+  if TreeNode.LineNumber=680 then begin
+   if TreeNode.LineNumber=680 then begin
+   end;
+  end;
   case TreeNode.TreeNodeType of
    ttntEMPTY:begin
    end;
@@ -897,7 +901,13 @@ begin
      begin
       TranslateCode(TreeNode.Left);
       FProcCode.Add('=',spacesBOTH);
-      TranslateCode(TreeNode.Right);
+      if assigned(TreeNode.Right.Return) and (TreeNode.Right.Return.TypeDefinition=ttdPOINTER) then begin
+       FProcCode.Add('((void*)(');
+       TranslateCode(TreeNode.Right);
+       FProcCode.Add('))');
+      end else begin
+       TranslateCode(TreeNode.Right);
+      end;
      end;
     end else begin
      Error.InternalError(201302222212000);
@@ -2227,7 +2237,7 @@ begin
       // pointer type field access in c is "myPointerTypeVar->myFieldEntry"
       TranslateCode(TreeNode.Left.Left);
       FProcCode.Add('->');
-     end else if (TreeNode.Left.TreeNodeType = ttntIndex) then begin
+     end else if (TreeNode.Left.TreeNodeType = ttntIndex) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and TreeNode.Left.Left.Return.DynamicArray then begin
       FProcCode.FIgnoreNextToken := True;
       TranslateCode(TreeNode.Left);
       FProcCode.Add('->');
