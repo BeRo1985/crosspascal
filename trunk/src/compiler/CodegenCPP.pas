@@ -3559,7 +3559,7 @@ begin
              end;
             end;
            end else begin
-            if assigned(Symbol^.TypeDefinition) and ((Symbol^.TypeDefinition^.TypeDefinition=ttdPointer) and assigned(Symbol^.TypeDefinition^.PointerTo)) and (Symbol^.TypeDefinition^.Definition^.PointerTo^.TypeDefinition=Symbol^.TypeDefinition) then begin
+            if assigned(Symbol^.TypeDefinition) and ((Symbol^.TypeDefinition^.TypeDefinition=ttdPointer) and assigned(Symbol^.TypeDefinition^.PointerTo)) and (Symbol^.TypeDefinition^.PointerTo^.TypeDefinition=Symbol^.TypeDefinition) then begin
              Target.AddLn('void* '+GetSymbolName(Symbol)+';');
             end else begin
              Target.AddLn(GetTypeName(Symbol^.TypeDefinition)+' '+GetSymbolName(Symbol)+';');
