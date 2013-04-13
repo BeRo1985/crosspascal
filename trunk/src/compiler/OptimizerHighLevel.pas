@@ -525,11 +525,18 @@ begin
    end;
    OldType:=TreeNode.Return;
    OldLeft:=TreeNode.Left;
-   TreeNode.Left:=nil;
+{  TreeNode.Left:=nil;
    TreeNode.Assign(OldLeft);
    TreeNode.Return:=OldType;
    TreeNode.DoNotOptimize:=true;
    OldLeft.Destroy;
+   OptimizeTree(TreeNode);
+   exit;}
+   TreeNode.Left:=nil;
+   FreeAndNil(TreeNode);
+   TreeNode:=OldLeft;
+   TreeNode.Return:=OldType;
+   TreeNode.DoNotOptimize:=true;
    OptimizeTree(TreeNode);
    exit;
   end;
@@ -570,11 +577,18 @@ begin
    end else if CompareTypesEqual=tcteExact then begin
     OldType:=TreeNode.Return;
     OldLeft:=TreeNode.Left;
-    TreeNode.Left:=nil;
+{   TreeNode.Left:=nil;
     TreeNode.Assign(OldLeft);
     TreeNode.Return:=OldType;
     TreeNode.DoNotOptimize:=true;
     OldLeft.Destroy;
+    OptimizeTree(TreeNode);
+    exit;}
+    TreeNode.Left:=nil;
+    FreeAndNil(TreeNode);
+    TreeNode:=OldLeft;
+    TreeNode.Return:=OldType;
+    TreeNode.DoNotOptimize:=true;
     OptimizeTree(TreeNode);
     exit;
    end else if (ConvertType in [tctIntegerToInteger,tctBooleanToInteger]) and
@@ -608,13 +622,22 @@ begin
      end;
     end;
     TreeNode.Left.ItemValue:=TreeNode.Left.Value;
-    OldType:=TreeNode.Return;
+{   OldType:=TreeNode.Return;
     OldLeft:=TreeNode.Left;
     TreeNode.Left:=nil;
     TreeNode.Assign(OldLeft);
     TreeNode.Return:=OldType;
     TreeNode.DoNotOptimize:=true;
     OldLeft.Destroy;
+    OptimizeTree(TreeNode);
+    exit;}
+    OldType:=TreeNode.Return;
+    OldLeft:=TreeNode.Left;
+    TreeNode.Left:=nil;
+    FreeAndNil(TreeNode);
+    TreeNode:=OldLeft;
+    TreeNode.Return:=OldType;
+    TreeNode.DoNotOptimize:=true;
     OptimizeTree(TreeNode);
     exit;
    end else if (TreeNode.Return^.TypeDefinition=ttdBOOLEAN) and (TreeNode.Left.TreeNodeType in [ttntORDConst]) then begin
@@ -624,11 +647,18 @@ begin
      TreeNode.Left.Value:=TreeNode.Return^.UpperLimit;
     end;
     TreeNode.Left.ItemValue:=TreeNode.Left.Value;
-    TreeNode.Left:=nil;
+{   TreeNode.Left:=nil;
     TreeNode.Assign(OldLeft);
     TreeNode.Return:=OldType;
     TreeNode.DoNotOptimize:=true;
     OldLeft.Destroy;
+    OptimizeTree(TreeNode);
+    exit;}
+    TreeNode.Left:=nil;
+    FreeAndNil(TreeNode);
+    TreeNode:=OldLeft;
+    TreeNode.Return:=OldType;
+    TreeNode.DoNotOptimize:=true;
     OptimizeTree(TreeNode);
     exit;
    end else if (TreeNode.Left.TreeNodeType=ttntORDConst) and
@@ -638,11 +668,18 @@ begin
     TreeNode.Left.CharValue:=TreeNode.Left.Value;
     OldType:=TreeNode.Return;
     OldLeft:=TreeNode.Left;
-    TreeNode.Left:=nil;
+{  TreeNode.Left:=nil;
     TreeNode.Assign(OldLeft);
     TreeNode.Return:=OldType;
     TreeNode.DoNotOptimize:=false;
     OldLeft.Destroy;
+    OptimizeTree(TreeNode);
+    exit;}
+    TreeNode.Left:=nil;
+    FreeAndNil(TreeNode);
+    TreeNode:=OldLeft;
+    TreeNode.Return:=OldType;
+    TreeNode.DoNotOptimize:=false;
     OptimizeTree(TreeNode);
     exit;
    end else if (TreeNode.Left.TreeNodeType=ttntCHARConst) and
@@ -652,11 +689,18 @@ begin
     TreeNode.Left.Value:=ord(TreeNode.Left.CharValue);
     OldType:=TreeNode.Return;
     OldLeft:=TreeNode.Left;
-    TreeNode.Left:=nil;
+{  TreeNode.Left:=nil;
     TreeNode.Assign(OldLeft);
     TreeNode.Return:=OldType;
     TreeNode.DoNotOptimize:=false;
     OldLeft.Destroy;
+    OptimizeTree(TreeNode);
+    exit;}
+    TreeNode.Left:=nil;
+    FreeAndNil(TreeNode);
+    TreeNode:=OldLeft;
+    TreeNode.Return:=OldType;
+    TreeNode.DoNotOptimize:=false;
     OptimizeTree(TreeNode);
     exit;
    end;
@@ -666,11 +710,17 @@ begin
     if CompareTypesEqual=tcteExact then begin
      OldType:=TreeNode.Return;
      OldLeft:=TreeNode.Left;
-     TreeNode.Left:=nil;
+{   TreeNode.Left:=nil;
      TreeNode.Assign(OldLeft);
      TreeNode.Return:=OldType;
      TreeNode.DoNotOptimize:=true;
      OldLeft.Destroy;
+     OptimizeTree(TreeNode);}
+     TreeNode.Left:=nil;
+     FreeAndNil(TreeNode);
+     TreeNode:=OldLeft;
+     TreeNode.Return:=OldType;
+     TreeNode.DoNotOptimize:=true;
      OptimizeTree(TreeNode);
     end;
    end;
@@ -679,11 +729,17 @@ begin
    if CompareTypesEqual=tcteExact then begin
     OldType:=TreeNode.Return;
     OldLeft:=TreeNode.Left;
-    TreeNode.Left:=nil;
+{  TreeNode.Left:=nil;
     TreeNode.Assign(OldLeft);
     TreeNode.Return:=OldType;
     TreeNode.DoNotOptimize:=false;
     OldLeft.Destroy;
+    OptimizeTree(TreeNode);}
+    TreeNode.Left:=nil;
+    FreeAndNil(TreeNode);
+    TreeNode:=OldLeft;
+    TreeNode.Return:=OldType;
+    TreeNode.DoNotOptimize:=false;
     OptimizeTree(TreeNode);
    end;
   end else if TreeNode.Left.TreeNodeType=ttntVAR then begin
@@ -875,11 +931,20 @@ begin
    if TreeNode.Left.Left.TreeNodeType=ttntVAR then begin
     NewType:=TreeNode.Return;
     OldLeft:=TreeNode.Left;
-    TreeNode.Left:=nil;
+{  TreeNode.Left:=nil;
     TreeNode.Assign(OldLeft.Left);
     FreeAndNil(OldLeft);
     TreeNode.Return:=NewType;
     TreeNode.DoNotOptimize:=true;
+    exit;}
+    TreeNode.Left:=nil;
+    FreeAndNil(TreeNode);
+    TreeNode:=OldLeft.Left;
+    OldLeft.Left:=nil;
+    FreeAndNil(OldLeft);
+    TreeNode.Return:=NewType;
+    TreeNode.DoNotOptimize:=true;
+    OptimizeTree(TreeNode);
     exit;
    end else if assigned(TreeNode.Left.Left.Return) then begin
     TreeNode.Return:=TreeNode.Left.Left.Return;
@@ -2012,10 +2077,14 @@ begin
   exit;
  end;
  if not assigned(TreeNode.Left.Left) then begin
-  Temp:=TreeNode.Left;
+  Temp:=TreeNode;
+  TreeNode:=TreeNode.Left;
+  Temp.Left:=nil;
+  FreeAndNil(Temp);
+{ Temp:=TreeNode.Left;
   TreeNode.Left:=nil;
   TreeNode.Assign(Temp);
-  FreeAndNil(Temp);
+  FreeAndNil(Temp);}
   exit;
  end;
  Temp:=TreeNode.Left;
@@ -2202,12 +2271,14 @@ begin
       FreeAndNil(TreeNode.Right);
       Temp:=TreeNode.ElseTree;
       TreeNode.ElseTree:=nil;
-      TreeNode.Assign(Temp);
+      FreeAndNil(TreeNode);
+      TreeNode:=Temp;
+{     TreeNode.Assign(Temp);
       Temp.Left:=nil;
       Temp.Right:=nil;
       Temp.Block:=nil;
       Temp.ElseTree:=nil;
-      FreeAndNil(Temp);
+      FreeAndNil(Temp);}
      end else begin
       TreeNode.TreeNodeType:=ttntEMPTY;
       FreeAndNil(TreeNode.Left);
@@ -2236,12 +2307,14 @@ begin
       end;
       Temp:=TreeNode.Right;
       TreeNode.Right:=nil;
-      TreeNode.Assign(Temp);
+      FreeAndNil(TreeNode);
+      TreeNode:=Temp;
+{     TreeNode.Assign(Temp);
       Temp.Left:=nil;
       Temp.Right:=nil;
       Temp.Block:=nil;
       Temp.ElseTree:=nil;
-      FreeAndNil(Temp);
+      FreeAndNil(Temp);}
      end else begin
       TreeNode.TreeNodeType:=ttntEMPTY;
       FreeAndNil(TreeNode.Left);
@@ -2470,7 +2543,7 @@ begin
    ttntCASEValue:begin
    end;
    ttntBREAK:begin
-   end;
+   end;        
    ttntCONTINUE:begin
    end;
    ttntEXIT:begin
