@@ -2577,24 +2577,24 @@ begin
   AStr := HugeStringToAnsiString(ConstantStr);
 
   FProcCode.InsertAtMark('static const char '+result+'_DATA['+IntToStr(Length(AStr)+17)+'] = "' + UIntToCString(65535)+UIntToCSTring(1)
-                         +UIntToCString($FFFFFFFF)+UIntToCString(Length(AStr))+'" "' +
-                         AnsiStringEscape(AStr,False)+'\x00";');
+                         +UIntToCString($FFFFFFFF)+UIntToCString(Length(AStr))+'" ' +
+                         AnsiStringEscape(AStr+#0,True) + ';');
   FProcCode.InsertAtMark('void* '+result+' = (void*)((uint32_t)(&'+result+'_DATA)+16);');
 end;
 
 procedure TCodegenCPP.TranslateShortStringConstant(const Name:ansistring; const ConstantStr: ShortString; ATarget: TCodeWriter);
 begin
-  ATarget.AddLn('static const char '+Name+'['+IntToStr(Length(ConstantStr)+1)+'] = "\x' + IntToHex(Byte(length(ConstantStr)), 2) + '" "' + AnsiStringEscape(ConstantStr,False) + '";');
+  ATarget.AddLn('static const char '+Name+'['+IntToStr(Length(ConstantStr)+1)+'] = "\x' + IntToHex(Byte(length(ConstantStr)), 2) + '" ' + AnsiStringEscape(ConstantStr,True) + ';');
 end;
 
 procedure TCodegenCPP.TranslateShortStringConstant(const ConstantStr: ShortString; ATarget: TCodeWriter);
 begin
-  ATarget.Add('"\x' + IntToHex(Byte(length(ConstantStr)), 2) + '" "' + AnsiStringEscape(ConstantStr,False) + '"');
+  ATarget.Add('"\x' + IntToHex(Byte(length(ConstantStr)), 2) + '" ' + AnsiStringEscape(ConstantStr,True));
 end;
 
 function TCodegenCPP.GetShortStringConstant(const ConstantStr: ShortString): ansistring;
 begin
-  result := '"\x' + IntToHex(Byte(length(ConstantStr)), 2) + '" "' + AnsiStringEscape(ConstantStr,False) + '"';
+  result := '"\x' + IntToHex(Byte(length(ConstantStr)), 2) + '" ' + AnsiStringEscape(ConstantStr,True);
 end;
 
 procedure TCodegenCPP.TranslateMethodList(List: TSymbolList; ATarget: TCodeWriter = nil);
