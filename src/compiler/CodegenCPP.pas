@@ -69,7 +69,7 @@ type TCodeWriter = class
        function GetTypeSize(AType: PType): Cardinal;
 
        function GetModuleName(Sym: PSymbol): ansistring;
-       function GetSymbolName(Sym: PSymbol): ansistring;
+       function GetSymbolName(Sym: PSymbol; const Prefix: ansistring = ''): ansistring;
        function GetTypeName(Type_:PType):ansistring;
 
        function ConvertStdType(const StdType: TStandardType): ansistring;
@@ -169,26 +169,26 @@ begin
  end;
 end;
 
-function TCodegenCPP.GetSymbolName(Sym: PSymbol): ansistring;
+function TCodegenCPP.GetSymbolName(Sym: PSymbol; const Prefix: ansistring = ''): ansistring;
 begin
  if assigned(Sym) then begin
   case Sym.SymbolType of
    Symbols.tstType:begin
-    result:=GetTypeName(Sym^.TypeDefinition);
+    result:=Prefix+GetTypeName(Sym^.TypeDefinition);
    end;
    Symbols.tstVariable:begin
     if tsaField in Sym^.Attributes then begin
      if tsaInternalField in Sym^.Attributes then begin
-      result:='INTERNAL_FIELD_'+Sym.Name;
+      result:=Prefix+'INTERNAL_FIELD_'+Sym.Name;
      end else begin
       if FVariantPrefix then begin
-       result:=GetTypeName(Sym.OwnerType)+'_'+Sym.VariantPrefix+'FIELD_'+Sym.Name;
+       result:=Prefix+GetTypeName(Sym.OwnerType)+'_'+Sym.VariantPrefix+'FIELD_'+Sym.Name;
       end else begin
-       result:=GetTypeName(Sym.OwnerType)+'_'+'FIELD_'+Sym.Name;
+       result:=Prefix+GetTypeName(Sym.OwnerType)+'_'+'FIELD_'+Sym.Name;
       end;
-      if FInProc and assigned(Sym^.TypeDefinition) and (Sym^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
-       result:='(('+GetTypeName(Sym^.TypeDefinition)+')((void*)'+result+'))';
-      end;
+     {if FInProc and assigned(Sym^.TypeDefinition) and (Sym^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
+       result:='(('+GetTypeName(Sym^.TypeDefinition)+')((void*)('+result+')))';
+      end;}
      end;
     end else begin
      if Sym.VariableLevel=0 then begin
@@ -231,6 +231,9 @@ begin
         end;
        end;
       end;
+      if length(Prefix)>0 then begin
+       result:=Prefix+result;
+      end;
       if FInProc then begin
        if assigned(Sym^.LocalProcSymbol) and Sym^.LocalProcSymbolAccessedFromHigherNestedProc then begin
         result:='(('+GetSymbolName(Sym^.LocalProcSymbol)+'_NESTED_STACK*)(nestedLevelStack['+IntToStr(Sym^.LocalProcSymbol^.LexicalScopeLevel)+']))->'+result;
@@ -247,35 +250,35 @@ begin
     end;
    end;
    Symbols.tstLabel:begin
-    result:=GetModuleName(Sym.OwnerModule)+'_LABEL_'+Sym.Name
+    result:=Prefix+GetModuleName(Sym.OwnerModule)+'_LABEL_'+Sym.Name
    end;
    Symbols.tstConstant:begin
-    result:=GetModuleName(Sym.OwnerModule)+'_CONSTANT_'+Sym.Name
+    result:=Prefix+GetModuleName(Sym.OwnerModule)+'_CONSTANT_'+Sym.Name
    end;
    Symbols.tstProcedure:begin
     if tpaConstructor in Sym.ProcedureAttributes then begin
-     result:=GetModuleName(Sym.OwnerModule)+'_CONSTRUCTOR_'+Sym.OverloadedName;
+     result:=Prefix+GetModuleName(Sym.OwnerModule)+'_CONSTRUCTOR_'+Sym.OverloadedName;
     end else if tpaDestructor in Sym.ProcedureAttributes then begin
-     result:=GetModuleName(Sym.OwnerModule)+'_DESTRUCTOR_'+Sym.OverloadedName;
+     result:=Prefix+GetModuleName(Sym.OwnerModule)+'_DESTRUCTOR_'+Sym.OverloadedName;
     end else begin
-     result:=GetModuleName(Sym.OwnerModule)+'_PROCEDURE_'+Sym.OverloadedName;
+     result:=Prefix+GetModuleName(Sym.OwnerModule)+'_PROCEDURE_'+Sym.OverloadedName;
     end;
 {   if (tpaOverload in Sym.ProcedureAttributes) and (Sym.OverloadedName<>'') and (Sym.OverloadedName<>Sym.Name) then begin
-     result:=GetModuleName(Sym.OwnerModule)+'_PROCEDURE_'+Sym.OverloadedName;
+     result:=Prefix+GetModuleName(Sym.OwnerModule)+'_PROCEDURE_'+Sym.OverloadedName;
     end else begin
-     result:=GetModuleName(Sym.OwnerModule)+'_PROCEDURE_'+Sym.Name;
+     result:=Prefix+GetModuleName(Sym.OwnerModule)+'_PROCEDURE_'+Sym.Name;
     end;}
    end;
    Symbols.tstFunction:begin
-    result:=GetModuleName(Sym.OwnerModule)+'_FUNCTION_'+Sym.OverloadedName;
+    result:=Prefix+GetModuleName(Sym.OwnerModule)+'_FUNCTION_'+Sym.OverloadedName;
 {   if (tpaOverload in Sym.ProcedureAttributes) and (Sym.OverloadedName<>'') and (Sym.OverloadedName<>Sym.Name) then begin
-     result:=GetModuleName(Sym.OwnerModule)+'_FUNCTION_'+Sym.OverloadedName;
+     result:=Prefix+GetModuleName(Sym.OwnerModule)+'_FUNCTION_'+Sym.OverloadedName;
     end else begin
-     result:=GetModuleName(Sym.OwnerModule)+'_FUNCTION_'+Sym.Name;
+     result:=Prefix+GetModuleName(Sym.OwnerModule)+'_FUNCTION_'+Sym.Name;
     end;}
    end;
    else begin
-    result:=GetModuleName(Sym.OwnerModule)+'_SYMBOL_'+Sym.Name;
+    result:=Prefix+GetModuleName(Sym.OwnerModule)+'_SYMBOL_'+Sym.Name;
    end;
   end;
  end else begin
@@ -1252,11 +1255,12 @@ begin
    end;
    ttntVAR:begin
     if TreeNode.WithLevel>=0 then begin
-     FProcCode.Add('withLevel'+IntToStr(TreeNode.WithLevel)+'->');
+     FProcCode.Add(GetSymbolName(TreeNode.Symbol,'withLevel'+IntToStr(TreeNode.WithLevel)+'->'));
     end else if assigned(TreeNode.Symbol^.OwnerObjectClass) and assigned(TreeNode.Symbol^.OwnerType) then begin
-     FProcCode.Add('instanceData->');
+     FProcCode.Add(GetSymbolName(TreeNode.Symbol,'instanceData->'));
+    end else begin
+     FProcCode.Add(GetSymbolName(TreeNode.Symbol));
     end;
-    FProcCode.Add(GetSymbolName(TreeNode.Symbol));
    end;
    ttntTYPE:begin
    end;
