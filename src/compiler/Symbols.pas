@@ -3,7 +3,7 @@ unit Symbols;
 
 interface
 
-uses BeRoStringHashMap,Globals,Error,BeRoGUIDTools,PointerList,StringList,CRC32,
+uses SysUtils,BeRoStringHashMap,Globals,Error,BeRoGUIDTools,PointerList,StringList,CRC32,
      BeRoStream,HugeString;
 
 const TypeKindUnknown=0;

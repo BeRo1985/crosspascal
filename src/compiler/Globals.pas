@@ -162,14 +162,14 @@ const DefaultLocalSwitches:TLocalSwitches=(
        TypedAddress:false;
       );
 
-procedure FreeAndNil(var Obj);
+//procedure FreeAndNil(var Obj);
 function RoundUpToPowerOfTwo(x:ptruint):ptruint;
 function RoundUpToMask(x,m:ptruint):ptruint;
 function HashString(const Str:ansistring):longword;
 
 implementation
 
-procedure FreeAndNil(var Obj);
+{procedure FreeAndNil(var Obj);
 var ObjEx:TObject;
 begin
  ObjEx:=TObject(Obj);
@@ -177,7 +177,7 @@ begin
   pointer(Obj):=nil;
   ObjEx.Destroy;
  end;
-end;
+end;}
 
 function RoundUpToPowerOfTwo(x:ptruint):ptruint;
 begin

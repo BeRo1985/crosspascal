@@ -41,7 +41,7 @@ type TTreeNodeType=(ttntEmpty,
        FileName:ansistring;
        TreeNodeType:TTreeNodeType;
        Symbol,MethodSymbol,SymbolField,ParameterSymbol:PSymbol;
-       Return,CheckType,CompareType,InheritedType,WithType:PType;
+       Return,ProcType,CheckType,CompareType,InheritedType,WithType:PType;
        ItemType:TTreeNodeItemType;
        ItemValue:int64;
        Signed,Forced,Colon,IsDownTo,ReferenceParameter,DoNotOptimize,Warning500:boolean;
@@ -179,6 +179,7 @@ begin
  SymbolField:=nil;
  ParameterSymbol:=nil;
  Return:=nil;
+ ProcType:=nil;
 //CastedType:=NIL;
  CheckType:=nil;
  CompareType:=nil;
@@ -230,6 +231,7 @@ begin
   SymbolField:=From.SymbolField;
   ParameterSymbol:=From.ParameterSymbol;
   Return:=From.Return;
+  ProcType:=From.ProcType;
 //CastedType:=From.CastedType;
   CheckType:=From.CheckType;
   CompareType:=From.CompareType;
@@ -693,7 +695,8 @@ begin
  result.TreeNodeType:=ttntCall;
  result.Symbol:=Symbol;
  if assigned(Symbol) then begin
-  result.Return:=Symbol^.TypeDefinition;
+  result.ProcType:=Symbol^.TypeDefinition;
+  result.Return:=Symbol^.ReturnType;
  end;
 end;
 
@@ -706,7 +709,8 @@ begin
  result.InheritedType:=InheritedType;
  result.Right:=Right;
  if assigned(MethodSymbol) then begin
-  result.Return:=MethodSymbol^.TypeDefinition;
+  result.ProcType:=MethodSymbol^.TypeDefinition;
+  result.Return:=MethodSymbol^.ReturnType;
  end;
 end;
 

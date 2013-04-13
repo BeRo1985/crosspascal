@@ -3,7 +3,7 @@ unit Parser;
 
 interface
 
-uses BeRoStream,Globals,Symbols,Scanner,Error,Tree,OptimizerHighLevel,
+uses SysUtils,BeRoStream,Globals,Symbols,Scanner,Error,Tree,OptimizerHighLevel,
      BeRoGUIDTools,IntegerList,UnitManager,PointerList,Code,CodegenCPP,
      HugeString;
 
