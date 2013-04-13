@@ -181,10 +181,10 @@ begin
      if tsaInternalField in Sym^.Attributes then begin
       result:=Prefix+'INTERNAL_FIELD_'+Sym.Name;
      end else begin
-      if FVariantPrefix then begin
-       result:=Prefix+GetTypeName(Sym.OwnerType)+'_'+Sym.VariantPrefix+'FIELD_'+Sym.Name;
+      if FVariantPrefix and (length(Sym.VariantPrefix)>0) then begin
+       result:=Prefix+GetTypeName(Sym.OwnerType)+'_'+Sym.VariantPrefix+GetTypeName(Sym.OwnerType)+'_FIELD_'+Sym.Name;
       end else begin
-       result:=Prefix+GetTypeName(Sym.OwnerType)+'_'+'FIELD_'+Sym.Name;
+       result:=Prefix+GetTypeName(Sym.OwnerType)+'_FIELD_'+Sym.Name;
       end;
       if Wrapping and FInProc and assigned(Sym^.TypeDefinition) and (Sym^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
        result:='(('+GetTypeName(Sym^.TypeDefinition)+')((void*)('+result+')))';
@@ -3544,7 +3544,7 @@ begin
           end;
           Symbols.tstCaseVariantPop:begin
            Target.DecTab;
-           Target.AddLn('} '+'L'+IntToStr(CurrentVariantLevelIndex)+'V'+IntToStr(VariantLevelVariants[CurrentVariantLevelIndex-1])+';');
+           Target.AddLn('} '+GetTypeName(Type_)+'_'+'L'+IntToStr(CurrentVariantLevelIndex)+'V'+IntToStr(VariantLevelVariants[CurrentVariantLevelIndex-1])+';');
           end;
           Symbols.tstVariable:begin
            if tsaObjectVMT in Symbol^.Attributes then begin
