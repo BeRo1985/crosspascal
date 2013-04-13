@@ -69,7 +69,7 @@ type TCodeWriter = class
        function GetTypeSize(AType: PType): Cardinal;
 
        function GetModuleName(Sym: PSymbol): ansistring;
-       function GetSymbolName(Sym: PSymbol; const Prefix: ansistring = ''): ansistring;
+       function GetSymbolName(Sym: PSymbol; const Prefix: ansistring = ''; Wrapping: boolean = true): ansistring;
        function GetTypeName(Type_:PType):ansistring;
 
        function ConvertStdType(const StdType: TStandardType): ansistring;
@@ -169,7 +169,7 @@ begin
  end;
 end;
 
-function TCodegenCPP.GetSymbolName(Sym: PSymbol; const Prefix: ansistring = ''): ansistring;
+function TCodegenCPP.GetSymbolName(Sym: PSymbol; const Prefix: ansistring = ''; Wrapping: boolean = true): ansistring;
 begin
  if assigned(Sym) then begin
   case Sym.SymbolType of
@@ -186,9 +186,9 @@ begin
       end else begin
        result:=Prefix+GetTypeName(Sym.OwnerType)+'_'+'FIELD_'+Sym.Name;
       end;
-     {if FInProc and assigned(Sym^.TypeDefinition) and (Sym^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
+      if Wrapping and FInProc and assigned(Sym^.TypeDefinition) and (Sym^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
        result:='(('+GetTypeName(Sym^.TypeDefinition)+')((void*)('+result+')))';
-      end;}
+      end;
      end;
     end else begin
      if Sym.VariableLevel=0 then begin
@@ -236,7 +236,7 @@ begin
       end;
       if FInProc then begin
        if assigned(Sym^.LocalProcSymbol) and Sym^.LocalProcSymbolAccessedFromHigherNestedProc then begin
-        result:='(('+GetSymbolName(Sym^.LocalProcSymbol)+'_NESTED_STACK*)(nestedLevelStack['+IntToStr(Sym^.LocalProcSymbol^.LexicalScopeLevel)+']))->'+result;
+        result:='(('+GetSymbolName(Sym^.LocalProcSymbol,'',false)+'_NESTED_STACK*)(nestedLevelStack['+IntToStr(Sym^.LocalProcSymbol^.LexicalScopeLevel)+']))->'+result;
        end;
        if IsSymbolReference(Sym) then begin
         result:='(*('+result+'))';
@@ -2236,7 +2236,7 @@ begin
        FProcCode.Add('.');
      end;
      if assigned(TreeNode.SymbolField) then begin
-      FProcCode.Add(GetSymbolName(TreeNode.SymbolField));
+      FProcCode.Add(GetSymbolName(TreeNode.SymbolField,'',false));
      end else begin
       Error.InternalError(201302222321000);
      end;
