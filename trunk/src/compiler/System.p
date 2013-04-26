@@ -174,7 +174,7 @@ procedure Move(var Src; var Dst; Size: Cardinal);
 
 #include "stdlib.h"
 #include "math.h"
-
+#include <stdio.h>
 #ifdef _MSC_VER
 // MSVC
 #define ___PACKED___ __declspec(align(1))
@@ -360,6 +360,10 @@ void* pasObjectDMTDispatch(void** object,size_t index);
 void* pasClassDMTDispatch(void* classVMT,size_t index);
 
 typedef void* pasDynArray;
+
+void pasAssignArray(pasDynArray* target, pasDynArray newValue, pasTypeInfo* t);
+void pasSetLengthArray(pasDynArray* target, uint32_t length, uint32_t arraySize);
+void pasFreeArray(pasDynArray* target, pasTypeInfo* t);
 
 ]]]
 
@@ -563,7 +567,7 @@ typedef struct {
 
 #define pasDynArrayHeaderSize sizeof(pasDynArrayHeader)
 
-void pasFreeArray(pasDynArray* target) {
+void pasFreeArray(pasDynArray* target, pasTypeInfo* t) {
     pasDynArrayHeader* header;
 
     if(NULL == *target)
@@ -575,14 +579,17 @@ void pasFreeArray(pasDynArray* target) {
     else{
         // red TODO: pasFinalize(); you do need to add a "optional" array element type info somewhere in the dynamic array data
         // structure, together with a if-check here
+        if(t) {
+                pasFinalizeArray(*target, t, header->length);
+        }
         free(header);
     }
 }
 
-void pasAssignArray(pasDynArray* target, pasDynArray newValue) {
+void pasAssignArray(pasDynArray* target, pasDynArray newValue, pasTypeInfo* t) {
     pasDynArrayHeader* header;
 
-    pasFreeArray(target);
+    pasFreeArray(target, t);
 
     *target = newValue;
 
@@ -611,6 +618,7 @@ void pasSetLengthArray(pasDynArray* target, uint32_t length, uint32_t arraySize)
              return;
          }
          oldLength = header->length;
+
          header = (pasDynArrayHeader*)malloc(pasDynArrayHeaderSize + arraySize * length);
          header->refCount = 1;
          header->length = length;
@@ -653,13 +661,18 @@ void pasInitializeRecord(void* p, pasTypeInfo* t){
 
 void pasInitializeArray(void* p, pasTypeInfo* t, size_t count){
   pasFieldTable* ft;
-  if(count){
+  if((int32_t)count > 0){
     switch(t->kind){
       case pastkLString:
+        break;
       case pastkWString:
+        break;
       case pastkUString:
+        break;
       case pastkHString:
+        break;
       case pastkInterface:
+        break;
       case pastkDynArray:{
         while(count--){
           *((void**)p) = NULL;
@@ -712,7 +725,7 @@ void pasFinalizeRecord(void* p, pasTypeInfo* t){
 
 void pasFinalizeArray(void* p, pasTypeInfo* t, size_t count){
   pasFieldTable* ft;
-  if(count){
+  if(((int32_t)count)>0){
     switch(t->kind){
       case pastkLString:{
         while(count--){
@@ -751,8 +764,9 @@ void pasFinalizeArray(void* p, pasTypeInfo* t, size_t count){
         break;
       }
       case pastkDynArray:{
+        ft = t->data;
         while(count--){
-          pasFreeArray(*((void**)p));
+          pasFreeArray(*((void**)p),(void*)(*ft->fields[0].typeInfo));
           p += sizeof(void*);
         }
         break;

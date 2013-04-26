@@ -532,7 +532,7 @@ begin
      begin
       // todo: string-ref checks for arrays
       if Sym.TypeDefinition.DynamicArray then
-        Target.Add('pasFreeArray(&'+GetSymbolName(Sym)+')');
+        Target.Add('pasFreeArray(&'+GetSymbolName(Sym)+', &'+GetTypeName(Sym.TypeDefinition)+'_TYPEINFO)');
      end;
      else begin
       if Sym.TypeDefinition.NeedTypeInfo and SymbolManager.TypeDoNeedInitialization(Sym.TypeDefinition) then begin
@@ -896,7 +896,7 @@ begin
       TranslateCode(TreeNode.Left);
       FProcCode.Add(', (pasDynArray)',spacesRIGHT);
       TranslateCode(TreeNode.Right);
-      FProcCode.Add(')');
+      FProcCode.Add(', &'+GetTypeName(TreeNode.Left.Symbol.TypeDefinition)+'_TYPEINFO)');
      end else
      begin
       TranslateCode(TreeNode.Left);
@@ -2371,6 +2371,11 @@ begin
     Error.InternalError(20130406173827);
    end;
   end;
+   ttntIndex:begin
+    if TreeNode.Left.Return = DesiredStringType then
+     TranslateCode(TreeNode) else
+     TranslateCode(TreeNode);
+   end;
   ttntTYPECONV:begin
    if assigned(TreeNode.Return) and assigned(TreeNode.Left.Return) and (TreeNode.Left.Return<>TreeNode.Return) then begin
    if ((TreeNode.Return.TypeDefinition <> ttdLongString)and(TreeNode.Return.TypeDefinition <> ttdShortString))
@@ -3272,6 +3277,7 @@ begin
 
   SortTypes;
 
+  (*
   Target.AddLn('// Forward definitions');
   for i:=0 to length(TypeItems)-1 do begin
    Type_:=TypeItems[i];
@@ -3285,7 +3291,7 @@ begin
     end;
    end;
   end;
-  Target.AddLn('');
+  Target.AddLn(''); *)
 
   Target.AddLn('// Type info definitions');
   for i:=0 to length(TypeItems)-1 do begin
