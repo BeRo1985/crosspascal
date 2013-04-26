@@ -664,15 +664,10 @@ void pasInitializeArray(void* p, pasTypeInfo* t, size_t count){
   if((int32_t)count > 0){
     switch(t->kind){
       case pastkLString:
-        break;
       case pastkWString:
-        break;
       case pastkUString:
-        break;
       case pastkHString:
-        break;
       case pastkInterface:
-        break;
       case pastkDynArray:{
         while(count--){
           *((void**)p) = NULL;
