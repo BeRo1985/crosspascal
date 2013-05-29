@@ -75,7 +75,7 @@ type TCodeWriter = class
        function ConvertStdType(const StdType: TStandardType): ansistring;
        function ConvertUnsignedStdType(const StdType: TStandardType): ansistring;
        function ConvertConstSymbol(const Symbol: PSymbol): ansistring;
-       procedure ConvertFuncSymbol(const Symbol: PSymbol; Target: TCodeWriter);
+       procedure ConvertFuncSymbol(const Symbol: PSymbol; Target: TCodeWriter; IsConstructor: boolean = false; IsDestructor: boolean = false);
 
        function AnsiStringEscape(const Input: ansistring; Quotes: Boolean = True): ansistring;
        function WideStringEscape(const Input: widestring): ansistring;
@@ -377,7 +377,7 @@ begin
  end;
 end;
 
-procedure TCodegenCPP.ConvertFuncSymbol(const Symbol: PSymbol; Target: TCodeWriter);
+procedure TCodegenCPP.ConvertFuncSymbol(const Symbol: PSymbol; Target: TCodeWriter; IsConstructor: boolean = false; IsDestructor: boolean = false);
 var sym: PSymbol;
     HaveParameters: boolean;
 begin
@@ -386,6 +386,10 @@ begin
   if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then
   begin
     Target.Add('int',spacesRIGHT);
+  end
+  else if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdCLASS) and IsConstructor then
+  begin
+    Target.Add('void*',spacesRIGHT);
   end
   else
   begin
@@ -398,7 +402,18 @@ begin
   Target.Add('',spacesRIGHT);
  end else
   Exit;
- Target.Add(GetSymbolName(Symbol));
+ if IsConstructor then
+ begin
+   Target.Add(GetSymbolName(Symbol)+'_CONSTRUCTOR');
+ end
+ else if IsDestructor then
+ begin
+   Target.Add(GetSymbolName(Symbol)+'_DESTRUCTOR');
+ end
+ else
+ begin
+   Target.Add(GetSymbolName(Symbol));
+ end;
  Target.Add('(');
  HaveParameters:=false;
  if FNeedNestedStack and (Symbol^.LexicalScopeLevel>0) then begin
@@ -569,7 +584,7 @@ end;
 procedure TCodegenCPP.GenerateProc(ProcSymbol: PSymbol;
   ProcCodeTree: TTreeNode);
 var //s,s2: ansistring;
-    ParameterSymbol:PSymbol;
+    ParameterSymbol,Symbol,MethodSymbol,sym:PSymbol;
 begin
 
  FWithStackSize:=0;
@@ -714,6 +729,66 @@ begin
  end else begin
   FProcStruct.Clear;
  end;
+
+ if (tpaConstructor in FProcSymbol^.ProcedureAttributes) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdCLASS) then begin
+  FProcCode.AddLn('//constructor proc ' + GetSymbolName(ProcSymbol));
+  ConvertFuncSymbol(ProcSymbol, FProcCode, true);
+  FProcCode.AddLn('{');
+  FProcCode.IncTab;
+  FProcCode.AddLn('void* instance = instanceData;');
+  Symbol:=SymbolManager.GetSymbol('TOBJECT');
+  if assigned(Symbol) and (Symbol^.SymbolType=tstTYPE) and assigned(Symbol^.TypeDefinition) then begin
+   MethodSymbol:=Symbol^.TypeDefinition.RecordTable.GetSymbol('NEWINSTANCE');
+   FProcCode.Add('instance = ');
+   FProcCode.Add('(('+GetTypeName(Symbol^.TypeDefinition)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
+   FProcCode.Add(GetSymbolName(Symbol)+'_VMT');
+   FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
+   FProcCode.AddLn('((void*)&'+GetSymbolName(Symbol)+'_VMT);');
+   FProcCode.Add(GetSymbolName(ProcSymbol)+'(instance');
+   if Assigned(Symbol.Parameter) then begin
+    sym := Symbol.Parameter.First;
+    while Assigned(sym) do
+    begin
+     FProcCode.Add(',',spacesRIGHT);
+     FProcCode.Add(GetSymbolName(Sym),spacesLEFT);
+     sym:=sym.Next;
+    end;
+   end;
+   FProcCode.AddLn(');');
+  end;
+  FProcCode.AddLn('return instance;');
+  FProcCode.DecTab;
+  FProcCode.AddLn('}');
+ end;
+
+ if (tpaDestructor in FProcSymbol^.ProcedureAttributes) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdCLASS) then begin
+  FProcCode.AddLn('//destructor proc ' + GetSymbolName(ProcSymbol));
+  ConvertFuncSymbol(ProcSymbol, FProcCode, false, true);
+  FProcCode.AddLn('{');
+  FProcCode.IncTab;
+  FProcCode.Add(GetSymbolName(ProcSymbol)+'((void*)instanceData');
+  if Assigned(ProcSymbol.Parameter) then begin
+   sym := ProcSymbol.Parameter.First;
+   while Assigned(sym) do
+   begin
+    FProcCode.Add(',',spacesRIGHT);
+    FProcCode.Add(GetSymbolName(Sym),spacesLEFT);
+    sym:=sym.Next;
+   end;
+  end;
+  FProcCode.AddLn(');');
+  Symbol:=SymbolManager.GetSymbol('TOBJECT');
+  if assigned(Symbol) and (Symbol^.SymbolType=tstTYPE) and assigned(Symbol^.TypeDefinition) then begin
+   MethodSymbol:=Symbol^.TypeDefinition.RecordTable.GetSymbol('FREEINSTANCE');
+   FProcCode.Add('(('+GetTypeName(Symbol^.TypeDefinition)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
+   FProcCode.Add(GetSymbolName(Symbol)+'_VMT');
+   FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
+   FProcCode.AddLn('((void*)instanceData);');
+  end;
+  FProcCode.DecTab;
+  FProcCode.AddLn('}');
+ end;
+
  FInProc:=false;
  FProcSymbol:=nil;
 end;
@@ -856,7 +931,7 @@ end;
 procedure TCodegenCPP.TranslateCode(TreeNode:TTreeNode);
 var SubTreeNode,SubTreeNode2:TTreeNode;
     s:ansistring;
-    HaveParameters:boolean;
+    HaveParameters,InjectNullPointer:boolean;
     ObjectClassType:PType;
 begin
  if assigned(TreeNode) then begin
@@ -2050,11 +2125,29 @@ begin
        end;
       end;
       else {tipNone:}begin
+       InjectNullPointer:=false;
        if assigned(TreeNode.Symbol.OwnerModule) then begin
         if assigned(TreeNode.MethodSymbol) then begin
          if assigned(TreeNode.Right) then begin
           ObjectClassType:=TreeNode.Right.Return;
-          if assigned(TreeNode.MethodSymbol) and (tpaVirtual in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
+          if assigned(TreeNode.MethodSymbol) and (tpaConstructor in TreeNode.MethodSymbol^.ProcedureAttributes) and assigned(ObjectClassType) and (ObjectClassType^.TypeDefinition=ttdCLASS) then begin
+           if assigned(TreeNode.MethodSymbol) and (tpaVirtual in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
+            // TODO
+           end else if assigned(TreeNode.MethodSymbol) and (tpaDynamic in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
+            // TODO
+           end else begin
+            FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol)+'_CONSTRUCTOR');
+            InjectNullPointer:=true;
+           end;
+          end else if assigned(TreeNode.MethodSymbol) and (tpaDestructor in TreeNode.MethodSymbol^.ProcedureAttributes) and assigned(ObjectClassType) and (ObjectClassType^.TypeDefinition=ttdCLASS) then begin
+           if assigned(TreeNode.MethodSymbol) and (tpaVirtual in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
+            // TODO
+           end else if assigned(TreeNode.MethodSymbol) and (tpaDynamic in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
+            // TODO
+           end else begin
+            FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol)+'_DESTRUCTOR');
+           end;
+          end else if assigned(TreeNode.MethodSymbol) and (tpaVirtual in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
            if assigned(ObjectClassType) and (ObjectClassType^.TypeDefinition=ttdOBJECT) then begin
             // OBJECT
             FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')(((('+GetTypeName(ObjectClassType)+'*)&(');
@@ -2112,7 +2205,7 @@ begin
        if tpaClassProcedure in TreeNode.Symbol.ProcedureAttributes then begin
         if tpaClassProcedure in FProcSymbol.ProcedureAttributes then begin
          FProcCode.Add('(void*)classReference');
-        end else begin 
+        end else begin
          FProcCode.Add('((void*)(instanceData->INTERNAL_FIELD_VMT))');
         end;
        end else begin
@@ -2139,9 +2232,13 @@ begin
         FProcCode.Add(')');}
        end else begin
         // CLASS
-        FProcCode.Add('(void*)(');
-        TranslateCode(TreeNode.Right);
-        FProcCode.Add(')');
+        if InjectNullPointer then begin
+         FProcCode.Add('NULL');
+        end else begin
+         FProcCode.Add('(void*)(');
+         TranslateCode(TreeNode.Right);
+         FProcCode.Add(')');
+        end;
        end;
        HaveParameters:=true;
       end else if assigned(TreeNode.MethodSymbol) and assigned(TreeNode.Symbol^.TypeDefinition) then begin
@@ -2183,6 +2280,7 @@ begin
       end;
 
       if Assigned(SubTreeNode.Left) and (not SubTreeNode.ReferenceParameter) and
+        Assigned(SubTreeNode.Left.Return) and
         ((SubTreeNode.Left.Return.TypeDefinition = ttdLongstring) or
          (SubTreeNode.Left.Return.TypeDefinition = ttdShortString)) then
        TranslateStringCode(SubTreeNode.Left, SubTreeNode.Return)
@@ -2550,6 +2648,15 @@ begin
  repeat
    Target.Add('extern ',spacesRIGHT);
    ConvertFuncSymbol(Symbol, Target);
+   if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdCLASS) then begin
+    Target.AddLn(';');
+    Target.Add('extern ',spacesRIGHT);
+    ConvertFuncSymbol(Symbol, Target, true);
+   end else if (tpaDestructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdCLASS) then begin
+    Target.AddLn(';');
+    Target.Add('extern ',spacesRIGHT);
+    ConvertFuncSymbol(Symbol, Target, false, true);
+   end;
    Symbol := Symbol.NextOverloaded;
    if Assigned(Symbol) then
      Target.AddLn(';');
