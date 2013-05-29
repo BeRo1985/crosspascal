@@ -1972,7 +1972,9 @@ begin
  if Symbol^.InternalProcedure<>tipNone then begin
   OptimizeInternalRoutines(TreeNode);
  end else begin
-  if not assigned(TreeNode.Return) then begin
+  if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdCLASS) then begin
+   TreeNode.Return:=Symbol^.OwnerObjectClass;
+  end else if not assigned(TreeNode.Return) then begin
    TreeNode.Return:=Symbol^.ReturnType;
   end;
   if Symbol.SymbolType=Symbols.tstFunction then begin

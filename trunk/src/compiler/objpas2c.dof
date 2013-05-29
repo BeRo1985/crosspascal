@@ -100,7 +100,7 @@ Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=vipribench.p -B
+RunParams=classtest.p -B
 HostApplication=
 Launcher=
 UseLauncher=0
@@ -134,3 +134,5 @@ OriginalFilename=
 ProductName=
 ProductVersion=1.0.0.0
 Comments=
+[Excluded Packages]
+C:\Program Files (x86)\Borland\Delphi7\Projects\Bpl\CrossFPC.bpl=CrossFPC IDE Plugin
