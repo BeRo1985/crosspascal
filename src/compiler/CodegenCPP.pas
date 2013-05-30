@@ -745,8 +745,8 @@ begin
    FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
    FProcCode.AddLn('((void*)&'+GetSymbolName(Symbol)+'_VMT);');
    FProcCode.Add(GetSymbolName(ProcSymbol)+'(instance');
-   if Assigned(Symbol.Parameter) then begin
-    sym := Symbol.Parameter.First;
+   if Assigned(FProcSymbol.Parameter) then begin
+    sym := FProcSymbol.Parameter.First;
     while Assigned(sym) do
     begin
      FProcCode.Add(',',spacesRIGHT);
