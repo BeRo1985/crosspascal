@@ -290,7 +290,7 @@ typedef struct pasClassTable {
 typedef struct pasClassFieldTableItem {
   size_t fieldOffset;
   size_t typeIndex;
-  char *Name;
+  char *name;
 } pasClassFieldTableItem;
 
 typedef pasClassFieldTableItem* pasClassFieldTableItemPointer;
@@ -1014,6 +1014,34 @@ end;
 
 function TObject.FieldAddress(const Name:shortstring):pointer;
 begin
+[[[
+  <<<result>>> = NULL;
+  if(*((uint8_t*)&<<<Name>>>)){
+    pasClassVirtualMethodTable* VMT = (void*)<<<self>>>->INTERNAL_FIELD_VMT;
+    while(VMT){
+      pasClassFieldTable* fieldTable = (void*)(VMT->vmtFieldTable);
+      for(int i = 0; i < fieldTable->count; i++){
+        pasClassFieldTableItem* fieldTableItem = &fieldTable->fields[i];
+        uint8_t* name = (void*)&<<<Name>>>;
+        uint8_t* fieldName = (void*)fieldTableItem->name;
+        int j = *fieldName;                            
+        if(*name == j){
+          for(j = *fieldName; j > 0; j--, name++, fieldName++){
+            if(*name != *fieldName){
+              break;
+            }
+          }
+          if(!j){
+            <<<result>>> = (void*)(((void*)<<<self>>>) + fieldTableItem->fieldOffset);
+            goto done;
+          }
+        }
+      }
+      VMT = VMT->vmtParent;
+    }
+  }
+  done:
+]]]
 end;
 
 function TObject.GetInterface(const IID:TGUID;out Obj):boolean;
