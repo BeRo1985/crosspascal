@@ -860,14 +860,35 @@ begin
 end;
 
 class function TObject.InitInstance(Instance:Pointer):TObject;
+var ClassPtr: TClass;
 begin
 [[[
-  
+  <<<result>>> = <<<Instance>>>;
+  memset(<<<result>>>, 0, <<<InstanceSize>>>);
+  <<<result>>>->INTERNAL_FIELD_VMT = (void*)<<<self>>>;
+  <<<ClassPtr>>> = <<<self>>>;
+  while(<<<ClassPtr>>>){
+    /* INTERFACE TODO */
+    <<<ClassPtr>>> = <<<ClassPtr>>>->vmtParent;
+  }
 ]]]
 end;
 
 procedure TObject.CleanupInstance;
+var ClassPtr: TClass;
+    InitTable: pointer;
 begin
+[[[
+  <<<ClassPtr>>> = <<<ClassType>>>;
+  <<<InitTable>>> = <<<ClassPtr>>>->vmtInitTable;
+  while(<<<ClassPtr>>> && <<<InitTable>>>){
+    // TODO TO TRANSLATE TO C: FinalizeRecord(Self, InitTable);
+    <<<ClassPtr>>> = <<<ClassPtr>>>->vmtParent;
+    if(<<<ClassPtr>>>){
+      <<<InitTable>>> = <<<ClassPtr>>>->vmtInitTable;
+    }
+  }
+]]]
 end;
 
 function TObject.ClassType:TClass;

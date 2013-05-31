@@ -2339,6 +2339,9 @@ begin
       FProcCode.FIgnoreNextToken := True;
       TranslateCode(TreeNode.Left);
       FProcCode.Add('->');
+     end else if assigned(TreeNode.Left) and assigned(TreeNode.Left.Return) and (TreeNode.Left.Return.TypeDefinition=ttdCLASS) then begin
+      TranslateCode(TreeNode.Left);
+      FProcCode.Add('->');
      end else begin
        TranslateCode(TreeNode.Left);
        FProcCode.Add('.');
@@ -3404,9 +3407,10 @@ begin
   for i:=0 to length(TypeItems)-1 do begin
    Type_:=TypeItems[i];
    Name:=GetTypeName(Type_);
-   if (Type_^.RuntimeTypeInfo and
+   if (Type_^.RuntimeTypeInfo and (not Type_^.RuntimeTypeInfoDumped) and
        (Type_^.NeedTypeInfo or not (Type_.TypeKind in [TypeKindUnknown,TypeKindRecord,TypeKindArray]))) and
        not ((Type_^.TypeDefinition in [ttdCEXPRESSION]) or (Type_=SymbolManager.TypeEmpty) or ((length(Name)>0) and (Name[1]='$'))) then begin
+    Type_^.RuntimeTypeInfoDumped:=false;
     Target.AddLn('extern pasTypeInfo '+Name+'_TYPEINFO;');
     Target.AddLn('extern pasTypeInfoPointer '+Name+'_TYPEINFO_POINTER;');
     case Type_.TypeDefinition of

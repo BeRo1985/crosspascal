@@ -10,15 +10,18 @@ type TTestClass=class
 
 constructor TTestClass.Create;
 begin
+ inherited Create; 
  a:=123;
 end;
 
 destructor TTestClass.Destroy;
 begin
+ inherited Destroy;
 end;
 
 var TestClass:TTestClass;
 begin
  TestClass:=TTestClass.Create;
+ writeln(TestClass.a);
  TestClass.Destroy;
 end.
