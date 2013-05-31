@@ -758,9 +758,8 @@ begin
    end;
    FProcCode.AddLn(');');
 
-   MethodSymbol:=Symbol^.TypeDefinition.RecordTable.GetSymbol('AFTERCONSTRUCTION');
-   FProcCode.Add('instance = ');
-   FProcCode.Add('(('+GetTypeName(Symbol^.TypeDefinition)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
+   MethodSymbol:=FProcSymbol^.OwnerObjectClass.RecordTable.GetSymbol('AFTERCONSTRUCTION');
+   FProcCode.Add('(('+GetTypeName(MethodSymbol^.OwnerObjectClass)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
    FProcCode.Add(GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT');
    FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
    FProcCode.AddLn('((void*)instance);');
@@ -777,12 +776,13 @@ begin
   FProcCode.AddLn('{');
   FProcCode.IncTab;
 
-  MethodSymbol:=Symbol^.TypeDefinition.RecordTable.GetSymbol('BEFOREDESTRUCTION');
-  FProcCode.Add('instance = ');
-  FProcCode.Add('(('+GetTypeName(Symbol^.TypeDefinition)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
-  FProcCode.Add(GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT');
-  FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
-  FProcCode.AddLn('((void*)instance);');
+  if assigned(FProcSymbol^.OwnerObjectClass) then begin
+   MethodSymbol:=FProcSymbol^.OwnerObjectClass.RecordTable.GetSymbol('BEFOREDESTRUCTION');
+   FProcCode.Add('(('+GetTypeName(MethodSymbol^.OwnerObjectClass)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
+   FProcCode.Add(GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT');
+   FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
+   FProcCode.AddLn('((void*)instanceData);');
+  end;
 
   FProcCode.Add(GetSymbolName(ProcSymbol)+'((void*)instanceData');
   if Assigned(ProcSymbol.Parameter) then begin
