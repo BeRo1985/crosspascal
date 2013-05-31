@@ -1568,12 +1568,18 @@ begin
      Error.InternalError(20130324000201)
     end else begin
      if(FContinueLabelNeeded[FNestedBreakCount-1] = -1) then begin
-      FContinueLabelNeeded[FNestedBreakCount-1] := FBreakCount;                                
+      FContinueLabelNeeded[FNestedBreakCount-1] := FBreakCount;
       Inc(FBreakCount);
      end;
      FProcCode.AddLn('goto '+GetSymbolName(FSelf)+'_CONTINUELABEL'+IntToStr(FContinueLabelNeeded[FNestedBreakCount-1])+';');
     end;
-   end;             
+   end;
+   ttntHALT:begin
+     FProcCode.Add('exit(');
+     if Assigned(TreeNode.Left) then
+       TranslateCode(TreeNode.Left);
+     FProcCode.AddLn(');');
+   end;
    ttntEXIT:begin
     FinalizeSymbolList(SymbolManager.CurrentList, FProcCode);
     if assigned(FProcSymbol.ReturnType) then begin
@@ -1605,7 +1611,7 @@ begin
       end;
       else {ttdCLASS:}begin
        // TODO: implement me!
-       Error.InternalError(201304050029001); // and kill this line then! :-) 
+       Error.InternalError(201304050029001); // and kill this line then! :-)
       end;
      end;
     end else begin
