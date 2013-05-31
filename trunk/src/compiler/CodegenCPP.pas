@@ -743,7 +743,7 @@ begin
    FProcCode.Add('(('+GetTypeName(Symbol^.TypeDefinition)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
    FProcCode.Add(GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT');
    FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
-   FProcCode.AddLn('((void*)&'+GetSymbolName(Symbol)+'_VMT);');
+   FProcCode.AddLn('((void*)&'+GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT);');
    FProcCode.Add(GetSymbolName(ProcSymbol)+'(instance');
    if Assigned(FProcSymbol.Parameter) then begin
     sym := FProcSymbol.Parameter.First;
