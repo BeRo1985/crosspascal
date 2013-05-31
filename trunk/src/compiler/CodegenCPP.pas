@@ -738,12 +738,14 @@ begin
   FProcCode.AddLn('void* instance = instanceData;');
   Symbol:=SymbolManager.GetSymbol('TOBJECT');
   if assigned(Symbol) and (Symbol^.SymbolType=tstTYPE) and assigned(Symbol^.TypeDefinition) then begin
+
    MethodSymbol:=Symbol^.TypeDefinition.RecordTable.GetSymbol('NEWINSTANCE');
    FProcCode.Add('instance = ');
    FProcCode.Add('(('+GetTypeName(Symbol^.TypeDefinition)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
    FProcCode.Add(GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT');
    FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
    FProcCode.AddLn('((void*)&'+GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT);');
+
    FProcCode.Add(GetSymbolName(ProcSymbol)+'(instance');
    if Assigned(FProcSymbol.Parameter) then begin
     sym := FProcSymbol.Parameter.First;
@@ -755,6 +757,14 @@ begin
     end;
    end;
    FProcCode.AddLn(');');
+
+   MethodSymbol:=Symbol^.TypeDefinition.RecordTable.GetSymbol('AFTERCONSTRUCTION');
+   FProcCode.Add('instance = ');
+   FProcCode.Add('(('+GetTypeName(Symbol^.TypeDefinition)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
+   FProcCode.Add(GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT');
+   FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
+   FProcCode.AddLn('((void*)instance);');
+
   end;
   FProcCode.AddLn('return instance;');
   FProcCode.DecTab;
@@ -766,6 +776,14 @@ begin
   ConvertFuncSymbol(ProcSymbol, FProcCode, false, true);
   FProcCode.AddLn('{');
   FProcCode.IncTab;
+
+  MethodSymbol:=Symbol^.TypeDefinition.RecordTable.GetSymbol('BEFOREDESTRUCTION');
+  FProcCode.Add('instance = ');
+  FProcCode.Add('(('+GetTypeName(Symbol^.TypeDefinition)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
+  FProcCode.Add(GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT');
+  FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
+  FProcCode.AddLn('((void*)instance);');
+
   FProcCode.Add(GetSymbolName(ProcSymbol)+'((void*)instanceData');
   if Assigned(ProcSymbol.Parameter) then begin
    sym := ProcSymbol.Parameter.First;
