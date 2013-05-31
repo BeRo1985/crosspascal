@@ -6,17 +6,23 @@ type TTestClass=class
        a:longint;
        constructor Create;
        destructor Destroy;
+      published 
+       procedure Test; 
      end;
 
 constructor TTestClass.Create;
 begin
- inherited Create; 
+ inherited Create;
  a:=123;
 end;
 
 destructor TTestClass.Destroy;
 begin
  inherited Destroy;
+end;
+
+procedure TTestClass.Test;
+begin
 end;
 
 var TestClass:TTestClass;
