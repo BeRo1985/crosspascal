@@ -865,6 +865,7 @@ begin
 [[[
   <<<result>>> = <<<Instance>>>;
   memset(<<<result>>>, 0, <<<InstanceSize>>>);
+  printf("%i\n", <<<InstanceSize>>>);
   <<<result>>>->INTERNAL_FIELD_VMT = (void*)<<<self>>>;
   <<<ClassPtr>>> = <<<self>>>;
   while(<<<ClassPtr>>>){
@@ -882,7 +883,7 @@ begin
   <<<ClassPtr>>> = <<<ClassType>>>;
   <<<InitTable>>> = <<<ClassPtr>>>->vmtInitTable;
   while(<<<ClassPtr>>> && <<<InitTable>>>){
-    // TODO TO TRANSLATE TO C: FinalizeRecord(Self, InitTable);
+    pasFinalizeRecord(<<<self>>>, <<<InitTable>>>);
     <<<ClassPtr>>> = <<<ClassPtr>>>->vmtParent;
     if(<<<ClassPtr>>>){
       <<<InitTable>>> = <<<ClassPtr>>>->vmtInitTable;
@@ -899,7 +900,12 @@ begin
 end;
 
 class function TObject.ClassName:shortstring;
+var len:byte;
 begin
+[[[
+  <<<len>>> = *((uint8_t*)<<<self>>>->vmtClassName);
+  memcpy(&<<<result>>>, <<<self>>>->vmtClassName, <<<len>>>);
+]]]
 end;
 
 class function TObject.ClassNameIs(const Name:ansistring):boolean;
@@ -944,6 +950,13 @@ end;
 
 class function TObject.MethodAddress(const Name:shortstring):pointer;
 begin
+[[[
+  <<<result>>> = NULL;
+  if(*((uint8_t*)&<<<Name>>>)){
+    void* methodTable = <<<self>>>->vmtMethodTable;
+    
+  }
+]]]
 end;
 
 class function TObject.MethodName(Address:pointer):shortstring;
