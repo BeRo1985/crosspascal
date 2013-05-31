@@ -2378,7 +2378,11 @@ begin
        FProcCode.Add(IntToStr(TreeNode.Value),spacesBOTH);
       end;
       tstUnsigned32Bit:begin
-       FProcCode.Add(IntToStr(TreeNode.Value)+'ul',spacesBOTH);
+       if (TreeNode.Value>=0) and (TreeNode.Value<=$7fffffff) then begin
+        FProcCode.Add(IntToStr(TreeNode.Value),spacesBOTH);
+       end else begin
+        FProcCode.Add(IntToStr(TreeNode.Value)+'ul',spacesBOTH);
+       end;
       end;
       tstUnsigned64Bit:begin
        FProcCode.Add(IntToStr(TreeNode.Value)+'ull',spacesBOTH);
