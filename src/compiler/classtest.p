@@ -24,4 +24,4 @@ begin
  TestClass:=TTestClass.Create;
  writeln(TestClass.a);
  TestClass.Destroy;
-end.
+end.                                                              

@@ -741,7 +741,7 @@ begin
    MethodSymbol:=Symbol^.TypeDefinition.RecordTable.GetSymbol('NEWINSTANCE');
    FProcCode.Add('instance = ');
    FProcCode.Add('(('+GetTypeName(Symbol^.TypeDefinition)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
-   FProcCode.Add(GetSymbolName(Symbol)+'_VMT');
+   FProcCode.Add(GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT');
    FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
    FProcCode.AddLn('((void*)&'+GetSymbolName(Symbol)+'_VMT);');
    FProcCode.Add(GetSymbolName(ProcSymbol)+'(instance');
@@ -3945,7 +3945,7 @@ begin
          // void* vmtAutoTable;
          CodeTarget.AddLn('NULL,');
          // void* vmtInitTable;
-         CodeTarget.AddLn('NULL,');
+         CodeTarget.AddLn('(void*)&'+Name+'_TYPEINFO,');
          // void* vmtTypeInfo;
          CodeTarget.AddLn('NULL,');
          // void* vmtFieldTable;
