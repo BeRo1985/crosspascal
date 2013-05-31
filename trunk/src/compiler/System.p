@@ -248,6 +248,12 @@ typedef struct pasFieldTable {
   pasFieldInfo fields[0];
 } pasFieldTable;
 
+typedef struct pasFieldTableStripped {
+  size_t x;
+  size_t size;
+  size_t count;
+} pasFieldTableStripped;
+
 typedef pasFieldTable* pasFieldTablePointer;
 
 typedef struct pasObjectDynamicMethodTable;
@@ -265,6 +271,12 @@ typedef struct pasObjectVirtualMethodTable {
   pasObjectVirtualMethodTablePointer ancestorVirtualMethodTable;
   void* virtualMethods[0];
 } pasObjectVirtualMethodTable;
+
+typedef struct pasObjectVirtualMethodTableStripped {
+  size_t size;
+  void* dynamicMethodTable;
+  pasObjectVirtualMethodTablePointer ancestorVirtualMethodTable;
+} pasObjectVirtualMethodTableStripped;
 
 typedef struct pasObjectWithVirtualMethodTable {
   pasObjectVirtualMethodTablePointer vmt;
@@ -287,6 +299,11 @@ typedef struct pasClassTable {
   pasClassTableItem classes[0];
 } pasClassTable;
 
+typedef struct pasClassTableStripped {
+  size_t count;
+  pasClassTableItem classes;
+} pasClassTableStripped;
+
 typedef struct pasClassFieldTableItem {
   size_t fieldOffset;
   size_t typeIndex;
@@ -301,10 +318,19 @@ typedef struct pasClassFieldTable {
   pasClassFieldTableItem fields[0];
 } pasClassFieldTable;
 
+typedef struct pasClassFieldTableStripped {
+  size_t count;
+  void* classTable;
+} pasClassFieldTableStripped;
+
 typedef struct pasClassMethodTable {
   size_t count;
   pasClassMethodTableItem methods[0];
 } pasClassMethodTable;
+
+typedef struct pasClassMethodTableStripped {
+  size_t count;
+} pasClassMethodTableStripped;
 
 typedef struct pasClassVirtualMethodTable;
 
@@ -332,6 +358,28 @@ typedef struct pasClassVirtualMethodTable {
   void* vmtDestroy;
   void* virtualMethods[0];
 } pasClassVirtualMethodTable;
+
+typedef struct pasClassVirtualMethodTableStripped {
+  void* vmtSelfPtr;
+  void* vmtIntfTable;
+  void* vmtAutoTable;
+  void* vmtInitTable;
+  void* vmtTypeInfo;
+  void* vmtFieldTable;
+  void* vmtMethodTable;
+  void* vmtDynamicTable;
+  void* vmtClassName;
+  size_t vmtInstanceSize;
+  void* vmtParent;
+  void* vmtSafeCallException;
+  void* vmtAfterConstruction;
+  void* vmtBeforeDestruction;
+  void* vmtDispatch;
+  void* vmtDefaultHandler;
+  void* vmtNewInstance;
+  void* vmtFreeInstance;
+  void* vmtDestroy;
+} pasClassVirtualMethodTableStripped;
 
 typedef struct {
 	uint32_t dummy;

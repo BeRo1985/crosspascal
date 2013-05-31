@@ -3479,7 +3479,7 @@ begin
        end;
        Target.AddLn('typedef struct {');
        Target.IncTab;
-       Target.AddLn('pasFieldTable fieldTable;');
+       Target.AddLn('pasFieldTableStripped fieldTable;');
        Target.AddLn('pasFieldInfo fields['+IntToStr(k)+'];');
        Target.DecTab;
        Target.AddLn('} '+Name+'_FIELDTABLE_TYPE;');
@@ -3535,7 +3535,7 @@ begin
      ttdArray:begin
       Target.AddLn('typedef struct {');
       Target.IncTab;
-      Target.AddLn('pasFieldTable fieldTable;');
+      Target.AddLn('pasFieldTableStripped fieldTable;');
       Target.AddLn('pasFieldInfo fields[1];');
       Target.DecTab;
       Target.AddLn('} '+Name+'_FIELDTABLE_TYPE;');
@@ -3947,9 +3947,9 @@ begin
         Target.AddLn('typedef struct {');
         Target.IncTab;
         if Type_.TypeDefinition=ttdObject then begin
-         Target.AddLn('pasObjectVirtualMethodTable VMT;');
+         Target.AddLn('pasObjectVirtualMethodTableStripped VMT;');
         end else begin
-         Target.AddLn('pasClassVirtualMethodTable VMT;');
+         Target.AddLn('pasClassVirtualMethodTableStripped VMT;');
         end;
         Target.AddLn('void* virtualMethods['+IntToStr(Type_^.VirtualIndexCount)+'];');
         Target.DecTab;
