@@ -363,6 +363,8 @@ typedef void* pasDynArray;
 
 void pasAssignArray(pasDynArray* target, pasDynArray newValue, pasTypeInfo* t);
 void pasSetLengthArray(pasDynArray* target, uint32_t length, uint32_t arraySize);
+uint32_t pasLengthArray(pasDynArray* target);
+
 void pasFreeArray(pasDynArray* target, pasTypeInfo* t);
 
 ]]]
@@ -599,6 +601,13 @@ void pasAssignArray(pasDynArray* target, pasDynArray newValue, pasTypeInfo* t) {
     }
 }
 
+uint32_t pasLengthArray(pasDynArray* target) {
+	if(target) 
+		return ((pasDynArrayHeader*)((uint32_t)(target) - pasDynArrayHeaderSize))->length;
+	else
+		return 0;
+}
+		
 void pasSetLengthArray(pasDynArray* target, uint32_t length, uint32_t arraySize) {
     pasDynArrayHeader* header;
     uint32_t oldLength;
