@@ -411,7 +411,7 @@ typedef void* pasDynArray;
 
 void pasAssignArray(pasDynArray* target, pasDynArray newValue, pasTypeInfo* t);
 void pasSetLengthArray(pasDynArray* target, uint32_t length, uint32_t arraySize);
-uint32_t pasLengthArray(pasDynArray* target);
+uint32_t pasLengthArray(pasDynArray target);
 
 void pasFreeArray(pasDynArray* target, pasTypeInfo* t);
 
@@ -649,15 +649,20 @@ void pasAssignArray(pasDynArray* target, pasDynArray newValue, pasTypeInfo* t) {
     }
 }
 
-uint32_t pasLengthArray(pasDynArray* target) {
-	if(target) 
-		return ((pasDynArrayHeader*)((uint32_t)(target) - pasDynArrayHeaderSize))->length;
-	else
+uint32_t pasLengthArray(pasDynArray target) {
+    pasDynArrayHeader* header;
+
+	if(target != NULL) {
+		header = (pasDynArrayHeader*)((uint32_t)(target) - pasDynArrayHeaderSize);
+		//printf("*** %i kthxbye %i ***", header->length, header->refCount);
+		return header->length;
+	} else
 		return 0;
 }
 		
 void pasSetLengthArray(pasDynArray* target, uint32_t length, uint32_t arraySize) {
     pasDynArrayHeader* header;
+	pasDynArrayHeader* oldHeader;
     uint32_t oldLength;
 
     if(NULL == *target) {
@@ -665,13 +670,17 @@ void pasSetLengthArray(pasDynArray* target, uint32_t length, uint32_t arraySize)
             return;
 
         header = (pasDynArrayHeader*)malloc(pasDynArrayHeaderSize + arraySize * length);
-        header->refCount = 1;
+        memset(header, 0, pasDynArrayHeaderSize + arraySize * length);
+		header->refCount = 1;
         header->length = length;
         *target = (pasDynArray)((uint32_t)(header) + pasDynArrayHeaderSize);
     } else {
         header = (void*)((uint32_t)(*target) - pasDynArrayHeaderSize);
          if(1 == header->refCount) {
-             header = realloc(header, arraySize*length);
+             header = realloc(header, pasDynArrayHeaderSize + arraySize*length);
+			 *target = (pasDynArray)((uint32_t)(header) + pasDynArrayHeaderSize);
+			 header->length = length;
+			 header->refCount = 1;
              return;
          }
          oldLength = header->length;
