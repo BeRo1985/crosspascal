@@ -387,7 +387,7 @@ begin
   begin
     Target.Add('int',spacesRIGHT);
   end
-  else if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdCLASS) and IsConstructor then
+  else if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdCLASS) then
   begin
     Target.Add('void*',spacesRIGHT);
   end
@@ -637,6 +637,26 @@ begin
  FProcCode.IncTab;
  FProcCode.SetMarker;
 
+ if (tpaConstructor in FProcSymbol^.ProcedureAttributes) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdCLASS) then begin
+   FProcCode.AddLn('if(!instanceData){');
+   FProcCode.IncTab;
+// FProcCode.AddLn('instanceData = pasClassCreate((void*)&'+GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT);');
+   MethodSymbol:=FProcSymbol^.OwnerObjectClass^.RecordTable.GetSymbol('NEWINSTANCE');
+   FProcCode.Add('instanceData = (void*)');
+   FProcCode.Add('(('+GetTypeName(MethodSymbol^.OwnerObjectClass)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
+   FProcCode.Add(GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT');
+   FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
+   FProcCode.AddLn('((void*)&'+GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT);');
+   FProcCode.DecTab;
+   FProcCode.AddLn('}');
+ end else if (tpaDestructor in FProcSymbol^.ProcedureAttributes) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdCLASS) then begin
+   MethodSymbol:=FProcSymbol^.OwnerObjectClass.RecordTable.GetSymbol('BEFOREDESTRUCTION');
+   FProcCode.Add('(('+GetTypeName(MethodSymbol^.OwnerObjectClass)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
+   FProcCode.Add(GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT');
+   FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
+   FProcCode.AddLn('((void*)instanceData);');
+ end;
+
  if Assigned(ProcSymbol.Parameter) then
   ParameterSymbol := ProcSymbol.Parameter.First
  else
@@ -711,6 +731,23 @@ begin
 
  if Assigned(ProcSymbol.ReturnType) then begin
    FProcCode.AddLn('return '+GetSymbolName(ProcSymbol.ResultSymbol)+';');
+ end else if (tpaConstructor in FProcSymbol^.ProcedureAttributes) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdCLASS) then begin
+   MethodSymbol:=FProcSymbol^.OwnerObjectClass.RecordTable.GetSymbol('AFTERCONSTRUCTION');
+   FProcCode.Add('(('+GetTypeName(MethodSymbol^.OwnerObjectClass)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
+   FProcCode.Add(GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT');
+   FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
+   FProcCode.AddLn('((void*)instanceData);');
+   FProcCode.AddLn('return instanceData;');
+ end else if (tpaDestructor in FProcSymbol^.ProcedureAttributes) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdCLASS) then begin
+   FProcCode.AddLn('if(instanceData->INTERNAL_FIELD_VMT == (void*)&'+GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT){');
+   MethodSymbol:=FProcSymbol^.OwnerObjectClass.RecordTable.GetSymbol('FREEINSTANCE');
+   FProcCode.IncTab;
+   FProcCode.Add('(('+GetTypeName(MethodSymbol^.OwnerObjectClass)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
+   FProcCode.Add(GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT');
+   FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
+   FProcCode.AddLn('((void*)instanceData);');
+   FProcCode.DecTab;
+   FProcCode.AddLn('}');
  end else if (tpaConstructor in ProcSymbol^.ProcedureAttributes) and assigned(ProcSymbol^.OwnerObjectClass) and (ProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
    FProcCode.AddLn('return 0;');
  end;
@@ -728,83 +765,6 @@ begin
   FProcStruct.AddLn('');
  end else begin
   FProcStruct.Clear;
- end;
-
- if (tpaConstructor in FProcSymbol^.ProcedureAttributes) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdCLASS) then begin
-  FProcCode.AddLn('//constructor proc ' + GetSymbolName(ProcSymbol));
-  ConvertFuncSymbol(ProcSymbol, FProcCode, true);
-  FProcCode.AddLn('{');
-  FProcCode.IncTab;
-  FProcCode.AddLn('void* instance = instanceData;');
-  Symbol:=SymbolManager.GetSymbol('TOBJECT');
-  if assigned(Symbol) and (Symbol^.SymbolType=tstTYPE) and assigned(Symbol^.TypeDefinition) then begin
-
-   MethodSymbol:=Symbol^.TypeDefinition.RecordTable.GetSymbol('NEWINSTANCE');
-   FProcCode.Add('instance = ');
-   FProcCode.Add('(('+GetTypeName(Symbol^.TypeDefinition)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
-   FProcCode.Add(GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT');
-   FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
-   FProcCode.AddLn('((void*)&'+GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT);');
-
-   FProcCode.Add(GetSymbolName(ProcSymbol)+'(instance');
-   if Assigned(FProcSymbol.Parameter) then begin
-    sym := FProcSymbol.Parameter.First;
-    while Assigned(sym) do
-    begin
-     FProcCode.Add(',',spacesRIGHT);
-     FProcCode.Add(GetSymbolName(Sym),spacesLEFT);
-     sym:=sym.Next;
-    end;
-   end;
-   FProcCode.AddLn(');');
-
-   MethodSymbol:=FProcSymbol^.OwnerObjectClass.RecordTable.GetSymbol('AFTERCONSTRUCTION');
-   FProcCode.Add('(('+GetTypeName(MethodSymbol^.OwnerObjectClass)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
-   FProcCode.Add(GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT');
-   FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
-   FProcCode.AddLn('((void*)instance);');
-
-  end;
-  FProcCode.AddLn('return instance;');
-  FProcCode.DecTab;
-  FProcCode.AddLn('}');
- end;
-
- if (tpaDestructor in FProcSymbol^.ProcedureAttributes) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdCLASS) then begin
-  FProcCode.AddLn('//destructor proc ' + GetSymbolName(ProcSymbol));
-  ConvertFuncSymbol(ProcSymbol, FProcCode, false, true);
-  FProcCode.AddLn('{');
-  FProcCode.IncTab;
-
-  if assigned(FProcSymbol^.OwnerObjectClass) then begin
-   MethodSymbol:=FProcSymbol^.OwnerObjectClass.RecordTable.GetSymbol('BEFOREDESTRUCTION');
-   FProcCode.Add('(('+GetTypeName(MethodSymbol^.OwnerObjectClass)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
-   FProcCode.Add(GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT');
-   FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
-   FProcCode.AddLn('((void*)instanceData);');
-  end;
-
-  FProcCode.Add(GetSymbolName(ProcSymbol)+'((void*)instanceData');
-  if Assigned(ProcSymbol.Parameter) then begin
-   sym := ProcSymbol.Parameter.First;
-   while Assigned(sym) do
-   begin
-    FProcCode.Add(',',spacesRIGHT);
-    FProcCode.Add(GetSymbolName(Sym),spacesLEFT);
-    sym:=sym.Next;
-   end;
-  end;
-  FProcCode.AddLn(');');
-  Symbol:=SymbolManager.GetSymbol('TOBJECT');
-  if assigned(Symbol) and (Symbol^.SymbolType=tstTYPE) and assigned(Symbol^.TypeDefinition) then begin
-   MethodSymbol:=Symbol^.TypeDefinition.RecordTable.GetSymbol('FREEINSTANCE');
-   FProcCode.Add('(('+GetTypeName(Symbol^.TypeDefinition)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
-   FProcCode.Add(GetSymbolName(Symbol)+'_VMT');
-   FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
-   FProcCode.AddLn('((void*)instanceData);');
-  end;
-  FProcCode.DecTab;
-  FProcCode.AddLn('}');
  end;
 
  FInProc:=false;
@@ -951,6 +911,7 @@ var SubTreeNode,SubTreeNode2:TTreeNode;
     s:ansistring;
     HaveParameters,InjectNullPointer:boolean;
     ObjectClassType:PType;
+    MethodSymbol:PSymbol;
 begin
  if assigned(TreeNode) then begin
   if TreeNode.LineNumber=680 then begin
@@ -1617,6 +1578,18 @@ begin
     FinalizeSymbolList(SymbolManager.CurrentList, FProcCode);
     if assigned(FProcSymbol.ReturnType) then begin
      FProcCode.AddLn('return '+GetSymbolName(FProcSymbol.ResultSymbol)+';',spacesBOTH);
+    end else if (tpaConstructor in FProcSymbol^.ProcedureAttributes) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdCLASS) then begin
+     FProcCode.AddLn('return instanceData;');
+    end else if (tpaDestructor in FProcSymbol^.ProcedureAttributes) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdCLASS) then begin
+     FProcCode.AddLn('if(instanceData->INTERNAL_FIELD_VMT == (void*)&'+GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT){');
+     MethodSymbol:=FProcSymbol^.OwnerObjectClass.RecordTable.GetSymbol('FREEINSTANCE');
+     FProcCode.IncTab;
+     FProcCode.Add('(('+GetTypeName(MethodSymbol^.OwnerObjectClass)+'_VMT_'+IntToStr(MethodSymbol^.VirtualIndex)+')(');
+     FProcCode.Add(GetSymbolName(FProcSymbol^.OwnerObjectClass^.Symbol)+'_VMT');
+     FProcCode.Add('.virtualMethods['+IntToStr(MethodSymbol^.VirtualIndex)+']))');
+     FProcCode.AddLn('((void*)instanceData);');
+     FProcCode.DecTab;
+     FProcCode.AddLn('}');
     end else if assigned(FProcSymbol) and (tpaConstructor in FProcSymbol^.ProcedureAttributes) and assigned(FProcSymbol^.OwnerObjectClass) and (FProcSymbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
      FProcCode.AddLn('return 0;');
     end else begin
@@ -2149,22 +2122,10 @@ begin
          if assigned(TreeNode.Right) then begin
           ObjectClassType:=TreeNode.Right.Return;
           if assigned(TreeNode.MethodSymbol) and (tpaConstructor in TreeNode.MethodSymbol^.ProcedureAttributes) and assigned(ObjectClassType) and (ObjectClassType^.TypeDefinition=ttdCLASS) then begin
-           if assigned(TreeNode.MethodSymbol) and (tpaVirtual in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
-            // TODO
-           end else if assigned(TreeNode.MethodSymbol) and (tpaDynamic in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
-            // TODO
-           end else begin
-            FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol)+'_CONSTRUCTOR');
-            InjectNullPointer:=true;
-           end;
+           FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol));
+           InjectNullPointer:=true;
           end else if assigned(TreeNode.MethodSymbol) and (tpaDestructor in TreeNode.MethodSymbol^.ProcedureAttributes) and assigned(ObjectClassType) and (ObjectClassType^.TypeDefinition=ttdCLASS) then begin
-           if assigned(TreeNode.MethodSymbol) and (tpaVirtual in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
-            // TODO
-           end else if assigned(TreeNode.MethodSymbol) and (tpaDynamic in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
-            // TODO
-           end else begin
-            FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol)+'_DESTRUCTOR');
-           end;
+           FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol));
           end else if assigned(TreeNode.MethodSymbol) and (tpaVirtual in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
            if assigned(ObjectClassType) and (ObjectClassType^.TypeDefinition=ttdOBJECT) then begin
             // OBJECT
