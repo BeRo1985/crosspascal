@@ -2550,6 +2550,10 @@ begin
    end;
    ttntEXIT:begin
    end;
+   ttntHALT:begin
+   end;
+   ttntFAIL:begin
+   end;
    ttntLABEL:begin
    end;
    ttntGOTO:begin

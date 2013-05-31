@@ -72,6 +72,7 @@ type TParser=class
        function ParseBREAKStatement:TTreeNode;
        function ParseCONTINUEStatement:TTreeNode;
        function ParseEXITStatement:TTreeNode;
+       function ParseHALTStatement:TTreeNode;
        function ParseFAILStatement:TTreeNode;
        function ParseRAISEStatement:TTreeNode;
        function ParseGOTOStatement:TTreeNode;
@@ -2716,6 +2717,19 @@ begin
  result:=TreeManager.GenerateExitNode;
 end;
 
+function TParser.ParseHALTStatement:TTreeNode;
+begin
+ Scanner.Match(tstHALT);
+ result:=TreeManager.GenerateHaltNode;
+ if Scanner.CurrentToken=tstLeftParen then begin
+  Scanner.Match(tstLeftParen);
+  result.Left:=ParseExpression(false);
+  Scanner.Match(tstRightParen);
+ end else begin
+  result.Left:=nil;
+ end;
+end;
+
 function TParser.ParseFAILStatement:TTreeNode;
 begin
  if assigned(CurrentProcedureFunction) and not (tpaCONSTRUCTOR in CurrentProcedureFunction^.ProcedureAttributes) then begin 
@@ -3600,6 +3614,9 @@ begin
   end;
   tstEXIT:begin
    result:=ParseEXITStatement;
+  end;
+  tstHALT:begin
+   result:=ParseHALTStatement;
   end;
   tstFAIL:begin
    result:=ParseFAILStatement;
