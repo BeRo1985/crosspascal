@@ -391,8 +391,6 @@ void* pasObjectDMTDispatch(void** object,size_t index);
 
 void* pasClassDMTDispatch(void* classVMT,size_t index);
 
-void* pasClassCreate(void* classVMT);
-
 typedef void* pasDynArray;
 
 void pasAssignArray(pasDynArray* target, pasDynArray newValue, pasTypeInfo* t);
@@ -888,11 +886,6 @@ void* pasClassDMTDispatch(void* classVMT, size_t index){
   return NULL;
 }
 
-void* pasClassCreate(void* classVMT){
-  void* instance = ((UNIT_SYSTEM_TYPE_TOBJECT_VMT_5)(UNIT_SYSTEM_TYPE_TOBJECT_VMT.virtualMethods[5]))(classVMT);
-  return instance;
-}
-
 ]]]
 
 {$i stringsc.inc}
@@ -922,7 +915,6 @@ begin
 [[[
   <<<result>>> = <<<Instance>>>;
   memset(<<<result>>>, 0, <<<InstanceSize>>>);
-  printf("%i\n", <<<InstanceSize>>>);
   <<<result>>>->INTERNAL_FIELD_VMT = (void*)<<<self>>>;
   <<<ClassPtr>>> = <<<self>>>;
   while(<<<ClassPtr>>>){
