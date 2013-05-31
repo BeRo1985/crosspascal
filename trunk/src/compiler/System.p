@@ -419,8 +419,6 @@ void pasWriteLongString(pasLongstring x);
 #define pasSQRT(x) sqrt(x);
 ]]]
 
-procedure Halt(ErrorCode:longint=0);
-
 procedure Randomize;
 function Random(Max:integer):integer; overload;
 function Random:double; overload;
@@ -448,10 +446,6 @@ function Max(a,b:int64):int64; overload;
 function Max(a,b:extended):extended; overload;
 
 implementation
-
-procedure Halt(ErrorCode:longint=0);
-begin
-end;
 
 procedure NextRandSeed;
 begin
