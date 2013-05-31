@@ -2474,8 +2474,6 @@ begin
     FProcCode.Add(')');
    end else begin
     Error.InternalError(20130406173827);
-    if Assigned(TreeNode.Left) then
-    asm nop end;
    end;
   end;
    ttntIndex:begin
