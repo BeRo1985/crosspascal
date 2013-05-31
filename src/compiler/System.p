@@ -461,7 +461,7 @@ function Random(Max:integer):integer;
 begin
  NextRandSeed;
  if Max>0 then begin
-  result:=RandSeed mod Max;
+  result:=(RandSeed and $7FFFFFFFF) mod Max;
  end else begin
   result:=0;
  end;
