@@ -391,6 +391,8 @@ void* pasObjectDMTDispatch(void** object,size_t index);
 
 void* pasClassDMTDispatch(void* classVMT,size_t index);
 
+void* pasClassCreate(void* classVMT);
+
 typedef void* pasDynArray;
 
 void pasAssignArray(pasDynArray* target, pasDynArray newValue, pasTypeInfo* t);
@@ -884,6 +886,11 @@ void* pasClassDMTDispatch(void* classVMT, size_t index){
     VMT = VMT->vmtParent;
   }
   return NULL;
+}
+
+void* pasClassCreate(void* classVMT){
+  void* instance = ((UNIT_SYSTEM_TYPE_TOBJECT_VMT_5)(UNIT_SYSTEM_TYPE_TOBJECT_VMT.virtualMethods[5]))(classVMT);
+  return instance;
 }
 
 ]]]
