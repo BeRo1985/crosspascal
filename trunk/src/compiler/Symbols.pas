@@ -139,6 +139,8 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
 
       RuntimeTypeInfo:boolean;
 
+      RuntimeTypeInfoDumped:boolean;
+
       Dumped:boolean;
 
       case TypeDefinition:TTypeDefinition of
@@ -1506,6 +1508,7 @@ begin
  result^.TypeKind:=0;
  result^.NeedTypeInfo:=false;
  result^.RuntimeTypeInfo:=false;
+ result^.RuntimeTypeInfoDumped:=false;
  result^.Dumped:=false;
  result^.OwnerModule:=ModuleSymbol;
  result^.OwnerObjectClass:=ObjectClassType;
