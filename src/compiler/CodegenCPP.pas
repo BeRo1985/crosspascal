@@ -2366,10 +2366,18 @@ begin
        FProcCode.Add(IntToStr(TreeNode.Value),spacesBOTH);
       end;
       tstSigned32Bit:begin
-       FProcCode.Add(IntToStr(TreeNode.Value)+'l',spacesBOTH);
+       if (TreeNode.Value>=0) and (TreeNode.Value<=$7fffffff) then begin
+        FProcCode.Add(IntToStr(TreeNode.Value),spacesBOTH);
+       end else begin
+        FProcCode.Add(IntToStr(TreeNode.Value)+'l',spacesBOTH);
+       end;
       end;
       tstSigned64Bit:begin
-       FProcCode.Add(IntToStr(TreeNode.Value)+'ll',spacesBOTH);
+       if (TreeNode.Value>=0) and (TreeNode.Value<=$7fffffff) then begin
+        FProcCode.Add(IntToStr(TreeNode.Value),spacesBOTH);
+       end else begin
+        FProcCode.Add(IntToStr(TreeNode.Value)+'ll',spacesBOTH);
+       end;
       end;
       tstUnsigned8Bit,tstUnsignedChar:begin
        FProcCode.Add(IntToStr(TreeNode.Value),spacesBOTH);
@@ -2385,7 +2393,11 @@ begin
        end;
       end;
       tstUnsigned64Bit:begin
-       FProcCode.Add(IntToStr(TreeNode.Value)+'ull',spacesBOTH);
+       if (TreeNode.Value>=0) and (TreeNode.Value<=$7fffffff) then begin
+        FProcCode.Add(IntToStr(TreeNode.Value),spacesBOTH);
+       end else begin
+        FProcCode.Add(IntToStr(TreeNode.Value)+'ull',spacesBOTH);
+       end;
       end;
       else begin
        FProcCode.Add(IntToStr(TreeNode.Value),spacesBOTH);
