@@ -962,14 +962,54 @@ begin
 [[[
   <<<result>>> = NULL;
   if(*((uint8_t*)&<<<Name>>>)){
-    void* methodTable = <<<self>>>->vmtMethodTable;
-    
+    pasClassVirtualMethodTable* VMT = (void*)<<<self>>>;
+    while(VMT){
+      pasClassMethodTable* methodTable = (void*)(VMT->vmtMethodTable);
+      for(int i = 0; i < methodTable->count; i++){
+        pasClassMethodTableItem* methodTableItem = &methodTable->methods[i];
+        uint8_t* name = (void*)&<<<Name>>>;
+        uint8_t* methodName = (void*)methodTableItem->name;
+        int j = *methodName;
+        if(*name == j){
+          for(j = *methodName; j > 0; j--, name++, methodName++){
+            if(*name != *methodName){
+              break;
+            }
+          }
+          if(!j){
+            <<<result>>> = (void*)methodTableItem->address;
+            goto done;
+          }
+        }
+      }
+      VMT = VMT->vmtParent;
+    }
   }
+  done:
 ]]]
 end;
 
 class function TObject.MethodName(Address:pointer):shortstring;
 begin
+[[[
+  *((uint8_t*)&<<<result>>>) = 0;
+  if(<<<Address>>>){
+    pasClassVirtualMethodTable* VMT = (void*)<<<self>>>;
+    while(VMT){
+      pasClassMethodTable* methodTable = (void*)(VMT->vmtMethodTable);
+      for(int i = 0; i < methodTable->count; i++){
+        pasClassMethodTableItem* methodTableItem = &methodTable->methods[i];
+        uint8_t* methodName = (void*)(methodTableItem->name);
+        if((void*)methodTableItem->address == (void*)<<<Address>>>){
+          memcpy(&<<<result>>>, methodName, *methodName);
+          goto done;
+        }
+      }
+      VMT = VMT->vmtParent;
+    }
+  }
+  done:
+]]]
 end;
 
 function TObject.FieldAddress(const Name:shortstring):pointer;
