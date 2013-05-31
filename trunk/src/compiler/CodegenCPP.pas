@@ -4011,9 +4011,9 @@ begin
          CodeTarget.AddLn(IntToStr(Type_^.RecordSize)+',');
          // void* vmtParent;
          if assigned(Type_^.ChildOf) then begin
-          CodeTarget.AddLn('(void*)&'+GetSymbolName(Type_^.ChildOf)+'_VMT,');
+          CodeTarget.AddLn('(void*)&'+GetSymbolName(Type_^.ChildOf)+'_VMT');
          end else begin
-          CodeTarget.AddLn('NULL,');
+          CodeTarget.AddLn('NULL');
          end;
         end;
         CodeTarget.DecTab;
