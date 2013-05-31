@@ -541,7 +541,8 @@ begin
     case Sym.TypeDefinition.TypeDefinition of
      ttdLongString:
      begin
-      Target.Add('FreeLongstring(&'+GetSymbolName(Sym)+')');
+      if(GetSymbolName(Sym))<>'result' then
+        Target.Add('FreeLongstring(&'+GetSymbolName(Sym)+')');
      end;
      ttdArray:
      begin
@@ -1576,8 +1577,10 @@ begin
    end;
    ttntHALT:begin
      FProcCode.Add('exit(');
+
      if Assigned(TreeNode.Left) then
        TranslateCode(TreeNode.Left);
+
      FProcCode.AddLn(');');
    end;
    ttntEXIT:begin
@@ -2471,6 +2474,8 @@ begin
     FProcCode.Add(')');
    end else begin
     Error.InternalError(20130406173827);
+    if Assigned(TreeNode.Left) then
+    asm nop end;
    end;
   end;
    ttntIndex:begin
@@ -2517,7 +2522,7 @@ begin
    end;
   end;
 
-  ttntSTRINGConst, ttntVar, ttntCHARConst:
+  ttntSTRINGConst, ttntVar, ttntCHARConst, ttntCall:
   begin
    // for string consts, we could actually just convert them into the right string type
 
