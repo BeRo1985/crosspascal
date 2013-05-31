@@ -1043,7 +1043,7 @@ begin
         uint8_t* fieldName = (void*)fieldTableItem->name;
         int j = *fieldName;                            
         if(*name == j){
-          for(j = *fieldName; j > 0; j--, name++, fieldName++){
+          for(; j > 0; j--, name++, fieldName++){
             if(*name != *fieldName){
               break;
             }
