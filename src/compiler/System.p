@@ -348,14 +348,6 @@ typedef struct pasClassVirtualMethodTable {
   void* vmtClassName;
   size_t vmtInstanceSize;
   void* vmtParent;
-  void* vmtSafeCallException;
-  void* vmtAfterConstruction;
-  void* vmtBeforeDestruction;
-  void* vmtDispatch;
-  void* vmtDefaultHandler;
-  void* vmtNewInstance;
-  void* vmtFreeInstance;
-  void* vmtDestroy;
   void* virtualMethods[0];
 } pasClassVirtualMethodTable;
 
@@ -371,14 +363,6 @@ typedef struct pasClassVirtualMethodTableStripped {
   void* vmtClassName;
   size_t vmtInstanceSize;
   void* vmtParent;
-  void* vmtSafeCallException;
-  void* vmtAfterConstruction;
-  void* vmtBeforeDestruction;
-  void* vmtDispatch;
-  void* vmtDefaultHandler;
-  void* vmtNewInstance;
-  void* vmtFreeInstance;
-  void* vmtDestroy;
 } pasClassVirtualMethodTableStripped;
 
 typedef struct {
