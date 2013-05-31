@@ -919,6 +919,23 @@ end;
 
 class function TObject.ClassNameIs(const Name:ansistring):boolean;
 begin
+[[[
+  pasClassVirtualMethodTable* VMT = (void*)<<<self>>>;
+  uint8_t* name = (void*)&<<<Name>>>;
+  uint8_t* className = (void*)VMT->vmtClassName;
+  int i = *className;
+  <<<result>>> = 0;
+  if(*name == i){
+    for(; i > 0; i--, name++, className++){
+      if(*name != *className){
+        break;
+      }
+    }
+    if(!i){
+     <<<result>>> = 1;
+    }
+  }
+]]]
 end;
 
 class function TObject.ClassParent:TClass;
@@ -971,7 +988,7 @@ begin
         uint8_t* methodName = (void*)methodTableItem->name;
         int j = *methodName;
         if(*name == j){
-          for(j = *methodName; j > 0; j--, name++, methodName++){
+          for(; j > 0; j--, name++, methodName++){
             if(*name != *methodName){
               break;
             }
