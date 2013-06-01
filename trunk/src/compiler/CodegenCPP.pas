@@ -3517,7 +3517,7 @@ begin
    if (Type_^.RuntimeTypeInfo and (not Type_^.RuntimeTypeInfoDumped) and
        (Type_^.NeedTypeInfo or not (Type_.TypeKind in [TypeKindUnknown,TypeKindRecord,TypeKindArray]))) and
        not ((Type_^.TypeDefinition in [ttdCEXPRESSION]) or (Type_=SymbolManager.TypeEmpty) or ((length(Name)>0) and (Name[1]='$'))) then begin
-    Type_^.RuntimeTypeInfoDumped:=false;
+    Type_^.RuntimeTypeInfoDumped:=true;
     Target.AddLn('extern pasTypeInfo '+Name+'_TYPEINFO;');
     Target.AddLn('extern pasTypeInfoPointer '+Name+'_TYPEINFO_POINTER;');
     case Type_.TypeDefinition of
