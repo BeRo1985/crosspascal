@@ -157,6 +157,9 @@ end;
 
 function TCodegenCPP.GetModuleName(Sym: PSymbol): ansistring;
 begin
+ if not Assigned(sym) then
+  result:='HUND'
+ else
  case Sym.UnitKind of
   tukUNIT:
     result:='UNIT_'+Sym.Name;
@@ -2607,7 +2610,7 @@ begin
    end;
   end;
 
-  ttntSTRINGConst, ttntVar, ttntCHARConst, ttntCall:
+  ttntSTRINGConst, ttntVar, ttntCHARConst, ttntCall, ttntField:
   begin
    // for string consts, we could actually just convert them into the right string type
 
