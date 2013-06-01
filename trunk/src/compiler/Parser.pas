@@ -2759,13 +2759,14 @@ begin
    Error.AbortCode(20);
   end else if not assigned(Left.MethodSymbol) then begin
    Error.AbortCode(20);
+//end else if (not assigned(Left.Symbol)) or (Left.Symbol^.SymbolType<>Symbols.tstVariable) or (Left.Symbol^.TypeDefinition.TypeDefinition<>ttdCLASS) then begin
   end else if (not assigned(Left.Symbol)) or (Left.Symbol^.SymbolType<>Symbols.tstType) then begin
    Error.AbortCode(20);
   end else begin
    Symbol:=Left.Symbol;
    ASymbol:=Symbol;
    AType:=Symbol^.TypeDefinition;
-   if AType^.TypeDefinition<>ttdClass then begin
+   if AType^.TypeDefinition=ttdClass then begin
     while assigned(AType^.ChildOf) do begin
      ASymbol:=AType^.ChildOf;
      AType:=AType^.ChildOf^.TypeDefinition;
@@ -2782,13 +2783,21 @@ begin
       NewSymbol:=NewSymbol^.SymbolList.GetSymbol(NewName,ModuleSymbol,CurrentObjectClass);
      end;
      if not assigned(NewSymbol) then begin
+      NewName:=tpsIdentifier+'SYSTEM';
+      NewSymbol:=SymbolManager.GetSymbol(NewName,ModuleSymbol,CurrentObjectClass);
+      if assigned(NewSymbol) and (NewSymbol^.SymbolType=Symbols.tstUnit) then begin
+       NewName:=tpsIdentifier+'EXCEPTION';
+       NewSymbol:=NewSymbol^.SymbolList.GetSymbol(NewName,ModuleSymbol,CurrentObjectClass);
+      end;
+     end;
+     if not assigned(NewSymbol) then begin
       Error.AbortCode(20);
      end else if (NewSymbol^.SymbolType<>Symbols.tstType) or (NewSymbol^.TypeDefinition^.TypeDefinition<>ttdClass) then begin
       Error.AbortCode(20);
      end else begin
-      if AType<>NewSymbol^.TypeDefinition then begin
+{     if AType<>NewSymbol^.TypeDefinition then begin
        Error.AbortCode(9,CorrectSymbolName(ASymbol^.Name),CorrectSymbolName(NewSymbol^.Name));
-      end;
+      end;}
      end;
     end else begin
      Error.AbortCode(20);

@@ -100,7 +100,7 @@ Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=strtest.p
+RunParams=exceptiontest.p -B
 HostApplication=
 Launcher=
 UseLauncher=0
