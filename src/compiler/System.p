@@ -377,6 +377,13 @@ typedef struct {
 	uint32_t dummy;
 } pasFile;
 
+typedef struct pasExceptionStackJmpBufItem {
+  void* next;
+  jmp_buf jmpBuf;
+} pasExceptionStackJmpBufItem;
+
+typedef pasExceptionStackJmpBufItem* pasExceptionStackJmpBufItemPointer;
+
 void* pasGetMem(size_t size);
 void pasReallocMem(void** ptr,size_t size);
 void pasFreeMem(void* ptr);
@@ -407,9 +414,8 @@ uint32_t pasLengthArray(pasDynArray target);
 
 void pasFreeArray(pasDynArray* target, pasTypeInfo* t);
 
-void pasExceptionPushJmpBuf(jmp_buf *jmpBuf);
-void pasExceptionPushRaise(void *object);
-void* pasExceptionPopRaise();
+void pasExceptionPushJmpBuf(pasExceptionStackJmpBufItem* item);
+pasExceptionStackJmpBufItem* pasExceptionPopJmpBuf();
 
 ]]]
 
@@ -892,15 +898,16 @@ void* pasClassDMTDispatch(void* classVMT, size_t index){
   return NULL;
 }
 
-typedef struct ExceptionStackJmpBufItem {
- void* next;
- jmp_buf* jmpBuf;
-} ExceptionStackJmpBufItem;
+pasExceptionStackJmpBufItem* pasExceptionStackJmpBufItemStack = NULL;
 
-ExceptionStackJmpBufItem* first;
+void pasExceptionPushJmpBuf(pasExceptionStackJmpBufItem* item){
+ item->next = pasExceptionStackJmpBufItemStack;
+ pasExceptionStackJmpBufItemStack = item;
+}
 
-
-void pasExceptionPushJmpBuf(jmp_buf *jmpBuf){
+pasExceptionStackJmpBufItem* pasExceptionPopJmpBuf(){
+ pasExceptionStackJmpBufItem* result = pasExceptionStackJmpBufItemStack;
+ pasExceptionStackJmpBufItemStack = result->next;
 }
 
 void pasExceptionPushRaise(void *object){
