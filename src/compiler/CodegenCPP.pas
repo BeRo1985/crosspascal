@@ -1666,6 +1666,7 @@ begin
     FProcCode.IncTab;
     if assigned(TreeNode.ExceptTree) and (TreeNode.ExceptTree.TreeNodeType=ttntTRYONELSE) then begin
      FProcCode.AddLn('TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+' = pasExceptioneGetRaiseObject();');
+     FProcCode.AddLn('void* TRY_OBJECT_VMT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+' = TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+' ? TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+'->INTERNAL_FIELD_VMT : NULL;');
     end;
     FProcCode.AddLn('pasExceptionPopJmpBuf();');
     if assigned(TreeNode.ExceptTree) then begin
@@ -1675,12 +1676,12 @@ begin
         SubTreeNode:=TreeNode.ExceptTree;
         while assigned(SubTreeNode) do begin
          if assigned(SubTreeNode.Symbol) then begin
-          FProcCode.AddLn('if(TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+' && ((void*)TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+'->INTERNAL_FIELD_VMT == (void*)&'+GetTypeName(SubTreeNode.CheckType)+'_VMT)){');
+          FProcCode.AddLn('if(TRY_OBJECT_VMT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+' == '+GetTypeName(SubTreeNode.CheckType)+'_VMT_POINTER){');
           FProcCode.IncTab;
           Symbol:=SubTreeNode.Symbol;
           Symbol^.IntValue:=FTrySymbolCounter;
           inc(FTrySymbolCounter);
-          FProcCode.AddLn(GetTypeName(SubTreeNode.CheckType)+' TRY_EXCEPTION_'+GetSymbolName(FSelf)+'_'+IntToStr(Symbol^.IntValue)+';');
+          FProcCode.AddLn(GetTypeName(SubTreeNode.CheckType)+' TRY_EXCEPTION_'+GetSymbolName(FSelf)+'_'+IntToStr(Symbol^.IntValue)+' = (void*)TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+';');
           TranslateCode(SubTreeNode.Left);
           SubTreeNode:=SubTreeNode.Right;
           FProcCode.DecTab;
@@ -4035,6 +4036,7 @@ begin
         Target.DecTab;
         Target.AddLn('} '+Name+'_VMT_TYPE;');
         Target.AddLn('extern '+Name+'_VMT_TYPE '+Name+'_VMT;');
+        Target.AddLn('extern '+Name+'_VMT_TYPE* '+Name+'_VMT_POINTER;');
         CodeTarget.AddLn(Name+'_VMT_TYPE '+Name+'_VMT={');
         CodeTarget.IncTab;
         CodeTarget.AddLn('{');
@@ -4157,6 +4159,7 @@ begin
         CodeTarget.AddLn('}');
         CodeTarget.DecTab;
         CodeTarget.AddLn('};');
+        CodeTarget.AddLn('static '+Name+'_VMT_TYPE* '+Name+'_VMT_POINTER = &'+Name+'_VMT;');
        end;
 
        Symbol:=SymbolList.First;

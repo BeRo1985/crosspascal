@@ -9,13 +9,13 @@ begin
   except
    on e:Exception do begin
     if assigned(e) then begin
-     writeln(e.Message);
+     writeln(2);
     end else begin
      writeln(1);
     end;
    end;
   end;
  finally
-  writeln('Bar');
+  writeln(3);
  end;
 end.
