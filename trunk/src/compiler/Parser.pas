@@ -407,7 +407,6 @@ begin
  Symbol^.OriginalCaseName:='LongInt';
  Symbol^.SymbolType:=Symbols.tstType;
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
- Symbol^.TypeDefinition:=AType;
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindInteger;
@@ -417,6 +416,7 @@ begin
  AType^.SubRangeType:=Symbols.tstSigned32Bit;
  AType^.LowerLimit:=-2147483646;
  AType^.UpperLimit:=2147483647;
+ Symbol^.TypeDefinition:=AType;
  LongIntType:=AType;
  SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
 

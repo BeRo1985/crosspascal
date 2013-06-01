@@ -181,6 +181,7 @@ procedure Move(var Src; var Dst; Size: Cardinal);
 
 #include "stdlib.h"
 #include "math.h"
+#include "setjmp.h"
 #include <stdio.h>
 #ifdef _MSC_VER
 // MSVC
@@ -405,6 +406,10 @@ void pasSetLengthArray(pasDynArray* target, uint32_t length, uint32_t arraySize)
 uint32_t pasLengthArray(pasDynArray target);
 
 void pasFreeArray(pasDynArray* target, pasTypeInfo* t);
+
+void pasExceptionPushJmpBuf(jmp_buf *jmpBuf);
+void pasExceptionPushRaise(void *object);
+void* pasExceptionPopRaise();
 
 ]]]
 
@@ -885,6 +890,24 @@ void* pasClassDMTDispatch(void* classVMT, size_t index){
     VMT = VMT->vmtParent;
   }
   return NULL;
+}
+
+typedef struct ExceptionStackJmpBufItem {
+ void* next;
+ jmp_buf* jmpBuf;
+} ExceptionStackJmpBufItem;
+
+ExceptionStackJmpBufItem* first;
+
+
+void pasExceptionPushJmpBuf(jmp_buf *jmpBuf){
+}
+
+void pasExceptionPushRaise(void *object){
+
+}
+
+void* pasExceptionPopRaise(){
 }
 
 ]]]
