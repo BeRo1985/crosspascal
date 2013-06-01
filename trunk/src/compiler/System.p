@@ -416,7 +416,8 @@ void pasFreeArray(pasDynArray* target, pasTypeInfo* t);
 
 void pasExceptionPushJmpBuf(pasExceptionStackJmpBufItem* item);
 pasExceptionStackJmpBufItem* pasExceptionPopJmpBuf();
-void pasExceptionRaise(void *object);
+void pasExceptionRaise(void *object, void* addr);
+void pasExceptionReraise();
 void* pasExceptioneGetRaiseObject();
 
 ]]]
@@ -902,6 +903,7 @@ void* pasClassDMTDispatch(void* classVMT, size_t index){
 
 pasExceptionStackJmpBufItem* pasExceptionStackJmpBufItemStack = NULL;
 void* pasExceptionObject = NULL;
+void* pasExceptionAddress = NULL;
 
 void pasExceptionPushJmpBuf(pasExceptionStackJmpBufItem* item){
   item->next = pasExceptionStackJmpBufItemStack;
@@ -913,11 +915,16 @@ pasExceptionStackJmpBufItem* pasExceptionPopJmpBuf(){
   pasExceptionStackJmpBufItemStack = result->next;
 }
 
-void pasExceptionRaise(void *object){
+void pasExceptionRaise(void *object, void* addr){
   if(pasExceptionStackJmpBufItemStack){
     pasExceptionObject = object;
+    pasExceptionAddress = addr;
     longjmp(pasExceptionStackJmpBufItemStack->jmpBuf, 1);
   }
+}
+
+void pasExceptionReraise(){
+  pasExceptionRaise(pasExceptionObject, pasExceptionAddress);
 }
 
 void* pasExceptioneGetRaiseObject(){

@@ -1722,6 +1722,19 @@ begin
    ttntTRYONELSE:begin
    end;
    ttntRAISE:begin
+    if assigned(TreeNode.Left) then begin
+     FProcCode.Add('pasExceptionRaise(');
+     TranslateCode(TreeNode.Left);
+     FProcCode.Add(', ');
+     if assigned(TreeNode.Right) then begin
+      FProcCode.Add('(void*)((size_t)'+IntToStr(TreeNode.Right.ItemValue)+')');
+     end else begin
+      FProcCode.Add('NULL');
+     end;
+     FProcCode.AddLn(');');
+    end else begin
+     FProcCode.Add('pasExceptionReraise();');
+    end;
    end;
    ttntPROCEDURE:begin
     case TreeNode.Symbol.InternalProcedure of
