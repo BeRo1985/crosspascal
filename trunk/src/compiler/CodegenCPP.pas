@@ -1641,21 +1641,20 @@ begin
     inc(FTryBlockCounter);
     FProcCode.AddLn('{');
     FProcCode.IncTab;
-    FProcCode.AddLn('jmp_buf TRY_JMPBUF_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+';');
+    FProcCode.AddLn('pasExceptionStackJmpBufItem TRY_JMPBUF_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+';');
     Symbol:=SymbolManager.GetSymbol(tpsIdentifier+'SYSTEM');
     if assigned(Symbol) and (Symbol^.SymbolType=Symbols.tstUnit) then begin
      Symbol:=Symbol^.SymbolList.GetSymbol(tpsIdentifier+'TOBJECT');
     end;
     FProcCode.AddLn(GetTypeName(Symbol^.TypeDefinition)+' TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+' = NULL;');
-    FProcCode.AddLn('int TRY_VALUE_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+' = setjmp(TRY_JMPBUF_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+');');
+    FProcCode.AddLn('int TRY_VALUE_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+' = setjmp(TRY_JMPBUF_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+'.jmpBuf);');
     FProcCode.AddLn('if(!TRY_VALUE_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+'){');
     FProcCode.IncTab;
+    FProcCode.AddLn('pasExceptionPushJmpBuf((void*)&TRY_JMPBUF_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+');');
     if assigned(TreeNode.Block) then begin
      TranslateCode(TreeNode.Block);
     end;
-    if assigned(TreeNode.FinallyTree) then begin
-     FProcCode.AddLn('goto TRY_FINALLY_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+';');
-    end;
+    FProcCode.AddLn('goto TRY_FINALLY_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+';');
     FProcCode.DecTab;
     FProcCode.AddLn('}else{');
     FProcCode.IncTab;
@@ -1701,8 +1700,9 @@ begin
       end;
      end;
     end;
+    FProcCode.AddLn('TRY_FINALLY_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+':');
+    FProcCode.AddLn('pasExceptionPopJmpBuf();');
     if assigned(TreeNode.FinallyTree) then begin
-     FProcCode.AddLn('TRY_FINALLY_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+':');
      TranslateCode(TreeNode.FinallyTree);
     end;
     FProcCode.DecTab;
