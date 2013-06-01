@@ -66,6 +66,7 @@ type TCodeWriter = class
        FBreakLabelNeeded: array of Integer;
        FContinueLabelNeeded: array of Integer;
        FTryBlockCounter: longint;
+       FTrySymbolCounter: longint;
       protected
        function GetTypeSize(AType: PType): Cardinal;
 
@@ -178,7 +179,9 @@ begin
     result:=Prefix+GetTypeName(Sym^.TypeDefinition);
    end;
    Symbols.tstVariable:begin
-    if tsaField in Sym^.Attributes then begin
+    if tsaTemporaryExceptionVariable in Sym^.Attributes then begin
+     result:=Prefix+'TRY_EXCEPTION_'+GetSymbolName(FSelf)+'_'+IntToStr(Sym^.IntValue);
+    end else if tsaField in Sym^.Attributes then begin
      if tsaInternalField in Sym^.Attributes then begin
       result:=Prefix+'INTERNAL_FIELD_'+Sym.Name;
      end else begin
@@ -518,6 +521,7 @@ begin
  FWithStackSize:=0;
 
  FTryBlockCounter:=0;
+ FTrySymbolCounter:=0;
 end;
 
 destructor TCodegenCPP.Destroy;
@@ -916,7 +920,7 @@ var SubTreeNode,SubTreeNode2:TTreeNode;
     s:ansistring;
     HaveParameters,InjectNullPointer:boolean;
     ObjectClassType:PType;
-    MethodSymbol:PSymbol;
+    MethodSymbol,Symbol:PSymbol;
     TryBlockCounter:longint;
 begin
  if assigned(TreeNode) then begin
@@ -1638,6 +1642,11 @@ begin
     FProcCode.AddLn('{');
     FProcCode.IncTab;
     FProcCode.AddLn('jmp_buf TRY_JMPBUF_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+';');
+    Symbol:=SymbolManager.GetSymbol(tpsIdentifier+'SYSTEM');
+    if assigned(Symbol) and (Symbol^.SymbolType=Symbols.tstUnit) then begin
+     Symbol:=Symbol^.SymbolList.GetSymbol(tpsIdentifier+'TOBJECT');
+    end;
+    FProcCode.AddLn(GetTypeName(Symbol^.TypeDefinition)+' TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+' = NULL;');
     FProcCode.AddLn('int TRY_VALUE_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+' = setjmp(TRY_JMPBUF_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+');');
     FProcCode.AddLn('if(!TRY_VALUE_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+'){');
     FProcCode.IncTab;
@@ -1653,18 +1662,33 @@ begin
     if assigned(TreeNode.ExceptTree) then begin
      case TreeNode.ExceptTree.TreeNodeType of
       ttntTRYONELSE:begin
-       if assigned(TreeNode.ExceptTree.Left) then begin
-        SubTreeNode:=TreeNode.ExceptTree.Left;
+       if assigned(TreeNode.ExceptTree) then begin
+        SubTreeNode:=TreeNode.ExceptTree;
         while assigned(SubTreeNode) do begin
-         FProcCode.AddLn('if(1){');
-         FProcCode.IncTab;
-         TranslateCode(SubTreeNode.Left);
-         SubTreeNode:=SubTreeNode.Right;
-         FProcCode.DecTab;
-         if assigned(SubTreeNode) then begin
-          FProcCode.Add('}else ');
-         end else begin
+         if assigned(SubTreeNode.Symbol) then begin
+          FProcCode.AddLn('if(TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+' && ((void*)TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+'->INTERNAL_FIELD_VMT == (void*)&'+GetTypeName(SubTreeNode.CheckType)+'_VMT)){');
+          FProcCode.IncTab;
+          Symbol:=SubTreeNode.Symbol;
+          Symbol^.IntValue:=FTrySymbolCounter;
+          inc(FTrySymbolCounter);
+          FProcCode.AddLn(GetTypeName(SubTreeNode.CheckType)+' TRY_EXCEPTION_'+GetSymbolName(FSelf)+'_'+IntToStr(Symbol^.IntValue)+';');
+          TranslateCode(SubTreeNode.Left);
+          SubTreeNode:=SubTreeNode.Right;
+          FProcCode.DecTab;
+          if assigned(SubTreeNode) and assigned(SubTreeNode.Left) then begin
+           FProcCode.Add('}else ');
+          end else begin
+           FProcCode.AddLn('}');
+          end;
+         end else if assigned(SubTreeNode.Left) then begin
+          FProcCode.AddLn('{');
+          FProcCode.IncTab;
+          TranslateCode(SubTreeNode.Left);
+          FProcCode.DecTab;
           FProcCode.AddLn('}');
+          break;
+         end else begin
+          break;
          end;
         end;
        end;
