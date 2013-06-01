@@ -65,6 +65,7 @@ type TCodeWriter = class
        FWithStackSize: longint;
        FBreakLabelNeeded: array of Integer;
        FContinueLabelNeeded: array of Integer;
+       FFinallyLabelCounter: longint;
       protected
        function GetTypeSize(AType: PType): Cardinal;
 
@@ -515,6 +516,8 @@ begin
 
  FWithStack:=nil;
  FWithStackSize:=0;
+
+ FFinallyLabelCounter:=0;
 end;
 
 destructor TCodegenCPP.Destroy;
@@ -1628,6 +1631,51 @@ begin
     FProcCode.Add('goto LABEL_'+GetSymbolName(FSelf)+'_'+TreeNode.LabelName+';');
    end;
    ttntTRY:begin
+    FProcCode.AddLn('if(1){');
+    FProcCode.IncTab;
+    if assigned(TreeNode.Block) then begin
+     TranslateCode(TreeNode.Block);
+    end;
+    if assigned(TreeNode.FinallyTree) then begin
+     FProcCode.AddLn('goto FINALLY_'+GetSymbolName(FSelf)+'_'+IntToStr(FFinallyLabelCounter)+';');
+    end;
+    FProcCode.DecTab;
+    FProcCode.AddLn('}else{');
+    FProcCode.IncTab;
+    if assigned(TreeNode.ExceptTree) then begin
+     case TreeNode.ExceptTree.TreeNodeType of
+      ttntTRYONELSE:begin
+       if assigned(TreeNode.ExceptTree.Left) then begin
+        SubTreeNode:=TreeNode.ExceptTree.Left;
+        while assigned(SubTreeNode) do begin
+         FProcCode.AddLn('if(1){');
+         FProcCode.IncTab;
+         TranslateCode(SubTreeNode.Left);
+         SubTreeNode:=SubTreeNode.Right;
+         FProcCode.DecTab;
+         if assigned(SubTreeNode) then begin
+          FProcCode.Add('}else ');
+         end else begin
+          FProcCode.AddLn('}');
+         end;
+        end;
+       end;
+       if assigned(TreeNode.ElseTree) and assigned(TreeNode.ElseTree.Right) then begin
+        TranslateCode(TreeNode.ElseTree.Right);
+       end;
+      end;
+      else begin
+       TranslateCode(TreeNode.ElseTree);
+      end;
+     end;
+    end;
+    if assigned(TreeNode.FinallyTree) then begin
+     FProcCode.AddLn('FINALLY_'+GetSymbolName(FSelf)+'_'+IntToStr(FFinallyLabelCounter)+':');
+     inc(FFinallyLabelCounter);
+     TranslateCode(TreeNode.FinallyTree);
+    end;
+    FProcCode.DecTab;
+    FProcCode.AddLn('}');
    end;
    ttntTRYONELSE:begin
    end;

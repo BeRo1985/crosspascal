@@ -166,6 +166,13 @@ type DWORD=LongWord;
       destructor Destroy; virtual;
      end;
 
+     Exception=class
+      public
+       Message:ansistring;
+       constructor Create(Msg:ansistring);
+       destructor Destroy; override;
+     end;
+
 var Input,Output:text;
 
 procedure Move(var Src; var Dst; Size: Cardinal);
@@ -1152,6 +1159,19 @@ end;
 destructor TObject.Destroy;
 begin
 end;
+
+constructor Exception.Create(Msg:ansistring);
+begin
+ inherited Create;
+ Message:=Msg;
+end;
+
+destructor Exception.Destroy;
+begin
+ Message:='';
+ inherited Destroy;
+end;
+
 {$hints on}
 
 initialization
