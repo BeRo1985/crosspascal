@@ -7,6 +7,8 @@ begin
    writeln('Foo');
   except
    on e:Exception do begin
+    if assigned(e) then begin
+    end;
    end;
   end;
  finally

@@ -2598,7 +2598,7 @@ begin
        ExceptionSymbolList:=TSymbolList.Create(SymbolManager);
        Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
        Symbol^.Name:=tpsIdentifier+SymbolName;
-       Symbol^.SymbolType:=Symbols.tstType;
+       Symbol^.SymbolType:=Symbols.tstVariable;
        Symbol^.Attributes:=[tsaPublic,tsaTemporaryExceptionVariable];
        Symbol^.TypeDefinition:=AType;
        ExceptionSymbolList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
