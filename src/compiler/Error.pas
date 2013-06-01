@@ -510,7 +510,7 @@ begin
     503:result:='Record, object, class or interface has no fields or methods';
     504:result:='Error in expression';
     505:result:='Method "'+S1+'" in one of parented classes not found';
-    506:result:='This method doesn''t hsve any parent';
+    506:result:='This method doesn''t have any parent';
     507:result:='General syntax error';
     508:result:='Field identifier expected';
     509:result:='"'+'" not allowed here';

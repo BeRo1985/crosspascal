@@ -2559,9 +2559,10 @@ begin
  IsInExceptionHandler:=true;
  case Scanner.CurrentToken of
   tstEXCEPT:begin
+   Scanner.CheckForDirectives([tstON]);
    Scanner.Match(tstEXCEPT);
    OnElseTree:=nil;
-   while Scanner.IsEOFOrAbortError do begin
+   while not Scanner.IsEOFOrAbortError do begin
     Scanner.CheckForDirectives([tstON]);
     case Scanner.CurrentToken of
      tstON:begin
@@ -2575,6 +2576,7 @@ begin
         Scanner.Match(tstIdentifier);
         Scanner.Match(tstCOLON);
        end;
+       Symbol:=SymbolManager.GetSymbol(tpsIdentifier+Scanner.CurrentIdentifier,ModuleSymbol,CurrentObjectClass);
        if assigned(Symbol) and (Symbol^.SymbolType=Symbols.tstUnit) then begin
         Scanner.Match(tstIdentifier);
         Scanner.Match(tstPeriod);
@@ -4706,26 +4708,44 @@ begin
   result^.WasForwardedClass:=false;
   result^.NeedTypeInfo:=false;
  end;
- if not (IsForward or IsSystemUnit) then begin
-  if not assigned(Parent) then begin
-   NewName:=tpsIdentifier+'SYSTEM';
-   NewSymbol:=SymbolManager.GetSymbol(NewName,ModuleSymbol,CurrentObjectClass);
-   if assigned(NewSymbol) and (NewSymbol^.SymbolType=Symbols.tstUnit) then begin
+ if not IsForward then begin
+  if IsSystemUnit then begin
+   if not assigned(Parent) then begin
     NewName:=tpsIdentifier+'TOBJECT';
-    NewSymbol:=NewSymbol^.SymbolList.GetSymbol(NewName,ModuleSymbol,CurrentObjectClass);
+    NewSymbol:=SymbolManager.GetSymbol(NewName,ModuleSymbol,CurrentObjectClass);
+    if not assigned(NewSymbol) then begin
+     Error.AbortCode(20);
+    end else if (NewSymbol^.SymbolType<>Symbols.tstType) or (NewSymbol^.TypeDefinition^.TypeDefinition<>ttdClass) then begin
+     Error.AbortCode(20);
+    end else begin
+     ParentName:=NewName;
+     Parent:=NewSymbol;
+    end;
    end;
-   if not assigned(NewSymbol) then begin
-    Error.AbortCode(20);
-   end else if (NewSymbol^.SymbolType<>Symbols.tstType) or (NewSymbol^.TypeDefinition^.TypeDefinition<>ttdClass) then begin
-    Error.AbortCode(20);
-   end else begin
-    ParentName:=NewName;
-    Parent:=NewSymbol;
+  end else begin
+   if not assigned(Parent) then begin
+    NewName:=tpsIdentifier+'SYSTEM';
+    NewSymbol:=SymbolManager.GetSymbol(NewName,ModuleSymbol,CurrentObjectClass);
+    if assigned(NewSymbol) and (NewSymbol^.SymbolType=Symbols.tstUnit) then begin
+     NewName:=tpsIdentifier+'TOBJECT';
+     NewSymbol:=NewSymbol^.SymbolList.GetSymbol(NewName,ModuleSymbol,CurrentObjectClass);
+    end;
+    if not assigned(NewSymbol) then begin
+     Error.AbortCode(20);
+    end else if (NewSymbol^.SymbolType<>Symbols.tstType) or (NewSymbol^.TypeDefinition^.TypeDefinition<>ttdClass) then begin
+     Error.AbortCode(20);
+    end else begin
+     ParentName:=NewName;
+     Parent:=NewSymbol;
+    end;
    end;
   end;
  end;
  result^.TypeDefinition:=ttdClass;
  result^.HasVirtualTable:=true;
+ if result^.Symbol=Parent then begin
+  Parent:=nil;
+ end;
  result^.ChildOf:=Parent;
  result^.ForwardClass:=IsForward;
  result^.RecordAlignment:=0;
