@@ -414,6 +414,7 @@ uint32_t pasLengthArray(pasDynArray target);
 
 void pasFreeArray(pasDynArray* target, pasTypeInfo* t);
 
+void pasExceptionInit();
 void pasExceptionPushJmpBuf(pasExceptionStackJmpBufItem* item);
 pasExceptionStackJmpBufItem* pasExceptionPopJmpBuf();
 void pasExceptionRaise(void *object, void* addr);
@@ -901,9 +902,15 @@ void* pasClassDMTDispatch(void* classVMT, size_t index){
   return NULL;
 }
 
-pasExceptionStackJmpBufItem* pasExceptionStackJmpBufItemStack = NULL;
-void* pasExceptionObject = NULL;
-void* pasExceptionAddress = NULL;
+pasExceptionStackJmpBufItem* pasExceptionStackJmpBufItemStack;
+void* pasExceptionObject;
+void* pasExceptionAddress;
+
+void pasExceptionInit(){
+  pasExceptionStackJmpBufItemStack = NULL;
+  pasExceptionObject = NULL;
+  pasExceptionAddress = NULL;
+}
 
 void pasExceptionPushJmpBuf(pasExceptionStackJmpBufItem* item){
   item->next = pasExceptionStackJmpBufItemStack;
@@ -1221,6 +1228,7 @@ end;
 initialization
 [[[
  stringRefCount = 0;
+ pasExceptionInit();
 ]]]
 finalization
 [[[
