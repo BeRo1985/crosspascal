@@ -1666,8 +1666,6 @@ begin
     FProcCode.IncTab;
     if assigned(TreeNode.ExceptTree) and (TreeNode.ExceptTree.TreeNodeType=ttntTRYONELSE) then begin
      FProcCode.AddLn('TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+' = pasExceptioneGetRaiseObject();');
-     FProcCode.AddLn('printf("%i\n", (size_t)TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+');');
-     FProcCode.AddLn('printf("%i\n", (size_t)TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+'->INTERNAL_FIELD_VMT);');
     end;
     FProcCode.AddLn('pasExceptionPopJmpBuf();');
     if assigned(TreeNode.ExceptTree) then begin
@@ -1677,7 +1675,6 @@ begin
         SubTreeNode:=TreeNode.ExceptTree;
         while assigned(SubTreeNode) do begin
          if assigned(SubTreeNode.Symbol) then begin
-          FProcCode.AddLn('printf("%i\n", (size_t)((void*)&'+GetTypeName(SubTreeNode.CheckType)+'_VMT));');
           FProcCode.AddLn('if(TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+' && ((void*)TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+'->INTERNAL_FIELD_VMT == (void*)&'+GetTypeName(SubTreeNode.CheckType)+'_VMT)){');
           FProcCode.IncTab;
           Symbol:=SubTreeNode.Symbol;
