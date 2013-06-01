@@ -1654,13 +1654,17 @@ begin
     if assigned(TreeNode.Block) then begin
      TranslateCode(TreeNode.Block);
     end;
-    FProcCode.AddLn('goto TRY_FINALLY_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+';');
+    FProcCode.AddLn('pasExceptionPopJmpBuf();');
+    if assigned(TreeNode.FinallyTree) then begin
+     FProcCode.AddLn('goto TRY_FINALLY_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+';');
+    end;
     FProcCode.DecTab;
     FProcCode.AddLn('}else{');
     FProcCode.IncTab;
     if assigned(TreeNode.ExceptTree) and (TreeNode.ExceptTree.TreeNodeType=ttntTRYONELSE) then begin
      FProcCode.AddLn('TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+' = pasExceptioneGetRaiseObject();');
     end;
+    FProcCode.AddLn('pasExceptionPopJmpBuf();');
     if assigned(TreeNode.ExceptTree) then begin
      case TreeNode.ExceptTree.TreeNodeType of
       ttntTRYONELSE:begin
@@ -1703,9 +1707,8 @@ begin
       end;
      end;
     end;
-    FProcCode.AddLn('TRY_FINALLY_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+':');
-    FProcCode.AddLn('pasExceptionPopJmpBuf();');
     if assigned(TreeNode.FinallyTree) then begin
+     FProcCode.AddLn('TRY_FINALLY_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+':');
      TranslateCode(TreeNode.FinallyTree);
     end;
     FProcCode.DecTab;
