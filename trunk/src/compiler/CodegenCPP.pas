@@ -65,7 +65,7 @@ type TCodeWriter = class
        FWithStackSize: longint;
        FBreakLabelNeeded: array of Integer;
        FContinueLabelNeeded: array of Integer;
-       FFinallyLabelCounter: longint;
+       FTryBlockCounter: longint;
       protected
        function GetTypeSize(AType: PType): Cardinal;
 
@@ -517,7 +517,7 @@ begin
  FWithStack:=nil;
  FWithStackSize:=0;
 
- FFinallyLabelCounter:=0;
+ FTryBlockCounter:=0;
 end;
 
 destructor TCodegenCPP.Destroy;
@@ -852,6 +852,7 @@ begin
  FHeader.AddHeader('');
  FHeader.AddHeader('// unit '+UnitSymbol.Name);
  FHeader.AddHeader('');
+ FHeader.AddInclude('setjmp.h');
  FHeader.AddInclude('system.h');
  FHeader.AddInclude('stdint.h');
  for i:=0 to SymbolManager.UnitList.Count-1 do
@@ -916,6 +917,7 @@ var SubTreeNode,SubTreeNode2:TTreeNode;
     HaveParameters,InjectNullPointer:boolean;
     ObjectClassType:PType;
     MethodSymbol:PSymbol;
+    TryBlockCounter:longint;
 begin
  if assigned(TreeNode) then begin
   if TreeNode.LineNumber=680 then begin
@@ -1631,13 +1633,19 @@ begin
     FProcCode.Add('goto LABEL_'+GetSymbolName(FSelf)+'_'+TreeNode.LabelName+';');
    end;
    ttntTRY:begin
-    FProcCode.AddLn('if(1){');
+    TryBlockCounter:=FTryBlockCounter;
+    inc(FTryBlockCounter);
+    FProcCode.AddLn('{');
+    FProcCode.IncTab;
+    FProcCode.AddLn('jmp_buf TRY_JMPBUF_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+';');
+    FProcCode.AddLn('int TRY_VALUE_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+' = setjmp(TRY_JMPBUF_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+');');
+    FProcCode.AddLn('if(!TRY_VALUE_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+'){');
     FProcCode.IncTab;
     if assigned(TreeNode.Block) then begin
      TranslateCode(TreeNode.Block);
     end;
     if assigned(TreeNode.FinallyTree) then begin
-     FProcCode.AddLn('goto FINALLY_'+GetSymbolName(FSelf)+'_'+IntToStr(FFinallyLabelCounter)+';');
+     FProcCode.AddLn('goto TRY_FINALLY_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+';');
     end;
     FProcCode.DecTab;
     FProcCode.AddLn('}else{');
@@ -1670,10 +1678,11 @@ begin
      end;
     end;
     if assigned(TreeNode.FinallyTree) then begin
-     FProcCode.AddLn('FINALLY_'+GetSymbolName(FSelf)+'_'+IntToStr(FFinallyLabelCounter)+':');
-     inc(FFinallyLabelCounter);
+     FProcCode.AddLn('TRY_FINALLY_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+':');
      TranslateCode(TreeNode.FinallyTree);
     end;
+    FProcCode.DecTab;
+    FProcCode.AddLn('}');
     FProcCode.DecTab;
     FProcCode.AddLn('}');
    end;
