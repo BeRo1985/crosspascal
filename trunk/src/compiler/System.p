@@ -935,6 +935,7 @@ void pasExceptionReraise(){
 }
 
 void* pasExceptioneGetRaiseObject(){
+//printf("%i\n", (size_t)pasExceptionObject );
   return pasExceptionObject;
 }
 
