@@ -84,7 +84,7 @@ const CompilerInfoString:pchar='OBJPAS2C';
       vmtNewInstance=sizeof(pointer)*16;
       vmtFreeInstance=sizeof(pointer)*17;
       vmtDestroy=sizeof(pointer)*18;
-      
+
       vmtQueryInterface=sizeof(pointer)*19;
       vmtAddRef=sizeof(pointer)*20;
       vmtRelease=sizeof(pointer)*21;
@@ -416,6 +416,8 @@ void pasFreeArray(pasDynArray* target, pasTypeInfo* t);
 
 void pasExceptionPushJmpBuf(pasExceptionStackJmpBufItem* item);
 pasExceptionStackJmpBufItem* pasExceptionPopJmpBuf();
+void pasExceptionRaise(void *object);
+void* pasExceptioneGetRaiseObject();
 
 ]]]
 
@@ -899,22 +901,27 @@ void* pasClassDMTDispatch(void* classVMT, size_t index){
 }
 
 pasExceptionStackJmpBufItem* pasExceptionStackJmpBufItemStack = NULL;
+void* pasExceptionObject = NULL;
 
 void pasExceptionPushJmpBuf(pasExceptionStackJmpBufItem* item){
- item->next = pasExceptionStackJmpBufItemStack;
- pasExceptionStackJmpBufItemStack = item;
+  item->next = pasExceptionStackJmpBufItemStack;
+  pasExceptionStackJmpBufItemStack = item;
 }
 
 pasExceptionStackJmpBufItem* pasExceptionPopJmpBuf(){
- pasExceptionStackJmpBufItem* result = pasExceptionStackJmpBufItemStack;
- pasExceptionStackJmpBufItemStack = result->next;
+  pasExceptionStackJmpBufItem* result = pasExceptionStackJmpBufItemStack;
+  pasExceptionStackJmpBufItemStack = result->next;
 }
 
-void pasExceptionPushRaise(void *object){
-
+void pasExceptionRaise(void *object){
+  if(pasExceptionStackJmpBufItemStack){
+    pasExceptionObject = object;
+    longjmp(pasExceptionStackJmpBufItemStack->jmpBuf, 1);
+  }
 }
 
-void* pasExceptionPopRaise(){
+void* pasExceptioneGetRaiseObject(){
+  return pasExceptionObject;
 }
 
 ]]]

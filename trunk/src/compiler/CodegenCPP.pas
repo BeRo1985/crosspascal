@@ -1658,6 +1658,9 @@ begin
     FProcCode.DecTab;
     FProcCode.AddLn('}else{');
     FProcCode.IncTab;
+    if assigned(TreeNode.ExceptTree) and (TreeNode.ExceptTree.TreeNodeType=ttntTRYONELSE) then begin
+     FProcCode.AddLn('TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+' = pasExceptioneGetRaiseObject();');
+    end;
     if assigned(TreeNode.ExceptTree) then begin
      case TreeNode.ExceptTree.TreeNodeType of
       ttntTRYONELSE:begin
