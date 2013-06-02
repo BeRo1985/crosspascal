@@ -546,7 +546,7 @@ begin
 end;
 
 procedure TOptimizerHighLevel.OptimizeTypeConv(var TreeNode:TTreeNode);
-var OldLeft:TTreeNode;
+var OldLeft,Node,NewLeft:TTreeNode;
     OldType:PType;
     CompareTypesEqual:TCompareTypesEqual;
     ConvertType:TConvertType;
@@ -776,6 +776,16 @@ begin
   end;
   TreeNode.ItemType:=TreeNode.Left.ItemType;
   TreeNode.ItemValue:=TreeNode.Left.ItemValue;
+ end;
+ if assigned(TreeNode) and (TreeNode.TreeNodeType=ttntTYPECONV) then begin
+  Node:=TreeNode.Left;
+  while assigned(Node) and (Node.TreeNodeType=ttntTYPECONV) do begin
+   NewLeft:=Node.Left;
+   Node.Left:=nil;
+   FreeAndNil(Node);
+   Node:=NewLeft;
+  end;
+  TreeNode.Left:=Node;
  end;
 end;
 
