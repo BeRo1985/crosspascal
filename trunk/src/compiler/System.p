@@ -97,7 +97,11 @@ const CompilerInfoString:pchar='OBJPAS2C';
 type DWORD=LongWord;
      Bool=LongBool;
      PBool=^Bool;
-
+	 
+	 TByteArray = array[0..32767] of Byte;
+	 PByteArray = ^TByteArray;
+	 TWordArray = array[0..16383] of Word;
+	 PWordArray = ^TWordArray;
      TObject=class;
 
      TClass=class of TObject;
@@ -490,6 +494,8 @@ function Random(Max:integer):integer;
 begin
  RandSeed:=(RandSeed*$8088405)+1;
  result:=int64((int64(RandSeed)*int64(Max)) shr 32);
+ if result<0 then result := - result;
+ result := result mod Max;
 end;
 
 function Random:double;
@@ -633,7 +639,7 @@ void pasFreeArray(pasDynArray* target, pasTypeInfo* t) {
         // red TODO: pasFinalize(); you do need to add a "optional" array element type info somewhere in the dynamic array data
         // structure, together with a if-check here
         if(t) {
-                pasFinalizeArray(*target, t, header->length);
+                pasFinalizeArray(target, t, header->length);
         }
         free(header);
     }
@@ -853,7 +859,7 @@ void pasFinalizeArray(void* p, pasTypeInfo* t, size_t count){
         break;
       }
       case pastkRecord:{
-        ft = t->data;
+		ft = t->data;
         while(count--){
           pasFinalizeRecord(p, t);
           p += ft->size;
