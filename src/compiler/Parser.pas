@@ -2607,7 +2607,7 @@ begin
        SymbolManager.PushSymbolList(ExceptionSymbolList);
        NewStatementTree:=TreeManager.GenerateLeftRightNode(ttntStatement,nil,ParseStatement(false));
        SymbolManager.PopSymbolList(ExceptionSymbolList);
-       ExceptionSymbolList.UnlistSymbol(Symbol);
+       ExceptionSymbolList.RemoveSymbol(Symbol);
        FreeAndNil(ExceptionSymbolList);
       end else begin
        Symbol:=nil;

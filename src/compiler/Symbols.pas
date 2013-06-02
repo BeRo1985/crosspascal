@@ -433,6 +433,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
        constructor Create(TheSymbolManager:TSymbolManager);
        destructor Destroy; override;
        procedure UnlistSymbol(var Symbol:PSymbol);
+       procedure RemoveSymbol(var Symbol:PSymbol);
        procedure DeleteSymbol(var Symbol:PSymbol);
        procedure RemoveLastSymbol;
        function GetSymbol(const Name:ansistring;ModuleSymbol:PSymbol=nil;ObjectClassType:PType=nil;Childs:boolean=true):PSymbol;
@@ -590,6 +591,38 @@ begin
      StringHashMapEntity^.Value:=TBeRoStringHashMapValue(pointer(Symbol^.PreviousWithEqualName));
     end else begin
      StringHashMap.Delete(Symbol^.Name);
+    end;
+   end;
+  end;
+ end;
+end;
+
+procedure TSymbolList.RemoveSymbol(var Symbol:PSymbol);
+begin
+ if assigned(Symbol) then begin
+  if assigned(Symbol^.Next) then begin
+   UnlistSymbol(Symbol);
+   if First=Symbol then begin
+    First:=First^.Next;
+    First^.Previous:=nil;
+   end else begin
+    if assigned(Symbol^.Previous) and assigned(Symbol^.Next) then begin
+     Symbol^.Previous^.Next:=Symbol^.Next;
+     Symbol^.Next^.Previous:=Symbol^.Previous;
+    end else begin
+     SymbolManager.Error.InternalError(200605180933000);
+    end;
+   end;
+  end else begin
+   if assigned(First) and assigned(Last) then begin
+    if assigned(First^.Next) then begin
+     Last:=Last^.Previous;
+     UnlistSymbol(Symbol);
+     Last^.Next:=nil;
+    end else begin
+     UnlistSymbol(Symbol);
+     First:=nil;
+     Last:=nil;
     end;
    end;
   end;
