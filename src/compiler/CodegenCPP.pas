@@ -1641,13 +1641,15 @@ begin
      FProcCode.Add('exit(');
 
      if Assigned(TreeNode.Left) then
-       TranslateCode(TreeNode.Left);
+       TranslateCode(TreeNode.Left)
+     else
+       FProcCode.Add('0');
 
      FProcCode.AddLn(');');
    end;
    ttntEXIT:begin
     for Level := FCodeLevel downto 0 do begin
-     if (Level>=0) and FLevelHasTryBlock[Level] then begin
+     if FLevelHasTryBlock[Level] then begin
       FProcCode.AddLn('pasExceptionPopJmpBuf();');
      end;
     end;
