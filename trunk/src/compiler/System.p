@@ -481,30 +481,21 @@ function Max(a,b:extended):extended; overload;
 
 implementation
 
-procedure NextRandSeed;
+procedure Randomize;
 begin
  RandSeed:=(RandSeed*$8088405)+1;
 end;
 
-procedure Randomize;
-begin
- NextRandSeed;
-end;
-
 function Random(Max:integer):integer;
 begin
- NextRandSeed;
- if Max>0 then begin
-  result:=(RandSeed and $7FFFFFFFF) mod Max;
- end else begin
-  result:=0;
- end;
+ RandSeed:=(RandSeed*$8088405)+1;
+ result:=int64((int64(RandSeed)*int64(Max)) shr 32);
 end;
 
 function Random:double;
 const DivFactor=(1.0/$10000)/$10000;
 begin
- NextRandSeed;
+ RandSeed:=(RandSeed*$8088405)+1;
  result:=RandSeed*DivFactor;
 end;
 
