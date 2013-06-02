@@ -97,7 +97,7 @@ type TCodeWriter = class
 
        procedure TranslateStringCode(TreeNode: TTreeNode; DesiredStringType: PType);
 
-       procedure TranslateCode(TreeNode:TTreeNode);
+       procedure TranslateCode(TreeNode:TTreeNode; NoTypecasting: Boolean = false);
 
        procedure StartBreakContinuePart;
        procedure StopBreakPart;
@@ -949,7 +949,7 @@ begin
  Target.Add(')');
 end;
 
-procedure TCodegenCPP.TranslateCode(TreeNode:TTreeNode);
+procedure TCodegenCPP.TranslateCode(TreeNode:TTreeNode; NoTypecasting: Boolean = false);
 var SubTreeNode,SubTreeNode2:TTreeNode;
     s:ansistring;
     HaveParameters,InjectNullPointer:boolean;
@@ -978,37 +978,37 @@ begin
    end;
    ttntAssign:begin
     if assigned(TreeNode.Left) and assigned(TreeNode.Right) then begin
-     if(TreeNode.Left.TreeNodeType=ttntVAR)and(TreeNode.Left.Symbol.TypeDefinition.TypeDefinition=ttdLongString) then
+     if(TreeNode.Left.Return.TypeDefinition=ttdLongString) then
      begin
       FProcCode.Add('AssignLongstring(&');
-      TranslateCode(TreeNode.Left);
+      TranslateCode(TreeNode.Left, true);
       FProcCode.Add(', (pasLongstring)',spacesRIGHT);
       TranslateStringCode(TreeNode.Right, TreeNode.Left.Return);
       FProcCode.Add(')');
      end else
-     if(TreeNode.Left.TreeNodeType=ttntVAR)and(TreeNode.Left.Symbol.TypeDefinition.TypeDefinition=ttdShortstring) then
+     if(TreeNode.Left.Return.TypeDefinition=ttdShortstring) then
      begin
       FProcCode.Add('AssignShortstring(&');
-      TranslateCode(TreeNode.Left);
+      TranslateCode(TreeNode.Left, true);
       FProcCode.Add(', ');
       FProcCode.Add(IntToStr(TreeNode.Left.Symbol.TypeDefinition.Length));
       FProcCode.Add(', (pasLongstring)',spacesRIGHT);
       TranslateStringCode(TreeNode.Right, @Ansistringtype);
       FProcCode.Add(')');
      end else
-     if(TreeNode.Left.TreeNodeType=ttntVAR)and(TreeNode.Left.Symbol.TypeDefinition.TypeDefinition=ttdArray)and
+     if(TreeNode.Left.Return.TypeDefinition=ttdArray)and
        (TreeNode.Left.Symbol.TypeDefinition.DynamicArray) then
      begin
       FProcCode.Add('pasAssignArray(&');
-      TranslateCode(TreeNode.Left);
+      TranslateCode(TreeNode.Left, true);
       FProcCode.Add(', (pasDynArray)',spacesRIGHT);
       TranslateCode(TreeNode.Right);
       FProcCode.Add(', &'+GetTypeName(TreeNode.Left.Symbol.TypeDefinition)+'_TYPEINFO)');
      end else
      begin
-      TranslateCode(TreeNode.Left);
+      TranslateCode(TreeNode.Left, true);
       FProcCode.Add('=',spacesBOTH);
-      if assigned(TreeNode.Right.Return) and (TreeNode.Right.Return.TypeDefinition=ttdPOINTER) then begin
+      if assigned(TreeNode.Right.Return) and (TreeNode.Return.TypeDefinition=ttdPOINTER) then begin
        FProcCode.Add('((void*)(');
        TranslateCode(TreeNode.Right);
        FProcCode.Add('))');
@@ -1374,7 +1374,7 @@ begin
     if TreeNode.WithLevel>=0 then begin
      FProcCode.Add(GetSymbolName(TreeNode.Symbol,'withLevel'+IntToStr(TreeNode.WithLevel)+'->'));
     end else if assigned(TreeNode.Symbol^.OwnerObjectClass) and assigned(TreeNode.Symbol^.OwnerType) then begin
-     FProcCode.Add(GetSymbolName(TreeNode.Symbol,'instanceData->'));
+     FProcCode.Add(GetSymbolName(TreeNode.Symbol,'instanceData->', not NoTypecasting));
     end else begin
      FProcCode.Add(GetSymbolName(TreeNode.Symbol));
     end;
@@ -1393,7 +1393,7 @@ begin
          FProcCode.Add(ConvertStdType(TreeNode.Return^.SubRangeType));
          FProcCode.Add(')');
          FProcCode.Add('((');
-         TranslateCode(TreeNode.Left);
+         TranslateCode(TreeNode.Left, NoTypecasting);
          FProcCode.Add(') ? ');
          if TreeNode.Return^.UpperLimit=$01 then begin
           FProcCode.Add('0x01ul');
@@ -1412,11 +1412,11 @@ begin
          FProcCode.Add('((');
          FProcCode.Add(ConvertStdType(TreeNode.Return^.SubRangeType));
          FProcCode.Add(')(');
-         TranslateCode(TreeNode.Left);
+         TranslateCode(TreeNode.Left, NoTypecasting);
          FProcCode.Add('))');
         end;
        end else begin
-        TranslateCode(TreeNode.Left);
+        TranslateCode(TreeNode.Left, NoTypecasting);
        end;
       end;
       ttdFloat:begin
@@ -1437,11 +1437,11 @@ begin
         FProcCode.Add('((');
         FProcCode.Add(GetTypeName(TreeNode.Return));
         FProcCode.Add(')((void*)(');
-        TranslateCode(TreeNode.Left);
+        TranslateCode(TreeNode.Left, True);
         FProcCode.Add(')))');
        end else begin
         FProcCode.Add('((void*)(');
-        TranslateCode(TreeNode.Left);
+        TranslateCode(TreeNode.Left, True);
         FProcCode.Add('))');
        end;
       end;
@@ -1453,7 +1453,11 @@ begin
         FProcCode.Add(GetTypeName(TreeNode.Return));
         FProcCode.Add('*)');
         FProcCode.Add('((void*)(&(');
-        TranslateCode(TreeNode.Left);
+        SubTreeNode := TreeNode.Left;
+        while Assigned(SubTreeNode) and (SubTreeNode.TreeNodeType in [ttntTYPECONV]) do begin
+         SubTreeNode:=SubTreeNode.Left;
+        end;
+        TranslateCode(SubTreeNode, True);
         FProcCode.Add(')))))');
        end;
       end;
@@ -2447,7 +2451,7 @@ begin
          (SubTreeNode.Left.Return.TypeDefinition = ttdShortString)) then
        TranslateStringCode(SubTreeNode.Left, SubTreeNode.Return)
       else
-       TranslateCode(SubTreeNode.Left);
+       TranslateCode(SubTreeNode.Left, SubTreeNode.ReferenceParameter);
 
       if SubTreeNode.ReferenceParameter then begin
        FProcCode.Add(')))');
@@ -2495,17 +2499,17 @@ begin
      if (TreeNode.Left.TreeNodeType = ttntPointer) then
      begin
       // pointer type field access in c is "myPointerTypeVar->myFieldEntry"
-      TranslateCode(TreeNode.Left.Left);
+      TranslateCode(TreeNode.Left.Left, NoTypecasting);
       FProcCode.Add('->');
      end else if (TreeNode.Left.TreeNodeType = ttntIndex) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and TreeNode.Left.Left.Return.DynamicArray then begin
       FProcCode.FIgnoreNextToken := True;
-      TranslateCode(TreeNode.Left);
+      TranslateCode(TreeNode.Left, NoTypecasting);
       FProcCode.Add('->');
      end else if assigned(TreeNode.Left) and assigned(TreeNode.Left.Return) and (TreeNode.Left.Return.TypeDefinition=ttdCLASS) then begin
-      TranslateCode(TreeNode.Left);
+      TranslateCode(TreeNode.Left, NoTypecasting);
       FProcCode.Add('->');
      end else begin
-       TranslateCode(TreeNode.Left);
+       TranslateCode(TreeNode.Left, NoTypecasting);
        FProcCode.Add('.');
      end;
      if assigned(TreeNode.SymbolField) then begin
@@ -3725,7 +3729,10 @@ begin
      end;
      CodeTarget.AddLn('pasTypeInfo '+Name+'_TYPEINFO={');
      CodeTarget.IncTab;
-     CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
+     if (Type_^.TypeKind = TypeKindArray)and(Type_^.DynamicArray) then
+      CodeTarget.AddLn(IntToStr(TypeKindDynArray)+',')
+     else
+      CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
      if Type_^.TypeDefinition=ttdLongString then begin
       CodeTarget.AddLn(IntToStr(Type_^.LongStringCodePage)+',');
      end else begin
@@ -4238,7 +4245,7 @@ begin
         CodeTarget.AddLn('}');
         CodeTarget.DecTab;
         CodeTarget.AddLn('};');
-        CodeTarget.AddLn('static '+Name+'_VMT_TYPE* '+Name+'_VMT_POINTER = &'+Name+'_VMT;');
+        CodeTarget.AddLn(Name+'_VMT_TYPE* '+Name+'_VMT_POINTER = &'+Name+'_VMT;');
        end;
 
        Symbol:=SymbolList.First;

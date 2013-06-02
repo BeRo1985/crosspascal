@@ -134,7 +134,7 @@ begin
     end;
    end;
   end else begin
-   DebugLog('Compiling '+name+'.c: '+GetDosOutput(Options.TargetCompiler+' -c '+pansichar(ChangeFileExt(Name,'.c'))));
+   DebugLog('Compiling '+name+'.c: '+GetDosOutput(Options.TargetCompiler+' -std=gnu99 -O3 -march=native -m32 -c '+pansichar(ChangeFileExt(Name,'.c'))));
   end;
  finally
   Error.LocalSwitches:=@LocalSwitches;
@@ -211,7 +211,7 @@ begin
   end;
 
 //  DebugLog(GetDosOutput(Options.TargetCompiler+' -c objpas2c.c'));
-  s:=Options.TargetCompiler+' objpas2c.o '+s;
+  s:=Options.TargetCompiler+' -std=gnu99 -O3 -march=native -m32 '+s;
   DebugLog('Executing: '+s);
   DebugLog(GetDosOutput(s));
  end;
