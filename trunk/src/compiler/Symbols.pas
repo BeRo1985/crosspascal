@@ -464,6 +464,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
        CurrentList:TSymbolList;
        GlobalList:TSymbolList;
        ProcList:TSymbolList;
+       TemporarySymbolList:TSymbolList;
        ConstantList:TConstantList;
        ConstantCount:longint;
        LabelCount:longint;
@@ -627,6 +628,15 @@ begin
    end;
   end;
  end;
+ if assigned(SymbolManager.TemporarySymbolList.Last) then begin
+  SymbolManager.TemporarySymbolList.Last.Next:=Symbol;
+  Symbol.Previous:=SymbolManager.TemporarySymbolList.Last;
+ end else begin
+  SymbolManager.TemporarySymbolList.First:=Symbol;
+  Symbol.Previous:=nil;
+ end;
+ Symbol.Next:=nil;
+ SymbolManager.TemporarySymbolList.Last:=Symbol;
 end;
 
 procedure TSymbolList.DeleteSymbol(var Symbol:PSymbol);
@@ -919,6 +929,7 @@ begin
  CurrentList:=nil;
  GlobalList:=nil;
  ProcList:=nil;
+ TemporarySymbolList:=nil;
  TypeList:=TTypeList.Create(self);
  FillChar(ConstantList,SizeOf(TConstantList),#0);
  ConstantCount:=0;
@@ -937,6 +948,7 @@ end;
 destructor TSymbolManager.Destroy;
 begin
  Clear;
+ FreeAndNil(TemporarySymbolList);
  FreeAndNil(GlobalList);
  FreeAndNil(TypeList);
  FreeAndNil(UnitList);
@@ -962,6 +974,7 @@ begin
   end;
  end;
  FillChar(ConstantList,SizeOf(TConstantList),#0);
+ FreeAndNil(TemporarySymbolList);
  FreeAndNil(GlobalList);
  while assigned(FirstSymbolListStack) do begin
   PopLastSymbolList;
@@ -972,7 +985,9 @@ begin
  CurrentList:=nil;
  GlobalList:=nil;
  ProcList:=nil;
+ TemporarySymbolList:=nil;
  UnitList.Clear;
+ TemporarySymbolList:=TSymbolList.Create(self);
  GlobalList:=TSymbolList.Create(self);
  PushSymbolList(GlobalList);
  CurrentList:=GlobalList;
