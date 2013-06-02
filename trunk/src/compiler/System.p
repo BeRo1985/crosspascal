@@ -384,6 +384,16 @@ typedef struct pasExceptionStackJmpBufItem {
 
 typedef pasExceptionStackJmpBufItem* pasExceptionStackJmpBufItemPointer;
 
+typedef struct pasExceptionThreadContext {
+  void* previous;
+  void* next;
+  pasExceptionStackJmpBufItem* jmpBufItemStack;
+  void* object;
+  void* address;
+} pasExceptionThreadContext;
+
+typedef pasExceptionThreadContext* pasExceptionThreadContextPointer;
+
 void* pasGetMem(size_t size);
 void pasReallocMem(void** ptr,size_t size);
 void pasFreeMem(void* ptr);
@@ -414,7 +424,9 @@ uint32_t pasLengthArray(pasDynArray target);
 
 void pasFreeArray(pasDynArray* target, pasTypeInfo* t);
 
+void pasExceptionInitContext(pasExceptionThreadContext* context);
 void pasExceptionInit();
+pasExceptionThreadContext* pasGetCurrentExceptionThreadContext();
 void pasExceptionPushJmpBuf(pasExceptionStackJmpBufItem* item);
 pasExceptionStackJmpBufItem* pasExceptionPopJmpBuf();
 void pasExceptionRaise(void *object, void* addr);
@@ -902,40 +914,53 @@ void* pasClassDMTDispatch(void* classVMT, size_t index){
   return NULL;
 }
 
-pasExceptionStackJmpBufItem* pasExceptionStackJmpBufItemStack;
-void* pasExceptionObject;
-void* pasExceptionAddress;
+pasExceptionThreadContext mainExceptionThreadContext;
+
+void pasExceptionInitContext(pasExceptionThreadContext* context){
+  context->previous = NULL;
+  context->next = NULL;
+  context->jmpBufItemStack = NULL;
+  context->object = NULL;
+  context->address = NULL;
+}
 
 void pasExceptionInit(){
-  pasExceptionStackJmpBufItemStack = NULL;
-  pasExceptionObject = NULL;
-  pasExceptionAddress = NULL;
+  pasExceptionInitContext(&mainExceptionThreadContext);
+}
+
+pasExceptionThreadContext* pasGetCurrentExceptionThreadContext(){
+  return &mainExceptionThreadContext;
 }
 
 void pasExceptionPushJmpBuf(pasExceptionStackJmpBufItem* item){
-  item->next = pasExceptionStackJmpBufItemStack;
-  pasExceptionStackJmpBufItemStack = item;
+  pasExceptionThreadContext* currentCxceptionThreadContext = pasGetCurrentExceptionThreadContext();
+  item->next = currentCxceptionThreadContext->jmpBufItemStack;
+  currentCxceptionThreadContext->jmpBufItemStack = item;
 }
 
 pasExceptionStackJmpBufItem* pasExceptionPopJmpBuf(){
-  pasExceptionStackJmpBufItem* result = pasExceptionStackJmpBufItemStack;
-  pasExceptionStackJmpBufItemStack = result->next;
+  pasExceptionThreadContext* currentCxceptionThreadContext = pasGetCurrentExceptionThreadContext();
+  pasExceptionStackJmpBufItem* result = currentCxceptionThreadContext->jmpBufItemStack;
+  currentCxceptionThreadContext->jmpBufItemStack = result->next;
 }
 
 void pasExceptionRaise(void *object, void* addr){
-  if(pasExceptionStackJmpBufItemStack){
-    pasExceptionObject = object;
-    pasExceptionAddress = addr;
-    longjmp(pasExceptionStackJmpBufItemStack->jmpBuf, 1);
+  pasExceptionThreadContext* currentCxceptionThreadContext = pasGetCurrentExceptionThreadContext();
+  if(currentCxceptionThreadContext->jmpBufItemStack){
+    currentCxceptionThreadContext->object = object;
+    currentCxceptionThreadContext->address = addr;
+    longjmp(currentCxceptionThreadContext->jmpBufItemStack->jmpBuf, 1);
   }
 }
 
 void pasExceptionReraise(){
-  pasExceptionRaise(pasExceptionObject, pasExceptionAddress);
+  pasExceptionThreadContext* currentCxceptionThreadContext = pasGetCurrentExceptionThreadContext();
+  pasExceptionRaise(currentCxceptionThreadContext->object, currentCxceptionThreadContext->address);
 }
 
 void* pasExceptioneGetRaiseObject(){
-  return pasExceptionObject;
+  pasExceptionThreadContext* currentCxceptionThreadContext = pasGetCurrentExceptionThreadContext();
+  return currentCxceptionThreadContext->object;
 }
 
 ]]]
