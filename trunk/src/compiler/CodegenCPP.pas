@@ -65,8 +65,11 @@ type TCodeWriter = class
        FWithStackSize: longint;
        FBreakLabelNeeded: array of Integer;
        FContinueLabelNeeded: array of Integer;
+       FBreakContinueLevel: array of Integer;
+       FLevelHasTryBlock: array of boolean;
        FTryBlockCounter: longint;
        FTrySymbolCounter: longint;
+       FCodeLevel: longint;
       protected
        function GetTypeSize(AType: PType): Cardinal;
 
@@ -523,13 +526,28 @@ begin
  FWithStack:=nil;
  FWithStackSize:=0;
 
+ FBreakLabelNeeded:=nil;
+ FContinueLabelNeeded:=nil;
+ FBreakContinueLevel:=nil;
+ SetLength(FBreakLabelNeeded,1024);
+ SetLength(FContinueLabelNeeded,1024);
+ SetLength(FBreakContinueLevel,1024);
+
  FTryBlockCounter:=0;
  FTrySymbolCounter:=0;
+ FCodeLevel:=-1;
+
+ FLevelHasTryBlock:=nil;
+ SetLength(FLevelHasTryBlock,1024);
 end;
 
 destructor TCodegenCPP.Destroy;
 begin
  SetLength(FWithStack,0);
+ SetLength(FBreakLabelNeeded,0);
+ SetLength(FContinueLabelNeeded,0);
+ SetLength(FBreakContinueLevel,0);
+ SetLength(FLevelHasTryBlock,0);
  FHeader.Free;
  FCode.Free;
  FProcCode.Free;
@@ -599,6 +617,10 @@ var //s,s2: ansistring;
 begin
 
  FWithStackSize:=0;
+
+ FTryBlockCounter:=0;
+ FTrySymbolCounter:=0;
+ FCodeLevel:=-1;
 
  FSelf := ProcSymbol.OwnerModule;
 
@@ -790,6 +812,9 @@ begin
  FProcSymbol:=nil;
 
  FWithStackSize:=0;
+ FTryBlockCounter:=0;
+ FTrySymbolCounter:=0;
+ FCodeLevel:=-1;
 
  for i:=0 to SymbolManager.UnitList.Count-1 do
   FCode.AddInclude(Copy(SymbolManager.UnitList[i], 1, Length(SymbolManager.UnitList[i]))+'.h');
@@ -883,11 +908,17 @@ begin
 
  FProcCode.AddLn('void '+UnitSymbol.Name+'_C_INITIALIZATION(){');
  FWithStackSize:=0;
+ FTryBlockCounter:=0;
+ FTrySymbolCounter:=0;
+ FCodeLevel:=-1;
  TranslateCode(InitializationCodeTree);
  FProcCode.AddLn('}');
 
  FProcCode.AddLn('void '+UnitSymbol.Name+'_C_FINALIZATION(){');
  FWithStackSize:=0;
+ FTryBlockCounter:=0;
+ FTrySymbolCounter:=0;
+ FCodeLevel:=-1;
  TranslateCode(FinalizationCodeTree);
  FProcCode.AddLn('}');
 
@@ -924,13 +955,22 @@ var SubTreeNode,SubTreeNode2:TTreeNode;
     HaveParameters,InjectNullPointer:boolean;
     ObjectClassType:PType;
     MethodSymbol,Symbol:PSymbol;
-    TryBlockCounter:longint;
+    TryBlockCounter,Level:longint;
 begin
  if assigned(TreeNode) then begin
   if TreeNode.LineNumber=680 then begin
    if TreeNode.LineNumber=680 then begin
    end;
   end;
+  inc(FCodeLevel);
+  if (FCodeLevel+1)>length(FLevelHasTryBlock) then begin
+   if FCodeLevel<16 then begin
+    SetLength(FLevelHasTryBlock,16);
+   end else begin
+    SetLength(FLevelHasTryBlock,(FCodeLevel+1) shl 1);
+   end;
+  end;
+  FLevelHasTryBlock[FCodeLevel]:=false;
   case TreeNode.TreeNodeType of
    ttntEMPTY:begin
    end;
@@ -1573,6 +1613,11 @@ begin
       FBreakLabelNeeded[FNestedBreakCount-1] := FBreakCount;
       Inc(FBreakCount);
      end;
+     for Level := FCodeLevel downto FBreakContinueLevel[FNestedBreakCount-1]+1 do begin
+      if (Level>=0) and FLevelHasTryBlock[Level] then begin
+       FProcCode.AddLn('pasExceptionPopJmpBuf();');
+      end;
+     end;
      FProcCode.AddLn('goto '+GetSymbolName(FSelf)+'_BREAKLABEL'+IntToStr(FBreakLabelNeeded[FNestedBreakCount-1])+';');
     end;
    end;
@@ -1583,6 +1628,11 @@ begin
      if(FContinueLabelNeeded[FNestedBreakCount-1] = -1) then begin
       FContinueLabelNeeded[FNestedBreakCount-1] := FBreakCount;
       Inc(FBreakCount);
+     end;
+     for Level := FCodeLevel downto FBreakContinueLevel[FNestedBreakCount-1]+1 do begin
+      if (Level>=0) and FLevelHasTryBlock[Level] then begin
+       FProcCode.AddLn('pasExceptionPopJmpBuf();');
+      end;
      end;
      FProcCode.AddLn('goto '+GetSymbolName(FSelf)+'_CONTINUELABEL'+IntToStr(FContinueLabelNeeded[FNestedBreakCount-1])+';');
     end;
@@ -1596,6 +1646,11 @@ begin
      FProcCode.AddLn(');');
    end;
    ttntEXIT:begin
+    for Level := FCodeLevel downto 0 do begin
+     if (Level>=0) and FLevelHasTryBlock[Level] then begin
+      FProcCode.AddLn('pasExceptionPopJmpBuf();');
+     end;
+    end;
     FinalizeSymbolList(SymbolManager.CurrentList, FProcCode);
     if assigned(FProcSymbol.ReturnType) then begin
      FProcCode.AddLn('return '+GetSymbolName(FProcSymbol.ResultSymbol)+';',spacesBOTH);
@@ -1640,6 +1695,7 @@ begin
     FProcCode.Add('goto LABEL_'+GetSymbolName(FSelf)+'_'+TreeNode.LabelName+';');
    end;
    ttntTRY:begin
+    FLevelHasTryBlock[FCodeLevel]:=true;
     TryBlockCounter:=FTryBlockCounter;
     inc(FTryBlockCounter);
     FProcCode.AddLn('{');
@@ -1719,6 +1775,7 @@ begin
     FProcCode.AddLn('}');
     FProcCode.DecTab;
     FProcCode.AddLn('}');
+    FLevelHasTryBlock[FCodeLevel]:=false;
    end;
    ttntTRYONELSE:begin
    end;
@@ -2517,6 +2574,7 @@ begin
     Error.InternalError(201302222201000);
    end;
   end;
+  dec(FCodeLevel);
  end;
 end;
 
@@ -3105,12 +3163,22 @@ begin
 end;
 
 procedure TCodegenCPP.StartBreakContinuePart;
+var i,j:longint;
 begin
+ i:=FNestedBreakCount;
  inc(FNestedBreakCount);
- SetLength(FBreakLabelNeeded, FNestedBreakCount);
- SetLength(FContinueLabelNeeded, FNestedBreakCount);
- FBreakLabelNeeded[FNestedBreakCount-1] := -1;
- FContinueLabelNeeded[FNestedBreakCount-1] := -1;
+ if FNestedBreakCount > length(FBreakLabelNeeded) then begin
+  j:=1;
+  while j<=FNestedBreakCount do begin
+   inc(j,j);
+  end;
+  SetLength(FBreakLabelNeeded, j);
+  SetLength(FContinueLabelNeeded, j);
+  SetLength(FBreakContinueLevel, j);
+ end;
+ FBreakLabelNeeded[i] := -1;
+ FContinueLabelNeeded[i] := -1;
+ FBreakContinueLevel[i] := FCodeLevel;
 end;
 
 procedure TCodegenCPP.StopBreakPart;
@@ -3120,8 +3188,6 @@ begin
   FProcCode.AddLn(GetSymbolName(FSelf)+'_BREAKLABEL'+IntToStr(FBreakLabelNeeded[FNestedBreakCount-1])+': ;');
  end;
  dec(FNestedBreakCount);
- SetLength(FBreakLabelNeeded, FNestedBreakCount);
- SetLength(FContinueLabelNeeded, FNestedBreakCount);
 end;
 
 procedure TCodegenCPP.StopContinuePart;
