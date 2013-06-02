@@ -1769,15 +1769,17 @@ begin
       end;
      end;
     end;
-    FProcCode.AddLn('if(TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+'){');
     Symbol:=SymbolManager.GetSymbol('TOBJECT');
     if assigned(Symbol) then begin
      MethodSymbol:=Symbol^.TypeDefinition^.RecordTable.GetSymbol('FREE');
      if assigned(MethodSymbol) then begin
+      FProcCode.AddLn('if(TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+'){');
+      FProcCode.IncTab;
       FProcCode.AddLn(GetSymbolName(MethodSymbol)+'((void*)TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+');');
+      FProcCode.DecTab;
+      FProcCode.AddLn('}');
      end;
     end;
-    FProcCode.AddLn('}');
     if assigned(TreeNode.FinallyTree) then begin
      FProcCode.AddLn('TRY_FINALLY_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+':');
      TranslateCode(TreeNode.FinallyTree);
