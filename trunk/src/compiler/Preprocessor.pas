@@ -1965,7 +1965,7 @@ begin
       DefineName:=DefineName+UpCase(ansichar(byte(CurrentChar)));
       ReadChar;
      end;
-     PushStack(tdIFNDEF,tdNONE,assigned(DefineStringHashMap.Get(DefineName)),true);
+     PushStack(tdIFNDEF,tdNONE,not assigned(DefineStringHashMap.Get(DefineName)),true);
      break;
     end;
     tdIFOPT:begin
