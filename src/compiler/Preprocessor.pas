@@ -264,6 +264,7 @@ begin
  DefineStringHashMap.Clear;
  DefineStringList.Clear;
  AddDefine('OBJPAS2C');
+ AddDefine('CROSSPASCAL');
  AddDefine('VER100');
  AddDefine('CPUC');
  AddDefine('CONDITIONALEXPRESSIONS');
