@@ -1814,6 +1814,7 @@ begin
         AType^.NeedTypeInfo:=false;
         AType^.LowerLimit:=0;
         AType^.UpperLimit:=255;
+        NewTreeNode.Return:=AType;
        end;
        ttdArray:begin
         LastTreeNode:=ParseExpression(false);
@@ -1822,6 +1823,7 @@ begin
         OptimizerHighLevel.OptimizeTree(LastTreeNode);
         NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntIndex,NewTreeNode,LastTreeNode);
         AType:=AType^.Definition;
+        NewTreeNode.Return:=AType;
        end;
        ttdPointer:begin
         if assigned(AType^.PointerTo) then begin
