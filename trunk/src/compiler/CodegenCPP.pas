@@ -1643,7 +1643,7 @@ begin
      if Assigned(TreeNode.Left) then
        TranslateCode(TreeNode.Left)
      else
-       FProcCode.Add('0');
+       FProcCode.Add('0');  
 
      FProcCode.AddLn(');');
    end;
@@ -1769,6 +1769,15 @@ begin
       end;
      end;
     end;
+    FProcCode.AddLn('if(TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+'){');
+    Symbol:=SymbolManager.GetSymbol('TOBJECT');
+    if assigned(Symbol) then begin
+     MethodSymbol:=Symbol^.TypeDefinition^.RecordTable.GetSymbol('FREE');
+     if assigned(MethodSymbol) then begin
+      FProcCode.AddLn(GetSymbolName(MethodSymbol)+'((void*)TRY_OBJECT_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+');');
+     end;
+    end;
+    FProcCode.AddLn('}');
     if assigned(TreeNode.FinallyTree) then begin
      FProcCode.AddLn('TRY_FINALLY_'+GetSymbolName(FSelf)+'_'+IntToStr(TryBlockCounter)+':');
      TranslateCode(TreeNode.FinallyTree);
