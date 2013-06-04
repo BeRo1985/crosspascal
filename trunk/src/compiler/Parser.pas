@@ -4,7 +4,7 @@ unit Parser;
 interface
 
 uses SysUtils,BeRoStream,Globals,Symbols,Scanner,Error,Tree,OptimizerHighLevel,
-     BeRoGUIDTools,IntegerList,UnitManager,PointerList,Code,CodegenCPP,
+     BeRoGUIDTools,IntegerList,UnitManager,PointerList,Code,CodegenC,
      HugeString;
 
 type TParser=class
