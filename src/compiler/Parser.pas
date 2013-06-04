@@ -1386,9 +1386,9 @@ begin
  end;
 end;
 
-function TParser.ParseFactor:TTreeNode;
+function TParser.ParseFactor:TTreeNode;         
 var NewTreeNode,FirstTreeNode,LastTreeNode:TTreeNode;
-    CanHaveQualifiers,Overloaded,OK:boolean;
+    ToHandleSymbol,CanHaveQualifiers,Overloaded,OK:boolean;
     AType,FieldType:PType;
     MethodSymbol,FieldSymbol,Symbol,TempSymbol:PSymbol;
     FieldName,Name:ansistring;
@@ -1399,6 +1399,7 @@ var NewTreeNode,FirstTreeNode,LastTreeNode:TTreeNode;
 begin
  NewTreeNode:=nil;
  AType:=nil;
+ ToHandleSymbol:=false;
  CanHaveQualifiers:=false;
  case Scanner.CurrentToken of
   tstIdentifier:begin
@@ -1413,110 +1414,7 @@ begin
     Name:=Scanner.ReadIdentifier(nil);
     Symbol:=Symbol^.SymbolList.GetSymbol(Name,ModuleSymbol,CurrentObjectClass);
    end;
-   if assigned(Symbol) then begin
-    AType:=Symbol^.TypeDefinition;
-    if (WhichWithLevel<0) and assigned(Symbol^.OwnerObjectClass) and
-       ((assigned(CurrentProcedureFunction) and assigned(CurrentProcedureFunction^.OwnerObjectClass)) and
-         (tpaClassProcedure in CurrentProcedureFunction^.ProcedureAttributes)) and
-        not (((Symbol^.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction]) and (tpaClassProcedure in Symbol^.ProcedureAttributes)) or
-             not (Symbol^.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction])) then begin
-     Error.AddErrorCode(128,CorrectSymbolName(Symbol .Name));
-    end;
-    case Symbol^.SymbolType of
-     Symbols.tstVariable:begin
-      NewTreeNode:=TreeManager.GenerateVarNode(Symbol);
-      if (WhichWithLevel>=0) and (WhichWithLevel<WithStack.Count) then begin
-       NewTreeNode.WithType:=WithStack.Items[WhichWithLevel];
-       NewTreeNode.WithLevel:=WhichWithLevel;
-      end;
-     end;
-     Symbols.tstProperty:begin
-      // TODO PROPERTY
-     end;
-     Symbols.tstType:begin
-      if Scanner.CurrentToken=tstLeftParen then begin
-       Scanner.Match(tstLeftParen);
-       NewTreeNode:=ParseExpression(false);
-       Scanner.Match(tstRightParen);
-       NewTreeNode:=TreeManager.GenerateTypeConvNode(NewTreeNode,AType,true);
-      end else begin
-       NewTreeNode:=TreeManager.GenerateTypeNode(AType);
-      end;
-     end;
-     Symbols.tstConstant:begin
-      case Symbol^.ConstantType of
-       tctOrdinal:begin
-        NewTreeNode:=TreeManager.GenerateOrdConstNode(Symbol^.IntValue,Symbol^.ConstantTypeRecord);
-       end;
-       tctAnsiChar:begin
-        NewTreeNode:=TreeManager.GenerateCharConstNode(Symbol^.CharValue,SymbolManager.TypeChar);
-       end;
-       tctWideChar:begin
-        NewTreeNode:=TreeManager.GenerateCharConstNode(Symbol^.CharValue,SymbolManager.TypeWideChar);
-       end;
-       tctHugeChar:begin
-        NewTreeNode:=TreeManager.GenerateCharConstNode(Symbol^.CharValue,SymbolManager.TypeHugeChar);
-       end;
-       tctAnsiString:begin
-        NewTreeNode:=TreeManager.GenerateStringConstNode(Symbol^.StringValue,SymbolManager.TypeAnsiString);
-       end;
-       tctPANSICHAR:begin
-        NewTreeNode:=TreeManager.GeneratePCharConstNode(Symbol^.StringValue,SymbolManager.TypePAnsiChar);
-       end;
-       tctWideString:begin
-        NewTreeNode:=TreeManager.GenerateStringConstNode(Symbol^.StringValue,SymbolManager.TypeWideString);
-       end;
-       tctHugeString:begin
-        NewTreeNode:=TreeManager.GenerateStringConstNode(Symbol^.StringValue,SymbolManager.TypeHugeString);
-       end;
-       tctPWIDECHAR:begin
-        NewTreeNode:=TreeManager.GeneratePCharConstNode(Symbol^.StringValue,SymbolManager.TypePWideChar);
-       end;
-       tctPHUGECHAR:begin
-        NewTreeNode:=TreeManager.GeneratePCharConstNode(Symbol^.StringValue,SymbolManager.TypePHugeChar);
-       end;
-       tctFloat:begin
-        NewTreeNode:=TreeManager.GenerateFloatConstNode(Symbol^.FloatValue,SymbolManager.TypeExtended);
-       end;
-       tctPointer:begin
-        NewTreeNode:=TreeManager.GenerateLeftNode(ttntAddress,TreeManager.GenerateVarNode(Symbol^.PointerTo));
-       end;
-       tctSet:begin
-        NewTreeNode:=TreeManager.GenerateSetConstNode(Symbol^.SetArray,Symbol^.ConstantTypeRecord);
-       end;
-      end;
-      NewTreeNode.Symbol:=Symbol;
-     end;
-     Symbols.tstProcedure,Symbols.tstFunction:begin
-      NewTreeNode:=TreeManager.GenerateCallNode(Symbol);
-      if (Scanner.CurrentToken=tstLeftParen) or MustHaveParens then begin
-       Scanner.Match(tstLeftParen);
-       case Symbol^.InternalProcedure of
-        tipNEW,tipDISPOSE:begin
-         NewTreeNode.Left:=ParseNewDisposeParameter(Symbol^.InternalProcedure=tipNew);
-        end;
-        tipTYPEINFO:begin
-         NewTreeNode.Left:=ParseTypeInfoParameter;
-        end;
-        else begin
-         NewTreeNode.Left:=ParseCallParameter;
-         SearchOverloadedSymbolAndCheckParameters(NewTreeNode.Symbol,NewTreeNode.Left);
-        end;
-       end;
-       Scanner.Match(tstRightParen);
-      end else begin
-       NewTreeNode.Left:=nil;
-      end;
-     end;
-     else begin
-      Error.AbortCode(504);
-     end;
-    end;
-    CanHaveQualifiers:=true;
-   end else begin
-    Error.AbortCode(2,CorrectSymbolName(Name));
-   end;
-   Error.Pop;
+   ToHandleSymbol:=true;
   end;
   tstINHERITED:begin
    Scanner.Match(tstINHERITED);
@@ -1536,14 +1434,20 @@ begin
      while assigned(AType) and not Scanner.IsEOFOrAbortError do begin
       MethodSymbol:=AType^.RecordTable.GetSymbol(Name,ModuleSymbol,CurrentObjectClass);
       if assigned(MethodSymbol) then begin
-       NewTreeNode:=TreeManager.GenerateMethodCallNode(Symbol,MethodSymbol,nil,AType);
-       if (Scanner.CurrentToken=tstLeftParen) or MustHaveParens then begin
-        Scanner.Match(tstLeftParen);
-        NewTreeNode.Left:=ParseCallParameter;
-        SearchOverloadedSymbolAndCheckParameters(NewTreeNode.MethodSymbol,NewTreeNode.Left);
-        Scanner.Match(tstRightParen);
+       if MethodSymbol^.SymbolType in [Symbols.tstFunction,Symbols.tstProcedure] then begin
+        NewTreeNode:=TreeManager.GenerateMethodCallNode(Symbol,MethodSymbol,nil,AType);
+        if (Scanner.CurrentToken=tstLeftParen) or MustHaveParens then begin
+         Scanner.Match(tstLeftParen);
+         NewTreeNode.Left:=ParseCallParameter;
+         SearchOverloadedSymbolAndCheckParameters(NewTreeNode.MethodSymbol,NewTreeNode.Left);
+         Scanner.Match(tstRightParen);
+        end else begin
+         NewTreeNode.Left:=nil;
+        end;
        end else begin
-        NewTreeNode.Left:=nil;
+        Symbol:=MethodSymbol;
+        ToHandleSymbol:=true;
+        Error.Push;
        end;
        break;
       end else begin
@@ -1763,6 +1667,112 @@ begin
   else begin
    Error.AbortCode(504);
   end;
+ end;
+ if ToHandleSymbol then begin
+  if assigned(Symbol) then begin
+   AType:=Symbol^.TypeDefinition;
+   if (WhichWithLevel<0) and assigned(Symbol^.OwnerObjectClass) and
+      ((assigned(CurrentProcedureFunction) and assigned(CurrentProcedureFunction^.OwnerObjectClass)) and
+        (tpaClassProcedure in CurrentProcedureFunction^.ProcedureAttributes)) and
+       not (((Symbol^.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction]) and (tpaClassProcedure in Symbol^.ProcedureAttributes)) or
+            not (Symbol^.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction])) then begin
+    Error.AddErrorCode(128,CorrectSymbolName(Symbol .Name));
+   end;
+   case Symbol^.SymbolType of
+    Symbols.tstVariable:begin
+     NewTreeNode:=TreeManager.GenerateVarNode(Symbol);
+     if (WhichWithLevel>=0) and (WhichWithLevel<WithStack.Count) then begin
+      NewTreeNode.WithType:=WithStack.Items[WhichWithLevel];
+      NewTreeNode.WithLevel:=WhichWithLevel;
+     end;
+    end;
+    Symbols.tstProperty:begin
+     // TODO PROPERTY
+    end;
+    Symbols.tstType:begin
+     if Scanner.CurrentToken=tstLeftParen then begin
+      Scanner.Match(tstLeftParen);
+      NewTreeNode:=ParseExpression(false);
+      Scanner.Match(tstRightParen);
+      NewTreeNode:=TreeManager.GenerateTypeConvNode(NewTreeNode,AType,true);
+     end else begin
+      NewTreeNode:=TreeManager.GenerateTypeNode(AType);
+     end;
+    end;
+    Symbols.tstConstant:begin
+     case Symbol^.ConstantType of
+      tctOrdinal:begin
+       NewTreeNode:=TreeManager.GenerateOrdConstNode(Symbol^.IntValue,Symbol^.ConstantTypeRecord);
+      end;
+      tctAnsiChar:begin
+       NewTreeNode:=TreeManager.GenerateCharConstNode(Symbol^.CharValue,SymbolManager.TypeChar);
+      end;
+      tctWideChar:begin
+       NewTreeNode:=TreeManager.GenerateCharConstNode(Symbol^.CharValue,SymbolManager.TypeWideChar);
+      end;
+      tctHugeChar:begin
+       NewTreeNode:=TreeManager.GenerateCharConstNode(Symbol^.CharValue,SymbolManager.TypeHugeChar);
+      end;
+      tctAnsiString:begin
+       NewTreeNode:=TreeManager.GenerateStringConstNode(Symbol^.StringValue,SymbolManager.TypeAnsiString);
+      end;
+      tctPANSICHAR:begin
+       NewTreeNode:=TreeManager.GeneratePCharConstNode(Symbol^.StringValue,SymbolManager.TypePAnsiChar);
+      end;
+      tctWideString:begin
+       NewTreeNode:=TreeManager.GenerateStringConstNode(Symbol^.StringValue,SymbolManager.TypeWideString);
+      end;
+      tctHugeString:begin
+       NewTreeNode:=TreeManager.GenerateStringConstNode(Symbol^.StringValue,SymbolManager.TypeHugeString);
+      end;
+      tctPWIDECHAR:begin
+       NewTreeNode:=TreeManager.GeneratePCharConstNode(Symbol^.StringValue,SymbolManager.TypePWideChar);
+      end;
+      tctPHUGECHAR:begin
+       NewTreeNode:=TreeManager.GeneratePCharConstNode(Symbol^.StringValue,SymbolManager.TypePHugeChar);
+      end;
+      tctFloat:begin
+       NewTreeNode:=TreeManager.GenerateFloatConstNode(Symbol^.FloatValue,SymbolManager.TypeExtended);
+      end;
+      tctPointer:begin
+       NewTreeNode:=TreeManager.GenerateLeftNode(ttntAddress,TreeManager.GenerateVarNode(Symbol^.PointerTo));
+      end;
+      tctSet:begin
+       NewTreeNode:=TreeManager.GenerateSetConstNode(Symbol^.SetArray,Symbol^.ConstantTypeRecord);
+      end;
+     end;
+     NewTreeNode.Symbol:=Symbol;
+    end;
+    Symbols.tstProcedure,Symbols.tstFunction:begin
+     NewTreeNode:=TreeManager.GenerateCallNode(Symbol);
+     if (Scanner.CurrentToken=tstLeftParen) or MustHaveParens then begin
+      Scanner.Match(tstLeftParen);
+      case Symbol^.InternalProcedure of
+       tipNEW,tipDISPOSE:begin
+        NewTreeNode.Left:=ParseNewDisposeParameter(Symbol^.InternalProcedure=tipNew);
+       end;
+       tipTYPEINFO:begin
+        NewTreeNode.Left:=ParseTypeInfoParameter;
+       end;
+       else begin
+        NewTreeNode.Left:=ParseCallParameter;
+        SearchOverloadedSymbolAndCheckParameters(NewTreeNode.Symbol,NewTreeNode.Left);
+       end;
+      end;
+      Scanner.Match(tstRightParen);
+     end else begin
+      NewTreeNode.Left:=nil;
+     end;
+    end;
+    else begin
+     Error.AbortCode(504);
+    end;
+   end;
+   CanHaveQualifiers:=true;
+  end else begin
+   Error.AbortCode(2,CorrectSymbolName(Name));
+  end;
+  Error.Pop;
  end;
  if CanHaveQualifiers then begin
   while not Scanner.IsEOFOrAbortError do begin
