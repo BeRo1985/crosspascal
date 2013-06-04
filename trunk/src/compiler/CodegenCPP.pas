@@ -1864,14 +1864,14 @@ begin
            ttdSubRange:
            begin
             case SubTreeNode.Left.Return.SubRangeType of
-             tstSigned8Bit,
-             tstSigned16Bit,
-             tstSigned32Bit,
-             tstSigned64Bit: FProcCode.Add('pasWriteInt(');
-             tstUnsigned8Bit,
-             tstUnsigned16Bit,
-             tstUnsigned32Bit,
-             tstUnsigned64Bit: FProcCode.Add('pasWriteUInt(');
+             tstSigned8Bit: FProcCode.Add('pasWriteInt8(');
+             tstSigned16Bit: FProcCode.Add('pasWriteInt16(');
+             tstSigned32Bit: FProcCode.Add('pasWriteInt32(');
+             tstSigned64Bit: FProcCode.Add('pasWriteInt64(');
+             tstUnsigned8Bit: FProcCode.Add('pasWriteUInt8(');
+             tstUnsigned16Bit: FProcCode.Add('pasWriteUInt16(');
+             tstUnsigned32Bit: FProcCode.Add('pasWriteUInt32(');
+             tstUnsigned64Bit: FProcCode.Add('pasWriteUInt64(');
              tstUnsignedChar,
              tstUnsignedWideChar,
              tstUnsignedHugeChar: FProcCode.Add('pasWriteChar(');
