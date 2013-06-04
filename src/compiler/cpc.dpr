@@ -1,5 +1,16 @@
-PROGRAM cpc;  
-{$APPTYPE CONSOLE}
+program cpc;
+{$ifdef fpc}
+ {$mode delphi}
+{$endif}
+{$ifdef win32}
+ {$define windows}
+{$endif}
+{$ifdef win64}
+ {$define windows}
+{$endif}
+{$ifdef windows}
+ {$apptype console}
+{$endif}
 uses
   BeRoStream in 'BeRoStream.pas',
   BeRoStringTree in 'BeRoStringTree.pas',
