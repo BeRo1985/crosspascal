@@ -1,4 +1,4 @@
-unit CodegenCPP;
+unit CodegenC;
 {$i Compiler.inc}
 
 interface
