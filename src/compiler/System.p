@@ -479,7 +479,7 @@ void* pasExceptioneGetRaiseObject();
 #endif
 #define pasWriteChar(x) printf("%c", x);
 #define pasWriteFloat(x) printf("%f", x);
-#define pasWriteBool(x) if(x) printf("TRUE"); else printf("FALSE");
+#define pasWriteBool(x) { if(x) printf("TRUE"); else printf("FALSE"); }
 
 void pasWriteLongString(pasLongstring x);
 #define pasWritePChar(x) printf(x);
