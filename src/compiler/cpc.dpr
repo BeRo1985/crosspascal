@@ -1,4 +1,4 @@
-PROGRAM objpas2c;  
+PROGRAM cpc;  
 {$APPTYPE CONSOLE}
 uses
   BeRoStream in 'BeRoStream.pas',
