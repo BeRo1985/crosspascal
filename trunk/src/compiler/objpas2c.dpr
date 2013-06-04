@@ -25,7 +25,7 @@ uses
   FastStringList in 'FastStringList.pas',
   BeRoUtils in 'BeRoUtils.pas',
   TypeCheck in 'TypeCheck.pas',
-  CodegenCPP in 'CodegenCPP.pas',
+  CodegenC in 'CodegenC.pas',
   ShellHelper in 'ShellHelper.pas',
   BeRoDoubleToString in 'BeRoDoubleToString.pas',
   BeRoStringToDouble in 'BeRoStringToDouble.pas',
