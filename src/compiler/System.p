@@ -210,6 +210,13 @@ procedure Move(var Src; var Dst; Size: Cardinal);
 #endif
 #endif
 
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+#define C99
+#include <inttypes.h>
+#else
+#undef C99
+#endif
+
 #define pastkUnknown 0
 #define pastkInteger 1
 #define pastkAnsiChar 2
@@ -442,8 +449,34 @@ void* pasExceptioneGetRaiseObject();
 {$i stringsh.inc}
 
 [[[
+#ifdef C99
 #define pasWriteInt(x) printf("%i", x);
 #define pasWriteUInt(x) printf("%u", x);
+#define pasWriteInt8(x) printf("%"PRIi8, x);
+#define pasWriteUInt8(x) printf("%"PRIu8, x);
+#define pasWriteInt16(x) printf("%"PRIi16, x);
+#define pasWriteUInt16(x) printf("%"PRIu16, x);
+#define pasWriteInt32(x) printf("%"PRIi32, x);
+#define pasWriteUInt32(x) printf("%"PRIu32, x);
+#define pasWriteInt64(x) printf("%"PRIi64, x);
+#define pasWriteUInt64(x) printf("%"PRIu64, x);
+#else
+#define pasWriteInt(x) printf("%i", x);
+#define pasWriteUInt(x) printf("%u", x);
+#define pasWriteInt8(x) printf("%i", x);
+#define pasWriteUInt8(x) printf("%u", x);
+#define pasWriteInt16(x) printf("%i", x);
+#define pasWriteUInt16(x) printf("%u", x);
+#define pasWriteInt32(x) printf("%i", x);
+#define pasWriteUInt32(x) printf("%u", x);
+#ifdef _MSC_VER
+#define pasWriteInt64(x) printf("%I64d", x);
+#define pasWriteUInt64(x) printf("%I64u", x);
+#else
+#define pasWriteInt64(x) printf("%ll", x);
+#define pasWriteUInt64(x) printf("%llu", x);
+#endif
+#endif
 #define pasWriteChar(x) printf("%c", x);
 #define pasWriteFloat(x) printf("%f", x);
 #define pasWriteBool(x) if(x) printf("TRUE"); else printf("FALSE");
@@ -493,9 +526,7 @@ end;
 function Random(Max:integer):integer;
 begin
  RandSeed:=(RandSeed*$8088405)+1;
- result:=int64((int64(RandSeed)*int64(Max)) shr 32);
- if result<0 then result := - result;
- result := result mod Max;
+ result:=uint64((uint64(longword(RandSeed))*uint64(Max)) shr 32);
 end;
 
 function Random:double;
