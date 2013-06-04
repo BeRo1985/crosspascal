@@ -29,7 +29,7 @@ type TParser=class
        procedure FinishCheckMethods(ParentSymbol:PSymbol);
        procedure AddDefaultSymbols;
        procedure GetDefaultTypes;
-       procedure ParseRecordField(var RecordType:PType;IsRecord:boolean=true;SymbolAttributes:TSymbolAttributes=[];UntilDirectives:TScannerTokens=[];CaseOfLevel:longint=0;CaseOfVariant:longint=0;VariantPrefix:ansistring='');
+       procedure ParseRecordField(var RecordType:PType;IsRecord:boolean=true;SymbolAttributes:TSymbolAttributes=[];UntilDirectives:TScannerTokens=[];CaseOfLevel:longint=0;CaseOfVariant:longint=0;VariantPrefix:ansistring='';IgnoreExistingOnParent:boolean=false);
        procedure ParsePropertyField(var RecordType:PType);
        procedure ParseParameterList(var Symbol:PSymbol;var SymbolParameter:TSymbolList;Bracket,AllowParameterConstant:boolean;var ParameterSuffix:ansistring);
        function ParseObjectDeclaration(ObjectName:ansistring;IsPacked:boolean):PType;
@@ -3809,7 +3809,7 @@ begin
  result:=nil;
 end;
 
-procedure TParser.ParseRecordField(var RecordType:PType;IsRecord:boolean=true;SymbolAttributes:TSymbolAttributes=[];UntilDirectives:TScannerTokens=[];CaseOfLevel:longint=0;CaseOfVariant:longint=0;VariantPrefix:ansistring='');
+procedure TParser.ParseRecordField(var RecordType:PType;IsRecord:boolean=true;SymbolAttributes:TSymbolAttributes=[];UntilDirectives:TScannerTokens=[];CaseOfLevel:longint=0;CaseOfVariant:longint=0;VariantPrefix:ansistring='';IgnoreExistingOnParent:boolean=false);
 var AType:PType;
     StartSymbol,Symbol,LastSymbol,NextSymbol:PSymbol;
     TypeName,VariantStr:ansistring;
@@ -3861,7 +3861,7 @@ begin
     end;
     Symbol^.PortabilityDirectives:=PortabilityDirectives;
     Symbol^.OwnerType:=RecordType;
-    RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+    RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass,false,not IgnoreExistingOnParent);
     Symbol:=NextSymbol;
    end;
    if Scanner.CurrentToken=tstSEPARATOR then begin
@@ -3939,7 +3939,7 @@ begin
     Symbol^.SymbolType:=Symbols.tstCaseVariantPush;
     Symbol^.OwnerType:=RecordType;
     RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
-    ParseRecordField(RecordType,IsRecord,SymbolAttributes,[],CaseOfLevel,CaseOfVariant,VariantPrefix+VariantStr+'.');
+    ParseRecordField(RecordType,IsRecord,SymbolAttributes,[],CaseOfLevel,CaseOfVariant,VariantPrefix+VariantStr+'.',IgnoreExistingOnParent);
     Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
     Symbol^.Name:='';
     Symbol^.SymbolType:=Symbols.tstCaseVariantPop;
@@ -4335,7 +4335,7 @@ begin
        TempSymbol:=SymbolManager.GetSymbol(TempName,ModuleSymbol,CurrentObjectClass);
        if assigned(TempSymbol) and (TempSymbol^.SymbolType=Symbols.tstType) and
           assigned(TempSymbol^.TypeDefinition) and (TempSymbol^.TypeDefinition^.TypeDefinition in [ttdCLASS,ttdINTERFACE]) then begin
-        Symbol^.PropertyImplements.AddSymbol(TempSymbol,ModuleSymbol,CurrentObjectClass);
+        Symbol^.PropertyImplements.AddSymbol(TempSymbol,ModuleSymbol,CurrentObjectClass,false,false);
        end else begin
         Error.AbortCode(7);
        end;
@@ -4359,7 +4359,7 @@ begin
  Scanner.Match(tstSEPARATOR);
  Symbol^.PortabilityDirectives:=PortabilityDirectives;
  Symbol^.OwnerType:=RecordType;
- RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
+ RecordType^.RecordTable.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass,false,false);
 end;
 
 function TParser.ParseProcedureVariable(var Symbol:PSymbol):PType;
@@ -4490,7 +4490,7 @@ begin
     SymbolAttributes:=(SymbolAttributes-OOPSymbolAttribute)+[tsaOOPPublished];
    end;
    tstIdentifier:begin
-    ParseRecordField(result,false,SymbolAttributes,[tstSTRICT,tstPRIVATE,tstPUBLIC,tstPROTECTED,tstPUBLISHED],0,0,'');
+    ParseRecordField(result,false,SymbolAttributes,[tstSTRICT,tstPRIVATE,tstPUBLIC,tstPROTECTED,tstPUBLISHED],0,0,'',false);
    end;
    tstPROPERTY:begin
     ParsePropertyField(result);
@@ -4840,7 +4840,7 @@ begin
      SymbolAttributes:=(SymbolAttributes-OOPSymbolAttribute)+[tsaOOPPublished];
     end;
     tstIdentifier:begin
-     ParseRecordField(result,false,SymbolAttributes,[tstSTRICT,tstPRIVATE,tstPUBLIC,tstPROTECTED,tstPUBLISHED],0,0,'');
+     ParseRecordField(result,false,SymbolAttributes,[tstSTRICT,tstPRIVATE,tstPUBLIC,tstPROTECTED,tstPUBLISHED],0,0,'',true);
     end;
     tstPROPERTY:begin
      ParsePropertyField(result);
@@ -6348,7 +6348,7 @@ begin
    CurrentType^.RecordPacked:=IsPacked or (LocalSwitches^.Alignment=1);
    CurrentType^.RecordTable:=TSymbolList.Create(SymbolManager);
    if Scanner.CurrentToken<>tstEND then begin
-    ParseRecordField(CurrentType,true,[],[],0,0,'');
+    ParseRecordField(CurrentType,true,[],[],0,0,'',false);
    end;
    SymbolManager.AlignRecord(CurrentType,LocalSwitches^.Alignment);
 {  if SymbolManager.GetSize(CurrentType)=0 then begin
