@@ -112,7 +112,7 @@ begin
  GlobalSwitches:=TheGlobalSwitches;
  LocalSwitches:=TheLocalSwitches;
  TreeManager:=TTreeManager.Create(Error,SymbolManager,@Options);
- CodeGenerator:=TCodegenCPP.Create(Error,SymbolManager,TreeManager,@Options,TheLocalSwitches);
+ CodeGenerator:=TCodeGenC.Create(Error,SymbolManager,TreeManager,@Options,TheLocalSwitches);
  ACompiler:=TheCompiler;
  Scanner:=TScanner.Create(TheInputStream,TheFileName,Error,SymbolManager,Options,TheGlobalSwitches,TheLocalSwitches);
  OptimizerHighLevel:=TOptimizerHighLevel.Create(Error,SymbolManager,TreeManager,@Options,TheLocalSwitches);
@@ -3529,9 +3529,9 @@ begin
      case Scanner.CurrentToken of
       tstCBLOCK:begin
        if ParseHeader then begin
-        TCodegenCPP(CodeGenerator).AddHeader(HugeStringToAnsiString(Scanner.CurrentString));
+        TCodeGenC(CodeGenerator).AddHeader(HugeStringToAnsiString(Scanner.CurrentString));
        end else begin
-        TCodegenCPP(CodeGenerator).AddCode(HugeStringToAnsiString(Scanner.CurrentString));
+        TCodeGenC(CodeGenerator).AddCode(HugeStringToAnsiString(Scanner.CurrentString));
        end;
        Scanner.ReadNext;
       end;

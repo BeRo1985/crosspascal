@@ -1,4 +1,4 @@
-unit CodegenC;
+unit CodeGenC;
 {$i Compiler.inc}
 
 interface
@@ -49,7 +49,7 @@ type TCodeWriter = class
        procedure UnmarkRootNested(Source:TCodeWriter);
      end;
 
-     TCodegenCPP = class(TCode)
+     TCodeGenC = class(TCode)
       private
        FHeader,FCode, FProcCode, FModuleCode, FProcStruct: TCodeWriter;
        FDepth: Integer;
@@ -158,7 +158,7 @@ begin
 {$endif}
 end;
 
-function TCodegenCPP.GetModuleName(Sym: PSymbol): ansistring;
+function TCodeGenC.GetModuleName(Sym: PSymbol): ansistring;
 begin
  if not Assigned(sym) then
   result:='HUND'
@@ -177,7 +177,7 @@ begin
  end;
 end;
 
-function TCodegenCPP.GetSymbolName(Sym: PSymbol; const Prefix: ansistring = ''; Wrapping: boolean = true): ansistring;
+function TCodeGenC.GetSymbolName(Sym: PSymbol; const Prefix: ansistring = ''; Wrapping: boolean = true): ansistring;
 begin
  if assigned(Sym) then begin
   case Sym.SymbolType of
@@ -296,7 +296,7 @@ begin
  end;
 end;
 
-function TCodeGenCPP.GetTypeName(Type_:PType):ansistring;
+function TCodeGenC.GetTypeName(Type_:PType):ansistring;
 begin
  if assigned(Type_^.OwnerModule) then begin
   if assigned(Type_^.Symbol) and (Type_^.Symbol^.LexicalScopeLevel=0) and (tsaPublicUnitSymbol in Type_^.Symbol^.Attributes) then begin
@@ -309,12 +309,12 @@ begin
  end;
 end;
 
-function TCodegenCPP.GetTypeSize(AType: PType): Cardinal;
+function TCodeGenC.GetTypeSize(AType: PType): Cardinal;
 begin
   result := SymbolManager.GetSize(AType);
 end;
 
-procedure TCodegenCPP.InitializeSymbolList(List: TSymbolList;
+procedure TCodeGenC.InitializeSymbolList(List: TSymbolList;
   Target: TCodeWriter);
 var sym: PSymbol;
 begin
@@ -374,9 +374,9 @@ begin
  end;
 end;
 
-{ TCodegenCPP }
+{ TCodeGenC }
 
-function TCodegenCPP.ConvertConstSymbol(const Symbol: PSymbol): ansistring;
+function TCodeGenC.ConvertConstSymbol(const Symbol: PSymbol): ansistring;
 begin
  case Symbol.ConstantType of
   tctOrdinal:
@@ -387,7 +387,7 @@ begin
  end;
 end;
 
-procedure TCodegenCPP.ConvertFuncSymbol(const Symbol: PSymbol; Target: TCodeWriter; IsConstructor: boolean = false; IsDestructor: boolean = false);
+procedure TCodeGenC.ConvertFuncSymbol(const Symbol: PSymbol; Target: TCodeWriter; IsConstructor: boolean = false; IsDestructor: boolean = false);
 var sym: PSymbol;
     HaveParameters: boolean;
 begin
@@ -464,7 +464,7 @@ begin
  Target.Add(')');
 end;
 
-function TCodegenCPP.ConvertStdType(const StdType: TStandardType): ansistring;
+function TCodeGenC.ConvertStdType(const StdType: TStandardType): ansistring;
 begin
  case StdType of
   tstSigned8Bit: result := 'int8_t';
@@ -483,7 +483,7 @@ begin
  end;
 end;
 
-function TCodegenCPP.ConvertUnsignedStdType(const StdType: TStandardType): ansistring;
+function TCodeGenC.ConvertUnsignedStdType(const StdType: TStandardType): ansistring;
 begin
  case StdType of
   tstSigned8Bit: result := 'uint8_t';
@@ -502,7 +502,7 @@ begin
  end;
 end;
 
-constructor TCodegenCPP.Create(TheError: TError;
+constructor TCodeGenC.Create(TheError: TError;
   TheSymbolManager: TSymbolManager; TheTreeManager: TTreeManager;
   TheOptions: POptions; TheLocalSwitches: PLocalSwitches);
 begin
@@ -541,7 +541,7 @@ begin
  SetLength(FLevelHasTryBlock,1024);
 end;
 
-destructor TCodegenCPP.Destroy;
+destructor TCodeGenC.Destroy;
 begin
  SetLength(FWithStack,0);
  SetLength(FBreakLabelNeeded,0);
@@ -556,7 +556,7 @@ begin
  inherited;
 end;
 
-procedure TCodegenCPP.FinalizeSymbolList(List: TSymbolList;
+procedure TCodeGenC.FinalizeSymbolList(List: TSymbolList;
   Target: TCodeWriter);
 var sym: PSymbol;
 begin
@@ -590,7 +590,7 @@ begin
  end;
 end;
 
-procedure TCodegenCPP.GenerateLibrary(LibrarySymbol: PSymbol;
+procedure TCodeGenC.GenerateLibrary(LibrarySymbol: PSymbol;
   LibraryCodeTree: TTreeNode);
 begin
  FCode.AddLn('//library ' + LibrarySymbol.Name);
@@ -598,19 +598,19 @@ begin
  TranslateSymbolList(FSelf.SymbolList, false);
 end;
 
-procedure TCodegenCPP.BeginRootNestedProc;
+procedure TCodeGenC.BeginRootNestedProc;
 begin
  FProcCode.MarkRootNested;
  FProcStruct.Clear;
  FProcStruct.AddLn('');
 end;
 
-procedure TCodegenCPP.EndRootNestedProc;
+procedure TCodeGenC.EndRootNestedProc;
 begin
  FCode.UnmarkRootNested(FProcStruct);
 end;
 
-procedure TCodegenCPP.GenerateProc(ProcSymbol: PSymbol;
+procedure TCodeGenC.GenerateProc(ProcSymbol: PSymbol;
   ProcCodeTree: TTreeNode);
 var //s,s2: ansistring;
     ParameterSymbol,Symbol,MethodSymbol,sym:PSymbol;
@@ -804,7 +804,7 @@ begin
  FProcSymbol:=nil;
 end;
 
-procedure TCodegenCPP.GenerateProgram(ProgramSymbol: PSymbol;
+procedure TCodeGenC.GenerateProgram(ProgramSymbol: PSymbol;
   ProgramCodeTree: TTreeNode);
 var i: integer;
 begin
@@ -868,7 +868,7 @@ begin
  FHeader.AddFooter('#endif //__OBJPAS2C'+ProgramSymbol.Name+'_H_INCLUDED__');
 end;
 
-procedure TCodegenCPP.GenerateUnit(UnitSymbol: PSymbol; InitializationCodeTree,
+procedure TCodeGenC.GenerateUnit(UnitSymbol: PSymbol; InitializationCodeTree,
   FinalizationCodeTree: TTreeNode);
 var i:longint;
 begin
@@ -924,7 +924,7 @@ begin
 
 end;
 
-procedure TCodegenCPP.ProcessFunctionType(Symbol:PSymbol; ReturnType: PType; Parameter: TSymbolList; const funcName: ansistring; Target: TCodeWriter);
+procedure TCodeGenC.ProcessFunctionType(Symbol:PSymbol; ReturnType: PType; Parameter: TSymbolList; const funcName: ansistring; Target: TCodeWriter);
 var //i: integer;
     Sym: PSymbol;
 begin
@@ -949,7 +949,7 @@ begin
  Target.Add(')');
 end;
 
-procedure TCodegenCPP.TranslateCode(TreeNode:TTreeNode; NoTypecasting: Boolean = false);
+procedure TCodeGenC.TranslateCode(TreeNode:TTreeNode; NoTypecasting: Boolean = false);
 var SubTreeNode,SubTreeNode2:TTreeNode;
     s:ansistring;
     HaveParameters,InjectNullPointer:boolean;
@@ -2595,7 +2595,7 @@ begin
  end;
 end;
 
-procedure TCodegenCPP.TranslateStringCode(TreeNode: TTreeNode;
+procedure TCodeGenC.TranslateStringCode(TreeNode: TTreeNode;
   DesiredStringType: PType);
 { this function enforces a specific string type, used for stringvar assignments
   and string parameter passing. }
@@ -2742,12 +2742,12 @@ begin
  end;
 end;
 
-procedure TCodegenCPP.TranslateClass(Symbol: PSymbol; Target: TCodeWriter);
+procedure TCodeGenC.TranslateClass(Symbol: PSymbol; Target: TCodeWriter);
 begin
  Target.AddLn('//class ' + Symbol.Name);
 end;
 
-procedure TCodegenCPP.TranslateConstant(Symbol: PSymbol; Target: TCodeWriter);
+procedure TCodeGenC.TranslateConstant(Symbol: PSymbol; Target: TCodeWriter);
 begin
  if Target = FHeader then
  begin
@@ -2757,13 +2757,13 @@ begin
  Target.Add('const ' + GetSymbolName(Symbol) + ' = ' + ConvertConstSymbol(Symbol));
 end;
 
-procedure TCodegenCPP.TranslateConstants;
+procedure TCodeGenC.TranslateConstants;
 var cons: PConstant;
 begin
  cons := SymbolManager.ConstantList.First;
 end;
 
-procedure TCodegenCPP.TranslateFunction(Symbol: PSymbol; Target: TCodeWriter);
+procedure TCodeGenC.TranslateFunction(Symbol: PSymbol; Target: TCodeWriter);
 var Sym: PSymbol;
     s: ansistring;
 begin
@@ -2849,23 +2849,23 @@ begin
  until not Assigned(Symbol);
 end;
 
-procedure TCodegenCPP.TranslateObject(Symbol: PSymbol; Target: TCodeWriter);
+procedure TCodeGenC.TranslateObject(Symbol: PSymbol; Target: TCodeWriter);
 begin
   Target.AddLn('//object ' + Symbol.Name);
 
 end;
 
-procedure TCodegenCPP.TranslateProcedure(Symbol: PSymbol; Target: TCodeWriter);
+procedure TCodeGenC.TranslateProcedure(Symbol: PSymbol; Target: TCodeWriter);
 begin
  TranslateFunction(Symbol, Target);
 end;
 
-procedure TCodegenCPP.TranslateTemp(Symbol: PSymbol; Target: TCodeWriter);
+procedure TCodeGenC.TranslateTemp(Symbol: PSymbol; Target: TCodeWriter);
 begin
  Target.AddLn('//Reg ' + Symbol.Name);
 end;
 
-function TCodegenCPP.TranslateStringConstant(
+function TCodeGenC.TranslateStringConstant(
   ConstantStr: THugeString): ansistring;
 
 var AStr: ansistring;
@@ -2890,22 +2890,22 @@ begin
   FProcCode.InsertAtMark('void* '+result+' = (void*)((uint32_t)(&'+result+'_DATA)+16);');
 end;
 
-procedure TCodegenCPP.TranslateShortStringConstant(const Name:ansistring; const ConstantStr: ShortString; ATarget: TCodeWriter);
+procedure TCodeGenC.TranslateShortStringConstant(const Name:ansistring; const ConstantStr: ShortString; ATarget: TCodeWriter);
 begin
   ATarget.AddLn('static const char '+Name+'['+IntToStr(Length(ConstantStr)+1)+'] = "\x' + IntToHex(Byte(length(ConstantStr)), 2) + '" ' + AnsiStringEscape(ConstantStr,True) + ';');
 end;
 
-procedure TCodegenCPP.TranslateShortStringConstant(const ConstantStr: ShortString; ATarget: TCodeWriter);
+procedure TCodeGenC.TranslateShortStringConstant(const ConstantStr: ShortString; ATarget: TCodeWriter);
 begin
   ATarget.Add('"\x' + IntToHex(Byte(length(ConstantStr)), 2) + '" ' + AnsiStringEscape(ConstantStr,True));
 end;
 
-function TCodegenCPP.GetShortStringConstant(const ConstantStr: ShortString): ansistring;
+function TCodeGenC.GetShortStringConstant(const ConstantStr: ShortString): ansistring;
 begin
   result := '"\x' + IntToHex(Byte(length(ConstantStr)), 2) + '" ' + AnsiStringEscape(ConstantStr,True);
 end;
 
-procedure TCodegenCPP.TranslateMethodList(List: TSymbolList; ATarget: TCodeWriter = nil);
+procedure TCodeGenC.TranslateMethodList(List: TSymbolList; ATarget: TCodeWriter = nil);
 var sym: PSymbol;
     Symbol: PSymbol;
     Target: TCodeWriter;
@@ -2954,7 +2954,7 @@ begin
  dec(FDepth);
 end;
 
-procedure TCodegenCPP.TranslateSymbolList(List: TSymbolList; IgnoreTypes: boolean; ATarget: TCodeWriter = nil);
+procedure TCodeGenC.TranslateSymbolList(List: TSymbolList; IgnoreTypes: boolean; ATarget: TCodeWriter = nil);
 var sym: PSymbol;
     Target: TCodeWriter;
     LastProcStruct:boolean;
@@ -3010,7 +3010,7 @@ begin
  dec(FDepth);
 end;
 
-procedure TCodegenCPP.ProcessTypedConstant(var Constant: PConstant; AType: PType;
+procedure TCodeGenC.ProcessTypedConstant(var Constant: PConstant; AType: PType;
   Target: TCodeWriter);
 var i:integer;
     Sym: PSymbol;
@@ -3075,7 +3075,7 @@ begin
  end;
 end;
 
-procedure TCodegenCPP.ProcessTypeOrName(AType: PType; Target: TCodeWriter; OwnType: PType = nil);
+procedure TCodeGenC.ProcessTypeOrName(AType: PType; Target: TCodeWriter; OwnType: PType = nil);
 var Sym: PSymbol;
 begin
  if not Assigned(AType) then
@@ -3103,13 +3103,13 @@ begin
  Dec(FDepth);
 end;
 
-procedure TCodegenCPP.TranslateUnit(Symbol: PSymbol; Target: TCodeWriter);
+procedure TCodeGenC.TranslateUnit(Symbol: PSymbol; Target: TCodeWriter);
 begin
   Target.AddLn('//unit ' + Symbol.Name);
   Target.AddInclude(CorrectSymbolName(Symbol.Name)+'.h');
 end;
 
-procedure TCodegenCPP.TranslateVariable(Symbol: PSymbol; Target: TCodeWriter);
+procedure TCodeGenC.TranslateVariable(Symbol: PSymbol; Target: TCodeWriter);
 var TypeSym: PSymbol;
     cons: PConstant;
 begin
@@ -3171,7 +3171,7 @@ begin
  end;
 end;
 
-procedure TCodegenCPP.SaveToStreams(CodeStream, HeaderStream: TBeRoStream);
+procedure TCodeGenC.SaveToStreams(CodeStream, HeaderStream: TBeRoStream);
 begin
   FCode.ExportStream(CodeStream);
   CodeStream.Append(FProcCode.FData);
@@ -3179,7 +3179,7 @@ begin
   FHeader.ExportStream(HeaderStream);
 end;
 
-procedure TCodegenCPP.StartBreakContinuePart;
+procedure TCodeGenC.StartBreakContinuePart;
 var i,j:longint;
 begin
  i:=FNestedBreakCount;
@@ -3198,7 +3198,7 @@ begin
  FBreakContinueLevel[i] := FCodeLevel;
 end;
 
-procedure TCodegenCPP.StopBreakPart;
+procedure TCodeGenC.StopBreakPart;
 begin
  if FBreakLabelNeeded[FNestedBreakCount-1] <> -1 then begin
   FProcCode.AddLn(';');
@@ -3207,7 +3207,7 @@ begin
  dec(FNestedBreakCount);
 end;
 
-procedure TCodegenCPP.StopContinuePart;
+procedure TCodeGenC.StopContinuePart;
 begin
  if FContinueLabelNeeded[FNestedBreakCount-1] <> -1 then begin
   FProcCode.AddLn(';');
@@ -3215,17 +3215,17 @@ begin
  end;
 end;
 
-procedure TCodegenCPP.AddCode(const Input: string);
+procedure TCodeGenC.AddCode(const Input: string);
 begin
   FCode.AddLn(Input);
 end;
 
-procedure TCodegenCPP.AddHeader(const Input: string);
+procedure TCodeGenC.AddHeader(const Input: string);
 begin
   FHeader.AddLn(Input);
 end;
 
-function TCodegenCPP.AnsiStringEscape(const Input: ansistring; Quotes: Boolean = True): ansistring;
+function TCodeGenC.AnsiStringEscape(const Input: ansistring; Quotes: Boolean = True): ansistring;
 var Counter: Integer;
     c: Ansichar;
 begin
@@ -3251,7 +3251,7 @@ begin
   Result:=Result+'"';
 end;
 
-function TCodegenCPP.WideStringEscape(const Input: widestring): ansistring;
+function TCodeGenC.WideStringEscape(const Input: widestring): ansistring;
 var Counter: Integer;
     c: widechar;
 begin
@@ -3274,7 +3274,7 @@ begin
  Result:=Result+'"';
 end;
 
-procedure TCodegenCPP.TranslateModuleTypes(ModuleSymbol:PSymbol;Target,CodeTarget:TCodeWriter);
+procedure TCodeGenC.TranslateModuleTypes(ModuleSymbol:PSymbol;Target,CodeTarget:TCodeWriter);
 type TTypeItems=array of PType;
 var TypeItems:TTypeItems;
  procedure SortTypes;
