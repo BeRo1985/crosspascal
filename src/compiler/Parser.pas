@@ -4100,10 +4100,11 @@ end;
 procedure TParser.ParsePropertyField(var RecordType:PType);
 var SymbolName,TypeName,TempName,OriginalCaseName:ansistring;
     NewTreeNode:TTreeNode;
-    Symbol,ParentSymbol,TempSymbol,SymbolA,SymbolB:PSymbol;
+    Symbol,ParentSymbol,TempSymbol,PropertySymbol,SymbolA,SymbolB:PSymbol;
     PortabilityDirectives:TPortabilityDirectives;
     NoDefault,HasParameter:boolean;
     ParameterSuffix:ansistring;
+    ClassType:PType;
 begin
  Scanner.Match(tstPROPERTY);
  OriginalCaseName:='';
@@ -4452,11 +4453,11 @@ begin
           Symbol^.PropertyDefault:=TempSymbol;
          end;
          else begin
-          Error.AbortCode(25);
+          Error.AddErrorCode(151);
          end;
         end;
        end else begin
-        Error.AbortCode(7);
+        Error.AddErrorCode(151);
        end;
        NewTreeNode.Destroy;
       end else begin
@@ -4464,9 +4465,36 @@ begin
       end;
      end else begin
       if (assigned(Symbol^.PropertyType) and (Symbol^.PropertyType^.TypeDefinition=ttdArray)) or assigned(Symbol^.PropertyParameter) then begin
-       Symbol^.PropertyDefaultArray:=true;
+       PropertySymbol:=nil;
+       ClassType:=RecordType;
+       while assigned(ClassType) and not assigned(PropertySymbol) do begin
+        if assigned(ClassType^.RecordTable) then begin
+         TempSymbol:=ClassType^.RecordTable.First;
+         while assigned(TempSymbol) do begin
+          case TempSymbol^.SymbolType of
+           Symbols.tstProperty:begin
+            if TempSymbol.PropertyDefaultArray then begin
+             PropertySymbol:=TempSymbol;
+             break;
+            end;
+           end;
+          end;
+          TempSymbol:=TempSymbol^.Next;
+         end;
+        end;
+        if assigned(ClassType^.ChildOf) then begin
+         ClassType:=ClassType^.ChildOf^.TypeDefinition;
+        end else begin
+         break;
+        end;
+       end;
+       if assigned(PropertySymbol) then begin
+        Error.AddErrorCode(135);
+       end else begin
+        Symbol^.PropertyDefaultArray:=true;
+       end;
       end else begin
-       Error.AbortCode(7);
+       Error.AddErrorCode(136);
       end;
      end;
     end;
