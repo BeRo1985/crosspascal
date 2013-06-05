@@ -91,8 +91,8 @@ function STRTOINT(S:ansistring):int64;
 function INTTOSTR(I:int64):ansistring;
 function STRTOFLOAT(S:ansistring):extended;
 function FLOATTOSTR(F:extended):ansistring;
-function StrLCopy(Dest:pansichar;const Source:pansichar;MaxLen:longword):pansichar; assembler;
-function StrPCopy(Dest:pansichar;const Source:ansistring):pansichar;
+{function StrLCopy(Dest:pansichar;const Source:pansichar;MaxLen:longword):pansichar; assembler;
+function StrPCopy(Dest:pansichar;const Source:ansistring):pansichar;}
 function FindNext(var F:TSearchRec):longint;
 procedure FindClose(var F:TSearchRec);
 function FindFirst(const Path:ansistring;Attr:longint;var F:TSearchRec):longint;
@@ -206,7 +206,7 @@ begin
  end;
 end;
 
-function StrLCopy(Dest:pansichar;const Source:pansichar;MaxLen:longword):pansichar; assembler;
+{function StrLCopy(Dest:pansichar;const Source:pansichar;MaxLen:longword):pansichar; assembler;
 asm
  PUSH EDI
  PUSH ESI
@@ -241,7 +241,7 @@ end;
 function StrPCopy(Dest:pansichar;const Source:ansistring):pansichar;
 begin
  result:=StrLCopy(Dest,pansichar(Source),length(Source));
-end;
+end;}
 
 {$IFDEF WIN32}
 function FindMatchingFile(var F:TSearchRec):longint;
