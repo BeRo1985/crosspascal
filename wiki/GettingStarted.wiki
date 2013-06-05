@@ -1,4 +1,4 @@
-#summary One-sentence summary of this page.
+#summary Where to begin with crosspascal
 #labels Phase-QA
 
 First things first get the sources as described in [https://code.google.com/p/crosspascal/source/browse/ this page]
