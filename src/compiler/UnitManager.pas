@@ -896,6 +896,9 @@ begin
      exit;
     end;
     Symbol^.PropertyNoDefault:=(Flags and 1)<>0;
+    if (Flags and 2)<>0 then begin
+     ReadSymbolReference(Symbol^.PropertyIndex);
+    end;
    end;
   end;
   HashSymbol(Symbol);
@@ -1800,8 +1803,14 @@ begin
     if Symbol^.PropertyNoDefault then begin
      Flags:=Flags or 1;
     end;
+    if assigned(Symbol^.PropertyIndex) then begin
+     Flags:=Flags or 2;
+    end;
     if Stream.Write(Flags,SizeOf(byte))<>SizeOf(byte) then begin
      exit;
+    end;
+    if (Flags and 2)<>0 then begin
+     WriteSymbolReference(Symbol^.PropertyIndex);
     end;
    end;
   end;

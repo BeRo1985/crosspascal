@@ -1894,6 +1894,7 @@ begin
          assigned(PropertySymbol.PropertyParameter) and assigned(PropertySymbol.PropertyParameter.First) then begin
        ParameterSymbol:=PropertySymbol.PropertyParameter.First;
        LastParameterNode:=nil;
+//       if assigned(PropertySymbol.PropertyType
        while assigned(ParameterSymbol) and not Scanner.IsEOFOrAbortError do begin
         ParameterNode:=TreeManager.GenerateParameterNode(ParseExpression(false),nil);
         case CompareTypesExt(Error,SymbolManager,ParameterNode.Left.Return,ParameterSymbol^.TypeDefinition,ttntEmpty,ConvertType,ProcType,[tctoCHECKOPERATOR,tctoALLOWVARIANT]) of
@@ -4087,6 +4088,7 @@ begin
   Symbol^.PropertyDefault:=ParentSymbol^.PropertyDefault;
   Symbol^.PropertyDefaultArray:=ParentSymbol^.PropertyDefaultArray;
   Symbol^.PropertyNoDefault:=ParentSymbol^.PropertyNoDefault;
+  Symbol^.PropertyIndex:=ParentSymbol^.PropertyIndex;
   PortabilityDirectives:=ParentSymbol^.PortabilityDirectives;
  end else begin
   Symbol^.PropertyType:=nil;
@@ -4098,6 +4100,7 @@ begin
   Symbol^.PropertyDefault:=nil;
   Symbol^.PropertyDefaultArray:=false;
   Symbol^.PropertyNoDefault:=true;
+  Symbol^.PropertyIndex:=nil;
   PortabilityDirectives:=[];
  end;
  HasParameter:=false;
@@ -4114,6 +4117,7 @@ begin
   Symbol^.PropertyDefault:=nil;
   Symbol^.PropertyDefaultArray:=false;
   Symbol^.PropertyNoDefault:=true;
+  Symbol^.PropertyIndex:=nil;
   PortabilityDirectives:=[];
   ParentSymbol:=nil;
  end;
@@ -4135,6 +4139,7 @@ begin
    Symbol^.PropertyDefault:=nil;
    Symbol^.PropertyDefaultArray:=false;
    Symbol^.PropertyNoDefault:=true;
+   Symbol^.PropertyIndex:=nil;
    PortabilityDirectives:=[];
    Scanner.Match(tstCOLON);
    TypeName:=Scanner.ReadIdentifier(nil);
@@ -4146,7 +4151,7 @@ begin
     Symbol^.PropertyType:=TempSymbol^.TypeDefinition;
    end;
   end;
-  while (Scanner.CurrentToken in [tstREAD,tstWRITE,tstSTORED,tstDEFAULT,tstNODEFAULT,tstIMPLEMENTS]) and not Scanner.IsEOFOrAbortError do begin
+  while (Scanner.CurrentToken in [tstREAD,tstWRITE,tstSTORED,tstDEFAULT,tstNODEFAULT,tstIMPLEMENTS,tstINDEX]) and not Scanner.IsEOFOrAbortError do begin
    case Scanner.CurrentToken of
     tstREAD:begin
      Scanner.Match(tstREAD);
@@ -4436,6 +4441,35 @@ begin
         break;
        end;
       end;
+     end;
+    end;
+    tstINDEX:begin
+     Symbol^.PropertyIndex:=nil;
+     Scanner.Match(tstINDEX);
+     Scanner.AllowedDirectives:=Scanner.AllowedDirectives+[tstREAD,tstWRITE,tstSTORED,tstDEFAULT,tstNODEFAULT,tstIMPLEMENTS,tstINDEX];
+     NewTreeNode:=ParseExpression(false);
+     Scanner.AllowedDirectives:=Scanner.AllowedDirectives-[tstREAD,tstWRITE,tstSTORED,tstDEFAULT,tstNODEFAULT,tstIMPLEMENTS,tstINDEX];
+     OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
+     OptimizerHighLevel.CurrentObjectClass:=CurrentObjectClass;
+     OptimizerHighLevel.OptimizeTree(NewTreeNode);
+     if assigned(NewTreeNode) then begin
+      case NewTreeNode.TreeNodeType of
+       ttntORDConst:begin
+        TempSymbol:=SymbolManager.NewSymbol(ModuleSymbol,nil);
+        TempSymbol^.Name:='#';
+        TempSymbol^.SymbolType:=tstConstant;
+        TempSymbol^.ConstantTypeRecord:=NewTreeNode.Return;
+        TempSymbol^.ConstantType:=tctOrdinal;
+        TempSymbol^.IntValue:=NewTreeNode.Value;
+        Symbol^.PropertyIndex:=TempSymbol;
+       end;
+       else begin
+        Error.AbortCode(0);
+       end;
+      end;
+      FreeAndNil(NewTreeNode);
+     end else begin
+      Error.AbortCode(0);
      end;
     end;
    end;

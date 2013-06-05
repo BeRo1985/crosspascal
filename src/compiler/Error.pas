@@ -104,13 +104,13 @@ begin
 end;
 
 procedure TError.Push;
-var index:longint;
+var Index:longint;
 begin
- index:=length(PositionStack);
+ Index:=length(PositionStack);
  SetLength(PositionStack,index+1);
- PositionStack[index].FileName:=CurrentFileName;
- PositionStack[index].Line:=CurrentLine;
- PositionStack[index].Column:=CurrentColumn;
+ PositionStack[Index].FileName:=CurrentFileName;
+ PositionStack[Index].Line:=CurrentLine;
+ PositionStack[Index].Column:=CurrentColumn;
 end;
 
 procedure TError.Pop;
@@ -651,17 +651,17 @@ begin
 end;
 
 function TError.Text:ansistring;
-var index:longint;
+var Index:longint;
 begin
  result:='';
- for index:=0 to ErrorList.Count-1 do begin
-  result:=result+'ERROR: '+ErrorList[index]+#13#10;
+ for Index:=0 to ErrorList.Count-1 do begin
+  result:=result+'ERROR: '+ErrorList[Index]+#13#10;
  end;
- for index:=0 to WarningList.Count-1 do begin
-  result:=result+'WARNING: '+WarningList[index]+#13#10;
+ for Index:=0 to WarningList.Count-1 do begin
+  result:=result+'WARNING: '+WarningList[Index]+#13#10;
  end;
- for index:=0 to HintList.Count-1 do begin
-  result:=result+'HINT: '+HintList[index]+#13#10;
+ for Index:=0 to HintList.Count-1 do begin
+  result:=result+'HINT: '+HintList[Index]+#13#10;
  end;
 end;
 
