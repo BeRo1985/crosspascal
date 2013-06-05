@@ -38,6 +38,7 @@ type TOptimizerHighLevel=class
        procedure OptimizeAddress(var TreeNode:TTreeNode);
        procedure OptimizePointer(var TreeNode:TTreeNode);
        procedure OptimizeField(var TreeNode:TTreeNode);
+       procedure OptimizeProperty(var TreeNode:TTreeNode);
        procedure OptimizeIndex(var TreeNode:TTreeNode);
        procedure OptimizeAdd(var TreeNode:TTreeNode);
        procedure OptimizeSub(var TreeNode:TTreeNode);
@@ -979,6 +980,77 @@ begin
   exit;
  end;
  TreeNode.Return:=TreeNode.SymbolField^.TypeDefinition; // TreeNode.Left.Return;
+end;
+
+procedure TOptimizerHighLevel.OptimizeProperty(var TreeNode:TTreeNode);
+var Node:TTreeNode;
+    PropertySymbol:PSymbol;
+    PropertyContainerSymbol:PSymbol;
+    PropertySourceTargetSymbol:PSymbol;
+begin
+ if not TreeNode.DoNotOptimize then begin
+  OptimizeTree(TreeNode.Left);
+  Node:=TreeNode.Right;
+  while assigned(Node) do begin
+   if assigned(Node.Left) then begin
+    OptimizeTree(Node.Left);
+   end;
+   Node:=Node.Right;
+  end;
+  if TreeNode.PropertyReadyForToOptimize then begin
+   PropertyContainerSymbol:=TreeNode.Symbol;
+   PropertySymbol:=TreeNode.SymbolField;
+   if TreeNode.PropertyIsToWrite then begin
+    PropertySourceTargetSymbol:=PropertySymbol^.PropertyWrite;
+   end else begin
+    PropertySourceTargetSymbol:=PropertySymbol^.PropertyRead;
+   end;
+   if assigned(PropertySourceTargetSymbol) then begin
+    case PropertySourceTargetSymbol^.SymbolType of
+     Symbols.tstVariable:begin
+      if assigned(PropertyContainerSymbol) then begin
+       TreeNode.TreeNodeType:=ttntField;
+       TreeNode.Symbol:=PropertyContainerSymbol;
+       TreeNode.SymbolField:=PropertySymbol;
+       if assigned(TreeNode.Right) then begin
+        TreeNode.Right.Destroy;
+        TreeNode.Right:=nil;
+       end;
+       OptimizeField(TreeNode);
+      end else begin
+       TreeNode.TreeNodeType:=ttntVar;
+       TreeNode.Symbol:=PropertySymbol;
+       TreeNode.SymbolField:=nil;
+       if assigned(TreeNode.Right) then begin
+        TreeNode.Right.Destroy;
+        TreeNode.Right:=nil;
+       end;
+       OptimizeVar(TreeNode);
+      end;
+      exit;
+     end;
+     Symbols.tstFunction:begin
+      // TODO: Read
+      Error.InternalError(201306050208002);
+     end;
+     Symbols.tstProcedure:begin
+      // TODO: Write
+      Error.InternalError(201306050208001);
+     end;
+     else begin
+      Error.InternalError(201306050208000);
+     end;
+    end;
+   end else begin
+    if TreeNode.PropertyIsToWrite then begin
+     Error.AbortCode(133);
+    end else begin
+     Error.AbortCode(134);
+    end;
+   end;
+   TreeNode.DoNotOptimize:=true;
+  end;
+ end;
 end;
 
 procedure TOptimizerHighLevel.OptimizeIndex(var TreeNode:TTreeNode);
@@ -2013,7 +2085,7 @@ begin
  if not assigned(TreeNode.Left) then begin
   Error.AbortCode(37);
   exit;
- end else if not (TreeNode.Left.TreeNodeType in [ttntINDEX,ttntVAR,ttntCALL,ttntFIELD]) then begin
+ end else if not (TreeNode.Left.TreeNodeType in [ttntINDEX,ttntVAR,ttntCALL,ttntFIELD,ttntPROPERTY]) then begin
 //end else if TreeNode.Left.TreeNodeType IN [ttntORDConst,ttntFLOATConst,ttntCHARConst,ttntStringConst,ttntWideStringConst] then begin
   Error.AbortCode(37);
   exit;
@@ -2596,6 +2668,9 @@ begin
    end;
    ttntField:begin
     OptimizeField(TreeNode);
+   end;
+   ttntProperty:begin
+    OptimizeProperty(TreeNode);
    end;
    ttntORDConst:begin
     OptimizeOrdinalConst(TreeNode);

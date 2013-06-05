@@ -1386,11 +1386,11 @@ begin
  end;
 end;
 
-function TParser.ParseFactor:TTreeNode;         
+function TParser.ParseFactor:TTreeNode;
 var NewTreeNode,FirstTreeNode,LastTreeNode:TTreeNode;
     ToHandleSymbol,CanHaveQualifiers,Overloaded,OK:boolean;
     AType,FieldType:PType;
-    MethodSymbol,FieldSymbol,Symbol,TempSymbol:PSymbol;
+    MethodSymbol,FieldSymbol,Symbol,TempSymbol,PropertySymbol:PSymbol;
     FieldName,Name:ansistring;
     SetConstant:TSetArray;
     CounterValue,LowValue,HighValue:byte;
@@ -1399,6 +1399,7 @@ var NewTreeNode,FirstTreeNode,LastTreeNode:TTreeNode;
 begin
  NewTreeNode:=nil;
  AType:=nil;
+ PropertySymbol:=nil;
  ToHandleSymbol:=false;
  CanHaveQualifiers:=false;
  case Scanner.CurrentToken of
@@ -1668,290 +1669,310 @@ begin
    Error.AbortCode(504);
   end;
  end;
- if ToHandleSymbol then begin
-  if assigned(Symbol) then begin
-   AType:=Symbol^.TypeDefinition;
-   if (WhichWithLevel<0) and assigned(Symbol^.OwnerObjectClass) and
-      ((assigned(CurrentProcedureFunction) and assigned(CurrentProcedureFunction^.OwnerObjectClass)) and
-        (tpaClassProcedure in CurrentProcedureFunction^.ProcedureAttributes)) and
-       not (((Symbol^.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction]) and (tpaClassProcedure in Symbol^.ProcedureAttributes)) or
-            not (Symbol^.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction])) then begin
-    Error.AddErrorCode(128,CorrectSymbolName(Symbol .Name));
-   end;
-   case Symbol^.SymbolType of
-    Symbols.tstVariable:begin
-     NewTreeNode:=TreeManager.GenerateVarNode(Symbol);
-     if (WhichWithLevel>=0) and (WhichWithLevel<WithStack.Count) then begin
-      NewTreeNode.WithType:=WithStack.Items[WhichWithLevel];
-      NewTreeNode.WithLevel:=WhichWithLevel;
-     end;
+ while true do begin
+  if ToHandleSymbol then begin
+   ToHandleSymbol:=false;
+   if assigned(Symbol) then begin
+    AType:=Symbol^.TypeDefinition;
+    if (WhichWithLevel<0) and assigned(Symbol^.OwnerObjectClass) and
+       ((assigned(CurrentProcedureFunction) and assigned(CurrentProcedureFunction^.OwnerObjectClass)) and
+         (tpaClassProcedure in CurrentProcedureFunction^.ProcedureAttributes)) and
+        not (((Symbol^.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction]) and (tpaClassProcedure in Symbol^.ProcedureAttributes)) or
+             not (Symbol^.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction])) then begin
+     Error.AddErrorCode(128,CorrectSymbolName(Symbol .Name));
     end;
-    Symbols.tstProperty:begin
-     // TODO PROPERTY
-    end;
-    Symbols.tstType:begin
-     if Scanner.CurrentToken=tstLeftParen then begin
-      Scanner.Match(tstLeftParen);
-      NewTreeNode:=ParseExpression(false);
-      Scanner.Match(tstRightParen);
-      NewTreeNode:=TreeManager.GenerateTypeConvNode(NewTreeNode,AType,true);
-     end else begin
-      NewTreeNode:=TreeManager.GenerateTypeNode(AType);
-     end;
-    end;
-    Symbols.tstConstant:begin
-     case Symbol^.ConstantType of
-      tctOrdinal:begin
-       NewTreeNode:=TreeManager.GenerateOrdConstNode(Symbol^.IntValue,Symbol^.ConstantTypeRecord);
-      end;
-      tctAnsiChar:begin
-       NewTreeNode:=TreeManager.GenerateCharConstNode(Symbol^.CharValue,SymbolManager.TypeChar);
-      end;
-      tctWideChar:begin
-       NewTreeNode:=TreeManager.GenerateCharConstNode(Symbol^.CharValue,SymbolManager.TypeWideChar);
-      end;
-      tctHugeChar:begin
-       NewTreeNode:=TreeManager.GenerateCharConstNode(Symbol^.CharValue,SymbolManager.TypeHugeChar);
-      end;
-      tctAnsiString:begin
-       NewTreeNode:=TreeManager.GenerateStringConstNode(Symbol^.StringValue,SymbolManager.TypeAnsiString);
-      end;
-      tctPANSICHAR:begin
-       NewTreeNode:=TreeManager.GeneratePCharConstNode(Symbol^.StringValue,SymbolManager.TypePAnsiChar);
-      end;
-      tctWideString:begin
-       NewTreeNode:=TreeManager.GenerateStringConstNode(Symbol^.StringValue,SymbolManager.TypeWideString);
-      end;
-      tctHugeString:begin
-       NewTreeNode:=TreeManager.GenerateStringConstNode(Symbol^.StringValue,SymbolManager.TypeHugeString);
-      end;
-      tctPWIDECHAR:begin
-       NewTreeNode:=TreeManager.GeneratePCharConstNode(Symbol^.StringValue,SymbolManager.TypePWideChar);
-      end;
-      tctPHUGECHAR:begin
-       NewTreeNode:=TreeManager.GeneratePCharConstNode(Symbol^.StringValue,SymbolManager.TypePHugeChar);
-      end;
-      tctFloat:begin
-       NewTreeNode:=TreeManager.GenerateFloatConstNode(Symbol^.FloatValue,SymbolManager.TypeExtended);
-      end;
-      tctPointer:begin
-       NewTreeNode:=TreeManager.GenerateLeftNode(ttntAddress,TreeManager.GenerateVarNode(Symbol^.PointerTo));
-      end;
-      tctSet:begin
-       NewTreeNode:=TreeManager.GenerateSetConstNode(Symbol^.SetArray,Symbol^.ConstantTypeRecord);
+    case Symbol^.SymbolType of
+     Symbols.tstVariable:begin
+      NewTreeNode:=TreeManager.GenerateVarNode(Symbol);
+      if (WhichWithLevel>=0) and (WhichWithLevel<WithStack.Count) then begin
+       NewTreeNode.WithType:=WithStack.Items[WhichWithLevel];
+       NewTreeNode.WithLevel:=WhichWithLevel;
       end;
      end;
-     NewTreeNode.Symbol:=Symbol;
-    end;
-    Symbols.tstProcedure,Symbols.tstFunction:begin
-     NewTreeNode:=TreeManager.GenerateCallNode(Symbol);
-     if (Scanner.CurrentToken=tstLeftParen) or MustHaveParens then begin
-      Scanner.Match(tstLeftParen);
-      case Symbol^.InternalProcedure of
-       tipNEW,tipDISPOSE:begin
-        NewTreeNode.Left:=ParseNewDisposeParameter(Symbol^.InternalProcedure=tipNew);
-       end;
-       tipTYPEINFO:begin
-        NewTreeNode.Left:=ParseTypeInfoParameter;
-       end;
-       else begin
-        NewTreeNode.Left:=ParseCallParameter;
-        SearchOverloadedSymbolAndCheckParameters(NewTreeNode.Symbol,NewTreeNode.Left);
-       end;
-      end;
-      Scanner.Match(tstRightParen);
-     end else begin
-      NewTreeNode.Left:=nil;
+     Symbols.tstProperty:begin
+      PropertySymbol:=Symbol;
+      Symbol:=nil;
      end;
-    end;
-    else begin
-     Error.AbortCode(504);
-    end;
-   end;
-   CanHaveQualifiers:=true;
-  end else begin
-   Error.AbortCode(2,CorrectSymbolName(Name));
-  end;
-  Error.Pop;
- end;
- if CanHaveQualifiers then begin
-  while not Scanner.IsEOFOrAbortError do begin
-   case Scanner.CurrentToken of
-    tstPointer:begin
-     Scanner.Match(tstPointer);
-     if AType^.TypeDefinition=ttdPOINTER then begin
-      if assigned(AType^.PointerTo) then begin
-       AType:=AType^.PointerTo^.TypeDefinition;
+     Symbols.tstType:begin
+      if Scanner.CurrentToken=tstLeftParen then begin
+       Scanner.Match(tstLeftParen);
+       NewTreeNode:=ParseExpression(false);
+       Scanner.Match(tstRightParen);
+       NewTreeNode:=TreeManager.GenerateTypeConvNode(NewTreeNode,AType,true);
       end else begin
-       if assigned(NewTreeNode) and (NewTreeNode.TreeNodeType=ttntAddress) and assigned(NewTreeNode.Left) then begin
-        AType:=NewTreeNode.Left.Return;
-       end else begin
-        AType:=SymbolManager.TypeEmpty;
+       NewTreeNode:=TreeManager.GenerateTypeNode(AType);
+      end;
+     end;
+     Symbols.tstConstant:begin
+      case Symbol^.ConstantType of
+       tctOrdinal:begin
+        NewTreeNode:=TreeManager.GenerateOrdConstNode(Symbol^.IntValue,Symbol^.ConstantTypeRecord);
+       end;
+       tctAnsiChar:begin
+        NewTreeNode:=TreeManager.GenerateCharConstNode(Symbol^.CharValue,SymbolManager.TypeChar);
+       end;
+       tctWideChar:begin
+        NewTreeNode:=TreeManager.GenerateCharConstNode(Symbol^.CharValue,SymbolManager.TypeWideChar);
+       end;
+       tctHugeChar:begin
+        NewTreeNode:=TreeManager.GenerateCharConstNode(Symbol^.CharValue,SymbolManager.TypeHugeChar);
+       end;
+       tctAnsiString:begin
+        NewTreeNode:=TreeManager.GenerateStringConstNode(Symbol^.StringValue,SymbolManager.TypeAnsiString);
+       end;
+       tctPANSICHAR:begin
+        NewTreeNode:=TreeManager.GeneratePCharConstNode(Symbol^.StringValue,SymbolManager.TypePAnsiChar);
+       end;
+       tctWideString:begin
+        NewTreeNode:=TreeManager.GenerateStringConstNode(Symbol^.StringValue,SymbolManager.TypeWideString);
+       end;
+       tctHugeString:begin
+        NewTreeNode:=TreeManager.GenerateStringConstNode(Symbol^.StringValue,SymbolManager.TypeHugeString);
+       end;
+       tctPWIDECHAR:begin
+        NewTreeNode:=TreeManager.GeneratePCharConstNode(Symbol^.StringValue,SymbolManager.TypePWideChar);
+       end;
+       tctPHUGECHAR:begin
+        NewTreeNode:=TreeManager.GeneratePCharConstNode(Symbol^.StringValue,SymbolManager.TypePHugeChar);
+       end;
+       tctFloat:begin
+        NewTreeNode:=TreeManager.GenerateFloatConstNode(Symbol^.FloatValue,SymbolManager.TypeExtended);
+       end;
+       tctPointer:begin
+        NewTreeNode:=TreeManager.GenerateLeftNode(ttntAddress,TreeManager.GenerateVarNode(Symbol^.PointerTo));
+       end;
+       tctSet:begin
+        NewTreeNode:=TreeManager.GenerateSetConstNode(Symbol^.SetArray,Symbol^.ConstantTypeRecord);
        end;
       end;
-      NewTreeNode:=TreeManager.GeneratePointerNode(NewTreeNode,AType);
-     end else begin
+      NewTreeNode.Symbol:=Symbol;
+     end;
+     Symbols.tstProcedure,Symbols.tstFunction:begin
+      NewTreeNode:=TreeManager.GenerateCallNode(Symbol);
+      if (Scanner.CurrentToken=tstLeftParen) or MustHaveParens then begin
+       Scanner.Match(tstLeftParen);
+       case Symbol^.InternalProcedure of
+        tipNEW,tipDISPOSE:begin
+         NewTreeNode.Left:=ParseNewDisposeParameter(Symbol^.InternalProcedure=tipNew);
+        end;
+        tipTYPEINFO:begin
+         NewTreeNode.Left:=ParseTypeInfoParameter;
+        end;
+        else begin
+         NewTreeNode.Left:=ParseCallParameter;
+         SearchOverloadedSymbolAndCheckParameters(NewTreeNode.Symbol,NewTreeNode.Left);
+        end;
+       end;
+       Scanner.Match(tstRightParen);
+      end else begin
+       NewTreeNode.Left:=nil;
+      end;
+     end;
+     else begin
       Error.AbortCode(504);
      end;
     end;
-    tstLeftParen:begin
-     if assigned(NewTreeNode) and (NewTreeNode.TreeNodeType=ttntVAR) and (NewTreeNode.Symbol^.TypeDefinition^.TypeDefinition=ttdProcedure) then begin
-      NewTreeNode.TreeNodeType:=ttntCALL;
-      Scanner.Match(tstLeftParen);
-      NewTreeNode.Left:=ParseCallParameter;
-      CheckParameters(NewTreeNode.Symbol,NewTreeNode.Symbol^.TypeDefinition^.Parameter,NewTreeNode.Left);
-      Scanner.Match(tstRightParen);
-      AType:=NewTreeNode.Symbol^.ReturnType;
-     end;
-    end;
-    tstLeftBracket:begin
-     Scanner.Match(tstLeftBracket);
-     while not Scanner.IsEOFOrAbortError do begin
-      case AType^.TypeDefinition of
-       ttdShortString,ttdLongString:begin
-        LastTreeNode:=ParseExpression(false);
-        OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
-        OptimizerHighLevel.CurrentObjectClass:=CurrentObjectClass;
-        OptimizerHighLevel.OptimizeTree(LastTreeNode);
-        NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntIndex,NewTreeNode,LastTreeNode);
-        AType^.Definition:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
-        AType^.Definition^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
-        AType^.Range:=AType^.Definition;
-        AType:=AType^.Definition;
-        AType^.TypeDefinition:=ttdSubRange;
-        AType^.SubRangeType:=tstUnsignedChar;
-        AType^.TypeKind:=TypeKindAnsiChar;
-        AType^.NeedTypeInfo:=false;
-        AType^.LowerLimit:=0;
-        AType^.UpperLimit:=255;
-        NewTreeNode.Return:=AType;
-       end;
-       ttdArray:begin
-        LastTreeNode:=ParseExpression(false);
-        OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
-        OptimizerHighLevel.CurrentObjectClass:=CurrentObjectClass;
-        OptimizerHighLevel.OptimizeTree(LastTreeNode);
-        NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntIndex,NewTreeNode,LastTreeNode);
-        AType:=AType^.Definition;
-        NewTreeNode.Return:=AType;
-       end;
-       ttdPointer:begin
-        if assigned(AType^.PointerTo) then begin
-         AType:=AType^.PointerTo^.TypeDefinition;
+    CanHaveQualifiers:=true;
+   end else begin
+    Error.AbortCode(2,CorrectSymbolName(Name));
+   end;
+   Error.Pop;
+  end;
+  if assigned(PropertySymbol) then begin
+   if assigned(PropertySymbol^.PropertyType) then begin
+    NewTreeNode:=TreeManager.GeneratePropertyNode(Symbol,PropertySymbol,NewTreeNode,nil,FieldSymbol^.PropertyType);
+    AType:=FieldSymbol^.PropertyType;
+    CanHaveQualifiers:=true;
+   end else begin
+    Error.InternalError(201306050146000);
+   end;
+  end;
+  if CanHaveQualifiers then begin
+   while CanHaveQualifiers and not Scanner.IsEOFOrAbortError do begin
+    case Scanner.CurrentToken of
+     tstPointer:begin
+      Scanner.Match(tstPointer);
+      if AType^.TypeDefinition=ttdPOINTER then begin
+       if assigned(AType^.PointerTo) then begin
+        AType:=AType^.PointerTo^.TypeDefinition;
+       end else begin
+        if assigned(NewTreeNode) and (NewTreeNode.TreeNodeType=ttntAddress) and assigned(NewTreeNode.Left) then begin
+         AType:=NewTreeNode.Left.Return;
         end else begin
-         if assigned(NewTreeNode) and (NewTreeNode.TreeNodeType=ttntAddress) and assigned(NewTreeNode.Left) then begin
-          AType:=NewTreeNode.Left.Return;
+         AType:=SymbolManager.TypeEmpty;
+        end;
+       end;
+       NewTreeNode:=TreeManager.GeneratePointerNode(NewTreeNode,AType);
+      end else begin
+       Error.AbortCode(504);
+      end;
+     end;
+     tstLeftParen:begin
+      if assigned(NewTreeNode) and (NewTreeNode.TreeNodeType=ttntVAR) and (NewTreeNode.Symbol^.TypeDefinition^.TypeDefinition=ttdProcedure) then begin
+       NewTreeNode.TreeNodeType:=ttntCALL;
+       Scanner.Match(tstLeftParen);
+       NewTreeNode.Left:=ParseCallParameter;
+       CheckParameters(NewTreeNode.Symbol,NewTreeNode.Symbol^.TypeDefinition^.Parameter,NewTreeNode.Left);
+       Scanner.Match(tstRightParen);
+       AType:=NewTreeNode.Symbol^.ReturnType;
+      end;
+     end;
+     tstLeftBracket:begin
+      Scanner.Match(tstLeftBracket);
+      while not Scanner.IsEOFOrAbortError do begin
+       case AType^.TypeDefinition of
+        ttdShortString,ttdLongString:begin
+         LastTreeNode:=ParseExpression(false);
+         OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
+         OptimizerHighLevel.CurrentObjectClass:=CurrentObjectClass;
+         OptimizerHighLevel.OptimizeTree(LastTreeNode);
+         NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntIndex,NewTreeNode,LastTreeNode);
+         AType^.Definition:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+         AType^.Definition^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
+         AType^.Range:=AType^.Definition;
+         AType:=AType^.Definition;
+         AType^.TypeDefinition:=ttdSubRange;
+         AType^.SubRangeType:=tstUnsignedChar;
+         AType^.TypeKind:=TypeKindAnsiChar;
+         AType^.NeedTypeInfo:=false;
+         AType^.LowerLimit:=0;
+         AType^.UpperLimit:=255;
+         NewTreeNode.Return:=AType;
+        end;
+        ttdArray:begin
+         LastTreeNode:=ParseExpression(false);
+         OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
+         OptimizerHighLevel.CurrentObjectClass:=CurrentObjectClass;
+         OptimizerHighLevel.OptimizeTree(LastTreeNode);
+         NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntIndex,NewTreeNode,LastTreeNode);
+         AType:=AType^.Definition;
+         NewTreeNode.Return:=AType;
+        end;
+        ttdPointer:begin
+         if assigned(AType^.PointerTo) then begin
+          AType:=AType^.PointerTo^.TypeDefinition;
          end else begin
-          AType:=SymbolManager.TypeEmpty;
-         end;
-        end;
-        NewTreeNode:=TreeManager.GeneratePointerNode(NewTreeNode,AType);
-        continue;
-       end;
-       else begin
-        Error.AbortCode(501);
-       end;
-      end;
-      if Scanner.CurrentToken=tstComma then begin
-       Scanner.Match(tstComma);
-      end else begin
-       break;
-      end;
-     end;
-     Scanner.Match(tstRightBracket);
-    end;
-    tstPeriod:begin
-     Scanner.Match(tstPeriod);
-     while assigned(AType) and (AType^.TypeDefinition=ttdPOINTER) do begin
-      if assigned(AType^.PointerTo) then begin
-       AType:=AType^.PointerTo^.TypeDefinition;
-      end else begin
-       if assigned(NewTreeNode) and (NewTreeNode.TreeNodeType=ttntAddress) and assigned(NewTreeNode.Left) then begin
-        AType:=NewTreeNode.Left.Return;
-       end else begin
-        AType:=SymbolManager.TypeEmpty;
-       end;
-      end;
-      NewTreeNode:=TreeManager.GeneratePointerNode(NewTreeNode,AType);
-     end;
-     case AType^.TypeDefinition of
-      ttdRecord,ttdObject,ttdClass,ttdInterface:begin
-       FieldName:=Scanner.ReadIdentifier(nil);
-//     Symbol:=SymbolManager.GetSymbol(Name,ModuleSymbol,CurrentObjectClass);
-       if assigned(AType) then begin
-        FieldSymbol:=AType^.RecordTable.GetSymbol(FieldName,ModuleSymbol,CurrentObjectClass,true);
-        if assigned(FieldSymbol) then begin
-         FieldType:=FieldSymbol^.TypeDefinition;
-         case FieldSymbol^.SymbolType of
-          Symbols.tstVariable:begin
-           case AType^.TypeDefinition of
-            ttdRecord,ttdObject,ttdClass:begin
-             NewTreeNode:=TreeManager.GenerateFieldNode(Symbol,FieldSymbol,NewTreeNode);
-             AType:=FieldSymbol^.TypeDefinition;
-            end;
-            ttdInterface:begin
-             Error.AbortCode(221);
-            end;
-            else begin
-             Error.InternalError(200605181020000);
-            end;
-           end;
-          end;
-          Symbols.tstFunction,Symbols.tstProcedure:begin
-           case AType^.TypeDefinition of
-            ttdObject,ttdClass,ttdInterface:begin       
-             NewTreeNode:=TreeManager.GenerateMethodCallNode(Symbol,FieldSymbol,NewTreeNode,nil);
-             if (Scanner.CurrentToken=tstLeftParen) or MustHaveParens then begin
-              Scanner.Match(tstLeftParen);
-              NewTreeNode.Left:=ParseCallParameter;
-              SearchOverloadedSymbolAndCheckParameters(NewTreeNode.MethodSymbol,NewTreeNode.Left);
-              AType:=NewTreeNode.MethodSymbol^.ReturnType;
-              Scanner.Match(tstRightParen);
-             end else begin
-              NewTreeNode.Left:=nil;
-             end;
-            end;
-            else begin
-             Error.InternalError(200605181020001);
-            end;
-           end;
-          end;
-          Symbols.tstProperty:begin
-           // TODO PROPERTY
+          if assigned(NewTreeNode) and (NewTreeNode.TreeNodeType=ttntAddress) and assigned(NewTreeNode.Left) then begin
+           AType:=NewTreeNode.Left.Return;
+          end else begin
+           AType:=SymbolManager.TypeEmpty;
           end;
          end;
-        end else begin
-         Error.AbortCode(174);
-         AType:=nil;
+         NewTreeNode:=TreeManager.GeneratePointerNode(NewTreeNode,AType);
+         continue;
         end;
-       end else begin
-        Error.AbortCode(503);
-        AType:=nil;
+        else begin
+         Error.AbortCode(501);
+        end;
        end;
-      end;
-      else begin
-       if assigned(NewTreeNode) and (NewTreeNode.TreeNodeType=ttntVAR) and (NewTreeNode.Symbol^.TypeDefinition^.TypeDefinition=ttdProcedure) then begin
-        NewTreeNode.TreeNodeType:=ttntCALL;
-        if (Scanner.CurrentToken=tstLeftParen) or MustHaveParens then begin
-         Scanner.Match(tstLeftParen);
-         NewTreeNode.Left:=ParseCallParameter;
-         CheckParameters(NewTreeNode.Symbol,NewTreeNode.Symbol^.TypeDefinition^.Parameter,NewTreeNode.Left);
-         Scanner.Match(tstRightParen);
-         AType:=NewTreeNode.Symbol^.ReturnType;
-        end else begin
-         NewTreeNode.Left:=nil;
-        end;
+       if Scanner.CurrentToken=tstComma then begin
+        Scanner.Match(tstComma);
        end else begin
         break;
        end;
       end;
+      Scanner.Match(tstRightBracket);
      end;
-    end;
-    else begin
-     break;
+     tstPeriod:begin
+      Scanner.Match(tstPeriod);
+      while assigned(AType) and (AType^.TypeDefinition=ttdPOINTER) do begin
+       if assigned(AType^.PointerTo) then begin
+        AType:=AType^.PointerTo^.TypeDefinition;
+       end else begin
+        if assigned(NewTreeNode) and (NewTreeNode.TreeNodeType=ttntAddress) and assigned(NewTreeNode.Left) then begin
+         AType:=NewTreeNode.Left.Return;
+        end else begin
+         AType:=SymbolManager.TypeEmpty;
+        end;
+       end;
+       NewTreeNode:=TreeManager.GeneratePointerNode(NewTreeNode,AType);
+      end;
+      case AType^.TypeDefinition of
+       ttdRecord,ttdObject,ttdClass,ttdInterface:begin
+        FieldName:=Scanner.ReadIdentifier(nil);
+ //     Symbol:=SymbolManager.GetSymbol(Name,ModuleSymbol,CurrentObjectClass);
+        if assigned(AType) then begin
+         FieldSymbol:=AType^.RecordTable.GetSymbol(FieldName,ModuleSymbol,CurrentObjectClass,true);
+         if assigned(FieldSymbol) then begin
+          FieldType:=FieldSymbol^.TypeDefinition;
+          case FieldSymbol^.SymbolType of
+           Symbols.tstVariable:begin
+            case AType^.TypeDefinition of
+             ttdRecord,ttdObject,ttdClass:begin
+              NewTreeNode:=TreeManager.GenerateFieldNode(Symbol,FieldSymbol,NewTreeNode);
+              AType:=FieldSymbol^.TypeDefinition;
+             end;
+             ttdInterface:begin
+              Error.AbortCode(221);
+             end;
+             else begin
+              Error.InternalError(200605181020000);
+             end;
+            end;
+           end;
+           Symbols.tstFunction,Symbols.tstProcedure:begin
+            case AType^.TypeDefinition of
+             ttdObject,ttdClass,ttdInterface:begin       
+              NewTreeNode:=TreeManager.GenerateMethodCallNode(Symbol,FieldSymbol,NewTreeNode,nil);
+              if (Scanner.CurrentToken=tstLeftParen) or MustHaveParens then begin
+               Scanner.Match(tstLeftParen);
+               NewTreeNode.Left:=ParseCallParameter;
+               SearchOverloadedSymbolAndCheckParameters(NewTreeNode.MethodSymbol,NewTreeNode.Left);
+               AType:=NewTreeNode.MethodSymbol^.ReturnType;
+               Scanner.Match(tstRightParen);
+              end else begin
+               NewTreeNode.Left:=nil;
+              end;
+             end;
+             else begin
+              Error.InternalError(200605181020001);
+             end;
+            end;
+           end;
+           Symbols.tstProperty:begin
+            PropertySymbol:=FieldSymbol;
+            Symbol:=FieldSymbol;
+            ToHandleSymbol:=false;
+            CanHaveQualifiers:=false;
+            continue;
+           end;
+          end;
+         end else begin
+          Error.AbortCode(174);
+          AType:=nil;
+         end;
+        end else begin
+         Error.AbortCode(503);
+         AType:=nil;
+        end;
+       end;
+       else begin
+        if assigned(NewTreeNode) and (NewTreeNode.TreeNodeType=ttntVAR) and (NewTreeNode.Symbol^.TypeDefinition^.TypeDefinition=ttdProcedure) then begin
+         NewTreeNode.TreeNodeType:=ttntCALL;
+         if (Scanner.CurrentToken=tstLeftParen) or MustHaveParens then begin
+          Scanner.Match(tstLeftParen);
+          NewTreeNode.Left:=ParseCallParameter;
+          CheckParameters(NewTreeNode.Symbol,NewTreeNode.Symbol^.TypeDefinition^.Parameter,NewTreeNode.Left);
+          Scanner.Match(tstRightParen);
+          AType:=NewTreeNode.Symbol^.ReturnType;
+         end else begin
+          NewTreeNode.Left:=nil;
+         end;
+        end else begin
+         break;
+        end;
+       end;
+      end;
+     end;
+     else begin
+      break;
+     end;
     end;
    end;
   end;
+  if ToHandleSymbol then begin
+  end;
+  break;
  end;
  if not assigned(NewTreeNode) then begin
   NewTreeNode:=TreeManager.GenerateEmptyNode;
