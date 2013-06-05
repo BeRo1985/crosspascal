@@ -97,11 +97,23 @@ const CompilerInfoString:pchar='OBJPAS2C';
 type DWORD=LongWord;
      Bool=LongBool;
      PBool=^Bool;
-	 
-	 TByteArray = array[0..32767] of Byte;
-	 PByteArray = ^TByteArray;
-	 TWordArray = array[0..16383] of Word;
-	 PWordArray = ^TWordArray;
+
+     PShortInt=^ShortInt;
+     PByte=^Byte;
+     PSmallInt=^SmallInt;
+     PWord=^Word;
+     PLongInt=^LongInt;
+     PLongWord=^LongWord;
+     PInt64=^Int64;
+     PUInt64=^UInt64;
+     PQWord=^QWord;
+
+     TByteArray=array[0..32767] of Byte;
+     PByteArray=^TByteArray;
+
+     TWordArray=array[0..16383] of Word;
+     PWordArray=^TWordArray;
+
      TObject=class;
 
      TClass=class of TObject;
