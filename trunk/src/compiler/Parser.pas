@@ -59,7 +59,8 @@ type TParser=class
        function ParseCallParameter:TTreeNode;
        function ParseNewDisposeParameter(IsNew:boolean):TTreeNode;
        function ParseTypeInfoParameter:TTreeNode;
-       function FinalizePropertyNodes(TreeNode:TTreeNode;IsWrite:boolean):TTreeNode;
+       function HasPropertyNode(TreeNode:TTreeNode):boolean;
+       function FinalizePropertyNodes(TreeNode,AssignTreeNode:TTreeNode;IsWrite:boolean):TTreeNode;
        function ParseFactor:TTreeNode;
        function ParseTerm:TTreeNode;
        function ParseSimpleExpression:TTreeNode;
@@ -1387,37 +1388,83 @@ begin
  end;
 end;
 
-function TParser.FinalizePropertyNodes(TreeNode:TTreeNode;IsWrite:boolean):TTreeNode;
+function TParser.HasPropertyNode(TreeNode:TTreeNode):boolean;
 begin
  if assigned(TreeNode) then begin
   case TreeNode.TreeNodeType of
    ttntProperty:begin
-    if TreeNode.PropertyReadyForToOptimize then begin
-     TreeNode.PropertyReadyForToOptimize:=true;
-     TreeNode.PropertyIsToWrite:=IsWrite;
+    if not TreeNode.PropertyReadyForToOptimize then begin
+     result:=true;
+     exit;
     end;
    end;
   end;
-  FinalizePropertyNodes(TreeNode.Left,IsWrite);
-  FinalizePropertyNodes(TreeNode.Right,IsWrite);
-  FinalizePropertyNodes(TreeNode.Block,IsWrite);
-  FinalizePropertyNodes(TreeNode.ElseTree,IsWrite);
-  FinalizePropertyNodes(TreeNode.ExceptTree,IsWrite);
-  FinalizePropertyNodes(TreeNode.FinallyTree,IsWrite);
+  result:=HasPropertyNode(TreeNode.Left) or HasPropertyNode(TreeNode.Right);
+ end else begin
+  result:=false;
+ end;
+end;
+
+function TParser.FinalizePropertyNodes(TreeNode,AssignTreeNode:TTreeNode;IsWrite:boolean):TTreeNode;
+var Node,LastNode:TTreeNode;
+    ConvertType:TConvertType;
+    ProcType:PType;
+begin
+ if assigned(TreeNode) then begin
+  case TreeNode.TreeNodeType of
+   ttntProperty:begin
+    if not TreeNode.PropertyReadyForToOptimize then begin
+     TreeNode.PropertyReadyForToOptimize:=true;
+     TreeNode.PropertyIsToWrite:=IsWrite;
+     if IsWrite then begin
+      if assigned(AssignTreeNode) then begin
+       LastNode:=nil;
+       Node:=TreeNode.Left;
+       while assigned(Node) and (Node.TreeNodeType=ttntParameter) do begin
+        LastNode:=Node;
+        Node:=Node.Right;
+       end;
+       Node:=TreeManager.GenerateParameterNode(AssignTreeNode,nil);
+       if assigned(LastNode) then begin
+        LastNode.Right:=Node;
+       end else begin
+        TreeNode.Left:=Node;
+       end;
+       case CompareTypesExt(Error,SymbolManager,Node.Left.Return,TreeNode.Return,ttntEmpty,ConvertType,ProcType,[tctoCHECKOPERATOR,tctoALLOWVARIANT]) of
+        tcteIncompatible:begin
+         Error.AddErrorCode(7);
+        end;
+       end;
+      end else begin
+       Error.InternalError(201306052222000);
+      end;
+      IsWrite:=false;
+     end;
+    end;
+   end;
+  end;
+  FinalizePropertyNodes(TreeNode.Left,AssignTreeNode,IsWrite);
+  FinalizePropertyNodes(TreeNode.Right,AssignTreeNode,IsWrite);
+  FinalizePropertyNodes(TreeNode.Block,AssignTreeNode,IsWrite);
+  FinalizePropertyNodes(TreeNode.ElseTree,AssignTreeNode,IsWrite);
+  FinalizePropertyNodes(TreeNode.ExceptTree,AssignTreeNode,IsWrite);
+  FinalizePropertyNodes(TreeNode.FinallyTree,AssignTreeNode,IsWrite);
  end;
  result:=TreeNode;
 end;
 
 function TParser.ParseFactor:TTreeNode;
-var NewTreeNode,FirstTreeNode,LastTreeNode:TTreeNode;
+var NewTreeNode,FirstTreeNode,LastTreeNode,LastParameterNode,ParameterNode:TTreeNode;
     ToHandleSymbol,CanHaveQualifiers,Overloaded,OK:boolean;
     AType,FieldType:PType;
-    MethodSymbol,FieldSymbol,Symbol,TempSymbol,PropertySymbol:PSymbol;
+    MethodSymbol,FieldSymbol,Symbol,TempSymbol,PropertySymbol,ParameterSymbol:PSymbol;
     FieldName,Name:ansistring;
     SetConstant:TSetArray;
     CounterValue,LowValue,HighValue:byte;
     Value:int64;
     ParameterImbalance,Counter,WhichWithLevel:longint;
+    ConvertType:TConvertType;
+    ProcType:PType;
 begin
  NewTreeNode:=nil;
  AType:=nil;
@@ -1548,7 +1595,7 @@ begin
   end;
   tstAT:begin
    Scanner.Match(tstAt);
-   NewTreeNode:=FinalizePropertyNodes(ParseFactor,false);
+   NewTreeNode:=FinalizePropertyNodes(ParseFactor,nil,false);
    NewTreeNode:=TreeManager.GenerateLeftNode(ttntAddress,NewTreeNode);
   end;
   tstLeftParen:begin
@@ -1633,22 +1680,22 @@ begin
   end;
   tstPlus:begin
    Scanner.Match(tstPlus);
-   NewTreeNode:=FinalizePropertyNodes(ParseFactor,false);
+   NewTreeNode:=FinalizePropertyNodes(ParseFactor,nil,false);
   end;
   tstMinus:begin
    Scanner.Match(tstMinus);
-   NewTreeNode:=FinalizePropertyNodes(ParseFactor,false);
+   NewTreeNode:=FinalizePropertyNodes(ParseFactor,nil,false);
    NewTreeNode:=TreeManager.GenerateLeftNode(ttntMinus,NewTreeNode);
   end;
   tstNot:begin
    Scanner.Match(tstNot);
-   NewTreeNode:=FinalizePropertyNodes(ParseFactor,false);
+   NewTreeNode:=FinalizePropertyNodes(ParseFactor,nil,false);
    NewTreeNode:=TreeManager.GenerateLeftNode(ttntNot,NewTreeNode);
   end;
   tstNIL:begin
    Scanner.Match(tstNIL);
    NewTreeNode:=TreeManager.GenerateNilNode(SymbolManager.TypePointer);
-   NewTreeNode:=FinalizePropertyNodes(NewTreeNode,false);
+   NewTreeNode:=FinalizePropertyNodes(NewTreeNode,nil,false);
   end;
   tstCEXPR:begin
    Scanner.Match(tstCEXPR);
@@ -1687,7 +1734,7 @@ begin
     LastTreeNode:=NewTreeNode;
    end;
    NewTreeNode:=TreeManager.GenerateCExpressionNode(FirstTreeNode);
-   NewTreeNode:=FinalizePropertyNodes(NewTreeNode,false);
+   NewTreeNode:=FinalizePropertyNodes(NewTreeNode,nil,false);
   end;
   else begin
    Error.AbortCode(504);
@@ -1804,7 +1851,7 @@ begin
   end;
   if assigned(PropertySymbol) then begin
    if assigned(PropertySymbol^.PropertyType) then begin
-    NewTreeNode:=TreeManager.GeneratePropertyNode(Symbol,PropertySymbol,NewTreeNode,nil,FieldSymbol^.PropertyType);
+    NewTreeNode:=TreeManager.GeneratePropertyNode(Symbol,PropertySymbol,nil,NewTreeNode,FieldSymbol^.PropertyType);
     AType:=FieldSymbol^.PropertyType;
     CanHaveQualifiers:=true;
    end else begin
@@ -1843,6 +1890,34 @@ begin
      end;
      tstLeftBracket:begin
       Scanner.Match(tstLeftBracket);
+      if assigned(NewTreeNode) and (NewTreeNode.TreeNodeType=ttntProperty) and assigned(PropertySymbol) and
+         assigned(PropertySymbol.PropertyParameter) and assigned(PropertySymbol.PropertyParameter.First) then begin
+       ParameterSymbol:=PropertySymbol.PropertyParameter.First;
+       LastParameterNode:=nil;
+       while assigned(ParameterSymbol) and not Scanner.IsEOFOrAbortError do begin
+        ParameterNode:=TreeManager.GenerateParameterNode(ParseExpression(false),nil);
+        case CompareTypesExt(Error,SymbolManager,ParameterNode.Left.Return,ParameterSymbol^.TypeDefinition,ttntEmpty,ConvertType,ProcType,[tctoCHECKOPERATOR,tctoALLOWVARIANT]) of
+         tcteIncompatible:begin
+          Error.AddErrorCode(7);
+         end;
+        end;
+        if assigned(LastParameterNode) then begin
+         LastParameterNode.Right:=ParameterNode;
+        end else begin
+         NewTreeNode.Left:=ParameterNode;
+        end;
+        LastParameterNode:=ParameterNode;
+        ParameterSymbol:=ParameterSymbol^.Next;
+        if Scanner.CurrentToken=tstComma then begin
+         Scanner.Match(tstComma);
+        end else begin
+         break;
+        end;
+       end;
+       if assigned(ParameterSymbol) then begin
+        Error.AbortCode(36);
+       end;
+      end;
       while not Scanner.IsEOFOrAbortError do begin
        case AType^.TypeDefinition of
         ttdShortString,ttdLongString:begin
@@ -1883,6 +1958,7 @@ begin
           end;
          end;
          NewTreeNode:=TreeManager.GeneratePointerNode(NewTreeNode,AType);
+         PropertySymbol:=nil;
          continue;
         end;
         else begin
@@ -1994,6 +2070,7 @@ begin
     end;
    end;
   end;
+  PropertySymbol:=nil;
   if ToHandleSymbol then begin
   end;
   break;
@@ -2018,37 +2095,37 @@ begin
   case Scanner.CurrentToken of
    tstMul:begin
     Scanner.Match(tstMul);
-    LastTreeNode:=FinalizePropertyNodes(ParseFactor,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseFactor,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntMul,NewTreeNode,LastTreeNode);
    end;
    tstSlash:begin
     Scanner.Match(tstSlash);
-    LastTreeNode:=FinalizePropertyNodes(ParseFactor,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseFactor,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntSlash,NewTreeNode,LastTreeNode);
    end;
    tstDIV:begin
     Scanner.Match(tstDIV);
-    LastTreeNode:=FinalizePropertyNodes(ParseFactor,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseFactor,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntDiv,NewTreeNode,LastTreeNode);
    end;
    tstMOD:begin
     Scanner.Match(tstMOD);
-    LastTreeNode:=FinalizePropertyNodes(ParseFactor,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseFactor,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntMod,NewTreeNode,LastTreeNode);
    end;
    tstAND:begin
     Scanner.Match(tstAND);
-    LastTreeNode:=FinalizePropertyNodes(ParseFactor,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseFactor,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntAnd,NewTreeNode,LastTreeNode);
    end;
    tstSHL:begin
     Scanner.Match(tstSHL);
-    LastTreeNode:=FinalizePropertyNodes(ParseFactor,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseFactor,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntShl,NewTreeNode,LastTreeNode);
    end;
    tstSHR:begin
     Scanner.Match(tstSHR);
-    LastTreeNode:=FinalizePropertyNodes(ParseFactor,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseFactor,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntShr,NewTreeNode,LastTreeNode);
    end;
    tstAS:begin
@@ -2095,22 +2172,22 @@ begin
   case Scanner.CurrentToken of
    tstPlus:begin
     Scanner.Match(tstPlus);
-    LastTreeNode:=FinalizePropertyNodes(ParseTerm,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseTerm,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntAdd,NewTreeNode,LastTreeNode);
    end;
    tstMinus:begin
     Scanner.Match(tstMinus);
-    LastTreeNode:=FinalizePropertyNodes(ParseTerm,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseTerm,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntSub,NewTreeNode,LastTreeNode);
    end;
    tstOR:begin
     Scanner.Match(tstOR);
-    LastTreeNode:=FinalizePropertyNodes(ParseTerm,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseTerm,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntOr,NewTreeNode,LastTreeNode);
    end;
    tstXOR:begin
     Scanner.Match(tstXOR);
-    LastTreeNode:=FinalizePropertyNodes(ParseTerm,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseTerm,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntXor,NewTreeNode,LastTreeNode);
    end;
    else begin
@@ -2140,37 +2217,37 @@ begin
   case Scanner.CurrentToken of
    tstLess:begin
     Scanner.Match(tstLess);
-    LastTreeNode:=FinalizePropertyNodes(ParseSimpleExpression,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseSimpleExpression,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntLess,NewTreeNode,LastTreeNode);
    end;
    tstLessOrEqual:begin
     Scanner.Match(tstLessOrEqual);
-    LastTreeNode:=FinalizePropertyNodes(ParseSimpleExpression,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseSimpleExpression,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntLessOrEqual,NewTreeNode,LastTreeNode);
    end;
    tstGreater:begin
     Scanner.Match(tstGreater);
-    LastTreeNode:=FinalizePropertyNodes(ParseSimpleExpression,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseSimpleExpression,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntGreater,NewTreeNode,LastTreeNode);
    end;
    tstGreaterOrEqual:begin
     Scanner.Match(tstGreaterOrEqual);
-    LastTreeNode:=FinalizePropertyNodes(ParseSimpleExpression,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseSimpleExpression,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntGreaterOrEqual,NewTreeNode,LastTreeNode);
    end;
    tstEqual:begin
     Scanner.Match(tstEqual);
-    LastTreeNode:=FinalizePropertyNodes(ParseSimpleExpression,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseSimpleExpression,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntEqual,NewTreeNode,LastTreeNode);
    end;
    tstNotEqual:begin
     Scanner.Match(tstNotEqual);
-    LastTreeNode:=FinalizePropertyNodes(ParseSimpleExpression,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseSimpleExpression,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntNotEqual,NewTreeNode,LastTreeNode);
    end;
    tstIN:begin
     Scanner.Match(tstIN);
-    LastTreeNode:=FinalizePropertyNodes(ParseSimpleExpression,false);
+    LastTreeNode:=FinalizePropertyNodes(ParseSimpleExpression,nil,false);
     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntIN,NewTreeNode,LastTreeNode);
    end;
    tstIS:begin
@@ -2219,7 +2296,7 @@ begin
  case Scanner.CurrentToken of
   tstDoublePeriod:begin
    Scanner.Match(tstDoublePeriod);
-   LastTreeNode:=FinalizePropertyNodes(ParseBooleanExpression,false);
+   LastTreeNode:=FinalizePropertyNodes(ParseBooleanExpression,nil,false);
    OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
    OptimizerHighLevel.CurrentObjectClass:=CurrentObjectClass;
    OptimizerHighLevel.OptimizeTree(LastTreeNode);
@@ -2238,8 +2315,12 @@ begin
   tstAssign:begin
    Scanner.Match(tstAssign);
    if AllowAssignment then begin
-    LastTreeNode:=FinalizePropertyNodes(ParseExpression(false),false);
-    NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntAssign,FinalizePropertyNodes(NewTreeNode,true),LastTreeNode);
+    LastTreeNode:=FinalizePropertyNodes(ParseExpression(false),nil,false);
+    if HasPropertyNode(NewTreeNode) then begin
+     NewTreeNode:=FinalizePropertyNodes(NewTreeNode,LastTreeNode,true);
+    end else begin                                                  
+     NewTreeNode:=TreeManager.GenerateLeftRightNode(ttntAssign,FinalizePropertyNodes(NewTreeNode,nil,false),LastTreeNode);
+    end;
     if assigned(NewTreeNode.Left.Return) and (NewTreeNode.Left.Return.TypeDefinition=ttdCEXPRESSION) then begin
      NewTreeNode.Left.Return:=NewTreeNode.Right.Return;
     end else if assigned(NewTreeNode.Right.Return) and (NewTreeNode.Right.Return.TypeDefinition=ttdCEXPRESSION) then begin
@@ -2260,7 +2341,7 @@ begin
  if not assigned(NewTreeNode) then begin
   NewTreeNode:=TreeManager.GenerateEmptyNode;
  end;
- result:=FinalizePropertyNodes(NewTreeNode,false);
+ result:=FinalizePropertyNodes(NewTreeNode,nil,false);
 end;
 
 function TParser.ParseFORStatement:TTreeNode;
@@ -2309,7 +2390,7 @@ begin
   tstIN:begin
    Scanner.Match(tstIN);
    ToVar:=TreeManager.GenerateVarNode(ToSymbol);
-   FromVar:=FinalizePropertyNodes(ParseFactor,false);
+   FromVar:=FinalizePropertyNodes(ParseFactor,nil,false);
    OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
    OptimizerHighLevel.CurrentObjectClass:=CurrentObjectClass;
    OptimizerHighLevel.OptimizeTree(ToVar);
@@ -2460,7 +2541,7 @@ begin
     result:=nil;
     exit;
    end;
-   FromValue:=TreeManager.GenerateLeftRightNode(ttntAssign,TreeManager.GenerateVarNode(ToSymbol),FinalizePropertyNodes(ParseExpression(false),false));
+   FromValue:=TreeManager.GenerateLeftRightNode(ttntAssign,TreeManager.GenerateVarNode(ToSymbol),FinalizePropertyNodes(ParseExpression(false),nil,false));
    IsDownTo:=Scanner.CurrentToken=tstDownto;
    if IsDownTo then begin
     Scanner.Match(tstDOWNTO);
@@ -2472,7 +2553,7 @@ begin
     result:=nil;
     exit;
    end;
-   ToValue:=FinalizePropertyNodes(ParseExpression(false),false);
+   ToValue:=FinalizePropertyNodes(ParseExpression(false),nil,false);
    OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
    OptimizerHighLevel.CurrentObjectClass:=CurrentObjectClass;
    OptimizerHighLevel.OptimizeTree(ToValue);

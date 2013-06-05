@@ -989,8 +989,8 @@ var Node:TTreeNode;
     PropertySourceTargetSymbol:PSymbol;
 begin
  if not TreeNode.DoNotOptimize then begin
-  OptimizeTree(TreeNode.Left);
-  Node:=TreeNode.Right;
+  OptimizeTree(TreeNode.Right);
+  Node:=TreeNode.Left;
   while assigned(Node) do begin
    if assigned(Node.Left) then begin
     OptimizeTree(Node.Left);
@@ -1012,15 +1012,21 @@ begin
        TreeNode.TreeNodeType:=ttntField;
        TreeNode.Symbol:=PropertyContainerSymbol;
        TreeNode.SymbolField:=PropertySymbol;
-       if assigned(TreeNode.Right) then begin
-        TreeNode.Right.Destroy;
-        TreeNode.Right:=nil;
+       if assigned(TreeNode.Left) then begin
+        TreeNode.Left.Destroy;
+        TreeNode.Left:=nil;
        end;
+       TreeNode.Left:=TreeNode.Right;
+       TreeNode.Right:=nil;
        OptimizeField(TreeNode);
       end else begin
        TreeNode.TreeNodeType:=ttntVar;
        TreeNode.Symbol:=PropertySymbol;
        TreeNode.SymbolField:=nil;
+       if assigned(TreeNode.Left) then begin
+        TreeNode.Left.Destroy;
+        TreeNode.Left:=nil;
+       end;
        if assigned(TreeNode.Right) then begin
         TreeNode.Right.Destroy;
         TreeNode.Right:=nil;
@@ -1029,13 +1035,28 @@ begin
       end;
       exit;
      end;
-     Symbols.tstFunction:begin
-      // TODO: Read
-      Error.InternalError(201306050208002);
-     end;
-     Symbols.tstProcedure:begin
-      // TODO: Write
-      Error.InternalError(201306050208001);
+     Symbols.tstFunction,Symbols.tstProcedure:begin
+      if assigned(PropertyContainerSymbol) then begin
+       TreeNode.TreeNodeType:=ttntCall;
+       TreeNode.Symbol:=PropertyContainerSymbol;
+       TreeNode.MethodSymbol:=PropertySourceTargetSymbol;
+       TreeNode.SymbolField:=nil;
+       TreeNode.InheritedType:=PropertyContainerSymbol^.TypeDefinition;
+       TreeNode.ProcType:=PropertySourceTargetSymbol^.TypeDefinition;
+       TreeNode.Return:=PropertySourceTargetSymbol^.ReturnType;
+      end else begin
+       TreeNode.TreeNodeType:=ttntCall;
+       TreeNode.Symbol:=PropertySourceTargetSymbol;
+       TreeNode.SymbolField:=nil;
+       TreeNode.ProcType:=PropertySourceTargetSymbol^.TypeDefinition;
+       TreeNode.Return:=PropertySourceTargetSymbol^.ReturnType;
+       if assigned(TreeNode.Right) then begin
+        TreeNode.Right.Destroy;
+        TreeNode.Right:=nil;
+       end;
+      end;
+      OptimizeCall(TreeNode);
+      exit;
      end;
      else begin
       Error.InternalError(201306050208000);
