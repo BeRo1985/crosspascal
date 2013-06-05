@@ -327,6 +327,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
         PropertyDefault:PSymbol;
         PropertyDefaultArray:boolean;
         PropertyNoDefault:boolean;
+        PropertyIndex:PSymbol;
        );
        tstProcedure,tstFunction:(
         MethodOfType:PType;
