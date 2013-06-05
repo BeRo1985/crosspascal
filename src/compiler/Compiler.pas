@@ -70,9 +70,8 @@ end;
 constructor TCompiler.Create;
 begin
  inherited Create;
- FillChar(Options,SizeOf(TOptions),#0);
- Options.TargetArchitecture:=taX86WIN32;
  GlobalSwitches:=DefaultGlobalSwitches;
+ Options:=TOptions.Create(@GlobalSwitches);
  LocalSwitches:=DefaultLocalSwitches;
  Error:=TError.Create(@Options);
  Error.LocalSwitches:=@LocalSwitches;
@@ -134,7 +133,7 @@ begin
     end;
    end;
   end else begin
-   DebugLog('Compiling '+name+'.c: '+GetDosOutput(Options.TargetCompiler+' -std=gnu99 -O3 -march=native -m32 -c '+pansichar(ChangeFileExt(Name,'.c'))));
+   DebugLog('Compiling '+name+'.c: '+GetDosOutput(Options.TargetCompiler+' '+Options.TargetCompilerParams+' -c '+pansichar(ChangeFileExt(Name,'.c'))));
   end;
  finally
   Error.LocalSwitches:=@LocalSwitches;
@@ -148,9 +147,11 @@ end;
 procedure TCompiler.CompileFile(FileName:ansistring;UnitLevel:longint=0);
 var FileStream:TBeRoFileStream;
     Stream:TBeRoStream;
+    FullFileName: ansistring;
 begin
- if FileExists(FileName) then begin
-  FileStream:=TBeRoFileStream.Create(FileName);
+ FullFileName:=Options.FindUnit(Filename);
+ if FullFileName<>'' then begin
+  FileStream:=TBeRoFileStream.Create(FullFileName);
   Stream:=TBeRoStream.Create;
   Stream.Assign(FileStream);
   FileStream.Destroy;
@@ -211,7 +212,7 @@ begin
   end;
 
 //  DebugLog(GetDosOutput(Options.TargetCompiler+' -c objpas2c.c'));
-  s:=Options.TargetCompiler+' -std=gnu99 -O3 -march=native -m32 '+s;
+  s:=Options.TargetCompiler+' '+Options.TargetCompilerParams+' '+s;
   DebugLog('Executing: '+s);
   DebugLog(GetDosOutput(s));
  end;

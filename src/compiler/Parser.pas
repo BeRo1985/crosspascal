@@ -9,7 +9,7 @@ uses SysUtils,BeRoStream,Globals,Symbols,Scanner,Error,Tree,OptimizerHighLevel,
 
 type TParser=class
       private
-       Options:POptions;
+       Options:TOptions;
        Error:TError;
        SymbolManager:TSymbolManager;
        TreeManager:TTreeManager;
@@ -53,7 +53,7 @@ type TParser=class
        DoBreak:boolean;
        ForEachVarCounter:longint;
        DefaultParameterCounter:longint;
-       constructor Create(TheInputStream:TBeRoStream;TheFileName:ansistring;TheError:TError;TheSymbolManager:TSymbolManager;TheUnitManager:TUnitManager;TheCompiler:pointer;TheUnitLevel:longint;TheOptions:POptions;TheGlobalSwitches:PGlobalSwitches;TheLocalSwitches:PLocalSwitches);
+       constructor Create(TheInputStream:TBeRoStream;TheFileName:ansistring;TheError:TError;TheSymbolManager:TSymbolManager;TheUnitManager:TUnitManager;TheCompiler:pointer;TheUnitLevel:longint;TheOptions:TOptions;TheGlobalSwitches:PGlobalSwitches;TheLocalSwitches:PLocalSwitches);
        destructor Destroy; override;
        procedure Parse;
        function ParseCallParameter:TTreeNode;
@@ -104,7 +104,7 @@ implementation
 
 uses BeRoUtils,TypeCheck;
 
-constructor TParser.Create(TheInputStream:TBeRoStream;TheFileName:ansistring;TheError:TError;TheSymbolManager:TSymbolManager;TheUnitManager:TUnitManager;TheCompiler:pointer;TheUnitLevel:longint;TheOptions:POptions;TheGlobalSwitches:PGlobalSwitches;TheLocalSwitches:PLocalSwitches);
+constructor TParser.Create(TheInputStream:TBeRoStream;TheFileName:ansistring;TheError:TError;TheSymbolManager:TSymbolManager;TheUnitManager:TUnitManager;TheCompiler:pointer;TheUnitLevel:longint;TheOptions:TOptions;TheGlobalSwitches:PGlobalSwitches;TheLocalSwitches:PLocalSwitches);
 begin
  inherited Create;
  Options:=TheOptions;
@@ -507,7 +507,7 @@ begin
  AType^.UpperLimit:=127;
  SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass);
 
- case Options^.TargetArchitecture of
+ case Options.TargetArchitecture of
   taX64,taX64WIN64:begin
    Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
    Symbol^.Name:=tpsIdentifier+'PTRINT';

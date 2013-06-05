@@ -122,7 +122,7 @@ type TCodeWriter = class
        procedure TranslateModuleTypes(ModuleSymbol:PSymbol;Target,CodeTarget:TCodeWriter);
       public
        LocalSwitches:PLocalSwitches;
-       constructor Create(TheError:TError;TheSymbolManager:TSymbolManager;TheTreeManager:TTreeManager;TheOptions:POptions;TheLocalSwitches:PLocalSwitches);
+       constructor Create(TheError:TError;TheSymbolManager:TSymbolManager;TheTreeManager:TTreeManager;TheOptions:TOptions;TheLocalSwitches:PLocalSwitches);
        destructor Destroy; override;
 
        procedure BeginRootNestedProc; override;
@@ -504,7 +504,7 @@ end;
 
 constructor TCodeGenC.Create(TheError: TError;
   TheSymbolManager: TSymbolManager; TheTreeManager: TTreeManager;
-  TheOptions: POptions; TheLocalSwitches: PLocalSwitches);
+  TheOptions: TOptions; TheLocalSwitches: PLocalSwitches);
 begin
  inherited;
 

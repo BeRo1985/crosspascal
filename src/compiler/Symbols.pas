@@ -455,7 +455,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
 
      TSymbolManager=class
       private
-       Options:POptions;
+       Options:TOptions;
        Error:TError;
       public
        FirstSymbolListStack:PSymbolListStack;
@@ -485,7 +485,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
        TypeTOBJECT,TypeTGUID,TypeCExpression,TypeEmpty:PType;
        GlobalSwitches:PGlobalSwitches;
        ConstantIDCounter:longword;
-       constructor Create(TheError:TError;TheOptions:POptions;TheGlobalSwitches:PGlobalSwitches);
+       constructor Create(TheError:TError;TheOptions:TOptions;TheGlobalSwitches:PGlobalSwitches);
        destructor Destroy; override;
        procedure Clear;
        procedure GetDefaultTypes;
@@ -919,7 +919,7 @@ begin
  end;
 end;
 
-constructor TSymbolManager.Create(TheError:TError;TheOptions:POptions;TheGlobalSwitches:PGlobalSwitches);
+constructor TSymbolManager.Create(TheError:TError;TheOptions:TOptions;TheGlobalSwitches:PGlobalSwitches);
 begin
  inherited Create;
  Options:=TheOptions;
@@ -1193,7 +1193,7 @@ begin
    end;
    ttdEmpty,ttdEnumerated,ttdProcedure,ttdPointer,ttdLongString,ttdClass,
    ttdInterface:begin
-    case Options^.TargetArchitecture of
+    case Options.TargetArchitecture of
      taX64,taX64WIN64:begin
       result:=8;
      end;
@@ -1217,7 +1217,7 @@ begin
       result:=8;
      end;
      tstFloat80Bit:begin
-      case Options^.TargetArchitecture of
+      case Options.TargetArchitecture of
        taX86,taX86WIN32:begin
         result:=12;
        end;
@@ -1262,7 +1262,7 @@ begin
       result:=8;
      end;
      tstFloat80Bit:begin
-      case Options^.TargetArchitecture of
+      case Options.TargetArchitecture of
        taX86,taX86WIN32:begin
         result:=12;
        end;
@@ -1315,7 +1315,7 @@ begin
    end;
    ttdEmpty,ttdEnumerated,ttdProcedure,ttdPointer,ttdLongString,ttdClass,
    ttdInterface:begin
-    case Options^.TargetArchitecture of
+    case Options.TargetArchitecture of
      taX64,taX64WIN64:begin
       result:=8;
      end;
@@ -1336,7 +1336,7 @@ begin
       result:=4;
      end;
      tstSigned64Bit,tstUnsigned64Bit,tstFloat64Bit:begin
-      case Options^.TargetArchitecture of
+      case Options.TargetArchitecture of
        taARMEABI,taX86WIN32:begin
         result:=8;
        end;
@@ -1349,7 +1349,7 @@ begin
       end;
      end;
      tstFloat80Bit:begin
-      case Options^.TargetArchitecture of
+      case Options.TargetArchitecture of
        taX86,taX86WIN32:begin
         result:=4;
        end;
@@ -1391,7 +1391,7 @@ begin
       result:=4;
      end;
      tstSigned64Bit,tstUnsigned64Bit,tstFloat64Bit:begin
-      case Options^.TargetArchitecture of
+      case Options.TargetArchitecture of
        taARMEABI,taX86WIN32:begin
         result:=8;
        end;
@@ -1404,7 +1404,7 @@ begin
       end;
      end;
      tstFloat80Bit:begin
-      case Options^.TargetArchitecture of
+      case Options.TargetArchitecture of
        taX86,taX86WIN32:begin
         result:=4;
        end;
@@ -1424,7 +1424,7 @@ begin
    ttdFile:begin
     case AType^.FileType of
      tftText:begin
-      case Options^.TargetArchitecture of
+      case Options.TargetArchitecture of
        taX64,taX64WIN64:begin
         result:=8;
        end;
@@ -1434,7 +1434,7 @@ begin
       end;
      end;
      tftUntyped:begin
-      case Options^.TargetArchitecture of
+      case Options.TargetArchitecture of
        taX64,taX64WIN64:begin
         result:=8;
        end;

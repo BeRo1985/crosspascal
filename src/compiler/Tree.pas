@@ -62,13 +62,13 @@ type TTreeNodeType=(ttntEmpty,
 
      TTreeManager=class
       private
-       Options:POptions;
+       Options:TOptions;
        procedure DumpNode(TreeNode:TTreeNode;TreeName:ansistring;Level:longint);
       public
        Tree:TTreeNode;
        Error:TError;
        SymbolManager:TSymbolManager;
-       constructor Create(TheError:TError;TheSymbolManager:TSymbolManager;TheOptions:POptions);
+       constructor Create(TheError:TError;TheSymbolManager:TSymbolManager;TheOptions:TOptions);
        destructor Destroy; override;
        procedure Clear;
        procedure Dump(TreeNode:TTreeNode;TreeName:ansistring='Root');
@@ -284,7 +284,7 @@ begin
  end;
 end;
 
-constructor TTreeManager.Create(TheError:TError;TheSymbolManager:TSymbolManager;TheOptions:POptions);
+constructor TTreeManager.Create(TheError:TError;TheSymbolManager:TSymbolManager;TheOptions:TOptions);
 begin
  inherited Create;
  Options:=TheOptions;

@@ -51,14 +51,15 @@ begin
     {launch the command line compiler
     WorkDir := 'C:\';}
     WorkDir := '';
-    WasOK := CreateProcess(nil, PChar(CommandLine), nil, nil, True, 0, nil, nil, SI,
+    Line:=CommandLine;
+    WasOK := CreateProcess(nil, PChar(Line), nil, nil, True, 0, nil, nil, SI,
       PI);
 //    Now that the handle has been inherited, close write to be safe.We don't
 //      want to read or write to it accidentally}
       CloseHandle(StdOutPipeWrite);
     {if process could be created then handle its output}
     if not WasOK then
-      raise Exception.Create('Could not execute command line!')
+      raise Exception.Create('Could not execute command line: '+CommandLine)
     else
     try
       {get all output until DOS app finishes}

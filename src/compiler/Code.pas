@@ -7,7 +7,7 @@ uses BeRoUtils,BeRoStream,Globals,Error,Symbols,Tree,PointerList,CRC32;
 
 type TCode=class
       private
-       Options:POptions;
+       Options:TOptions;
        procedure GenerateCodeBlock(ContextSymbol:PSymbol;TreeNode:TTreeNode);
        procedure GenerateCode(ContextSymbol:PSymbol;TreeNode:TTreeNode);
        procedure EmitConstants(ModuleSymbol:PSymbol);
@@ -23,7 +23,7 @@ type TCode=class
 
        AlignValue:longword;
 
-       constructor Create(TheError:TError;TheSymbolManager:TSymbolManager;TheTreeManager:TTreeManager;TheOptions:POptions;TheLocalSwitches:PLocalSwitches);
+       constructor Create(TheError:TError;TheSymbolManager:TSymbolManager;TheTreeManager:TTreeManager;TheOptions:TOptions;TheLocalSwitches:PLocalSwitches);
        destructor Destroy; override;
 
        procedure BeginRootNestedProc; virtual;
@@ -40,7 +40,7 @@ type TCode=class
 
 implementation
 
-constructor TCode.Create(TheError:TError;TheSymbolManager:TSymbolManager;TheTreeManager:TTreeManager;TheOptions:POptions;TheLocalSwitches:PLocalSwitches);
+constructor TCode.Create(TheError:TError;TheSymbolManager:TSymbolManager;TheTreeManager:TTreeManager;TheOptions:TOptions;TheLocalSwitches:PLocalSwitches);
 begin
  inherited Create;
  Options:=TheOptions;

@@ -3,6 +3,8 @@ unit Globals;
 
 interface
 
+uses SysUtils, Classes;
+
 const tpsVMT='VMT';
       tpsIdentifier='';
       tpsTypedConstant='';
@@ -78,11 +80,35 @@ type PSetArray=^TSetArray;
 
      TTargetArchitecture=(taARM,taARMEABI,taX86,taX86WIN32,taX64,taX64WIN64,taEMSCRIPTEN);
 
-     POptions=^TOptions;
-     TOptions=record
-      Dummy:byte;
-      TargetCompiler:ansistring;
+     TOptions=class
+      CompilerDefines,
+      UnitSearchPath,
+      IncludeSearchPath: TStringList;
+
+      ShowHelp,
+      ShowHints,
+      ShowWarnings,
+      ShowVersion,
+      BuildAll: Boolean;
+
+      TargetFilename,
+      TargetCompiler,
+      TargetCompilerParams: ansistring;
       TargetArchitecture:TTargetArchitecture;
+     protected
+      GlobalSwitches: PGlobalSwitches;
+      procedure ParseOption(s: ansistring);
+      function FindFile(List: TStringlist; Filename: ansistring): ansistring;
+     public
+      constructor Create(AGlobalSwitches: PGlobalSwitches);
+      destructor Destroy; override;
+
+      function FindUnit(const Filename: ansistring): ansistring;
+      function FindInclude(const Filename: ansistring): ansistring;
+
+      procedure Load;
+      procedure ParseCommandline;
+      procedure ParseConfigurationFile(const AFile: ansistring);
      end;
 
 {$ifdef fpc}
@@ -316,5 +342,187 @@ begin
  end;
 end;
 {$endif}
+
+{ TOptions }
+
+constructor TOptions.Create(AGlobalSwitches: PGlobalSwitches);
+begin
+ GlobalSwitches:=AGlobalSwitches;
+ UnitSearchPath:=TStringList.Create;
+ IncludeSearchPath:=TStringList.Create;
+ CompilerDefines:=TStringList.Create;
+ ShowHelp:=False;
+ BuildAll:=False;
+ TargetArchitecture:=taX86WIN32;
+end;
+
+destructor TOptions.Destroy;
+begin
+  UnitSearchPath.Free;
+  IncludeSearchPath.Free;
+  CompilerDefines.Free;
+  inherited;
+end;
+
+function TOptions.FindFile(List: TStringlist; Filename: ansistring): ansistring;
+var i: Integer;
+begin
+ for i:=0 to List.Count-1 do
+  if FileExists(List[i]+Filename) then begin
+   result:=List[i]+Filename;
+   Exit;
+  end;
+  result:='';
+end;
+
+function TOptions.FindInclude(const Filename: ansistring): ansistring;
+begin
+ result:=FindFile(IncludeSearchPath, Filename);
+end;
+
+function TOptions.FindUnit(const Filename: ansistring): ansistring;
+begin
+ result:=FindFile(UnitSearchPath, Filename);
+end;
+
+procedure TOptions.Load;
+var i: Integer;
+begin
+ ParseConfigurationFile(ChangeFileExt(Paramstr(0), '.cfg'));
+ for i:=1 to ParamCount do
+  if Paramstr(i)[1]<>'-' then
+  begin
+   TargetFilename:=Paramstr(i);
+   Break;
+  end;
+ ParseConfigurationFile(ChangeFileExt(TargetFilename, '.cfg'));
+ ParseCommandline;
+end;
+
+procedure TOptions.ParseCommandline;
+var i: Integer;
+begin
+ for i:=1 to ParamCount do
+  ParseOption(ParamStr(i));
+end;
+
+procedure TOptions.ParseConfigurationFile(const AFile: ansistring);
+var f: Textfile;
+    s: ansistring;
+begin
+ assignfile(f, AFile);
+ {$i-}reset(f);{$i+}
+ if ioresult=0 then
+ begin
+  while not eof(f) do
+  begin
+   readln(f, s);
+   ParseOption(s);
+  end;
+  closefile(f);
+ end;
+end;
+
+procedure TOptions.ParseOption(s: ansistring);
+var Value: ansistring;
+
+ function DelimitPath(const s: ansistring): ansistring;
+ begin
+  result:=s;
+  if (Length(s)>0) then
+  if not(s[Length(s)] in ['/', '\']) then
+   result:=result+'\';
+  {$IFDEF MSWINDOWS}
+   result:=StringReplace(result, '/', '\', [rfReplaceAll]);
+  {$ELSE}
+   result:=StringReplace(result, '\', '/', [rfReplaceAll]);
+  {$ENDIF}
+  end;
+
+  function Unescape(const s: ansistring): ansistring;
+  begin
+   if (Length(s)>0)and(s[1]='"')and(s[Length(s)]='"') then
+    result:=Copy(s, 2, Length(s)-2)
+   else
+    result:=s;
+  end;
+
+  procedure AddToList(List: TStringList; Value: ansistring; DoUppercase: Boolean = False);
+  begin
+   while(Pos(';',Value)>0) do
+   begin
+    if DoUppercase then
+     List.Add(Uppercase(Unescape(Copy(Value,1,pos(';',Value)-1))))
+    else
+     List.Add(DelimitPath(Unescape(Copy(Value,1,pos(';',Value)-1))));
+    Delete(Value, 1, pos(';', Value));
+   end;
+   if Value<>'' then
+    if DoUppercase then
+     List.Add(Uppercase(Unescape(Value)))
+    else
+     List.Add(DelimitPath(Unescape(Value)));
+  end;
+
+begin
+ try
+  if Length(s) = 0 then
+   Exit;
+
+  if s[1]='-' then
+  begin
+   Value:=Copy(s,3,Length(s)-2);
+   case Upcase(s[2]) of
+    'U': AddToList(UnitSearchPath, Value);
+    'I': AddToList(IncludeSearchPath, Value);
+    '$': if Length(s)>2 then begin
+     Delete(Value, 1, 1);
+     case Upcase(s[3]) of
+      'X': GlobalSwitches.ExtendedSyntax:=s<>'-';
+      'L': GlobalSwitches.LocalSymbols:=s<>'-';
+      'T': GlobalSwitches.TypedAddress:=s<>'-';
+     end;
+    end;
+    'K': GlobalSwitches.ImageBase:=StrToInt64Def(Value, $400000);
+
+    'B': BuildAll := Value<>'-';
+    'W': ShowWarnings := Value<>'-';
+    'H': ShowHints := Value<>'-';
+
+    '-': begin
+     Value:=Uppercase(Value);
+     if Value='-HELP' then
+      ShowHelp:=True
+     else if Value='-VERSION' then
+      ShowVersion:=True
+     else if Pos('-COMPILER=',Value)=1 then
+      TargetCompiler:=Unescape(Copy(s,11,length(s)-11))
+     else if Pos('-COMPILER-PARAMETER=',Value)=1 then
+      TargetCompiler:=Unescape(Copy(s,11,length(s)-11));
+    end;
+
+    'D': AddToList(CompilerDefines, Value, True);
+
+    'C':
+     if Value='C' then
+      GlobalSwitches.AppType:=tatCONSOLE
+     else if Value='G' then
+      GlobalSwitches.AppType:=tatGUI;
+
+    'V': GlobalSwitches.DebugInfo:=Value<>'-';
+
+    'S': if Length(s)>2 then begin
+     Delete(Value, 1, 1);
+     case Upcase(s[3]) of
+      'C': TargetCompiler:=Unescape(Value);
+      'P': TargetCompilerParams:=Unescape(Value);
+     end;
+    end;
+   end;
+  end;
+ except
+  Writeln('Error parsing: ',s);
+ end;
+end;
 
 end.

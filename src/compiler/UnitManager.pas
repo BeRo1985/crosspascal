@@ -55,7 +55,7 @@ type PUnitFixUpArray=^TUnitFixUpArray;
 
      TUnitManager=class
       private
-       Options:POptions;
+       Options:TOptions;
        Error:TError;
        SymbolManager:TSymbolManager;
        GlobalSwitches:PGlobalSwitches;
@@ -70,7 +70,7 @@ type PUnitFixUpArray=^TUnitFixUpArray;
       public
        FixUpList:TUnitFixUpList;
        RebuildAll:boolean;
-       constructor Create(TheError:TError;TheSymbolManager:TSymbolManager;TheCompiler:pointer;TheOptions:POptions;TheGlobalSwitches:PGlobalSwitches);
+       constructor Create(TheError:TError;TheSymbolManager:TSymbolManager;TheCompiler:pointer;TheOptions:TOptions;TheGlobalSwitches:PGlobalSwitches);
        destructor Destroy; override;
        procedure Clear;
        function SaveUnitSymbolTable(List:TSymbolList;UnitSymbol:PSymbol):boolean;
@@ -236,7 +236,7 @@ begin
  end;
 end;
 
-constructor TUnitManager.Create(TheError:TError;TheSymbolManager:TSymbolManager;TheCompiler:pointer;TheOptions:POptions;TheGlobalSwitches:PGlobalSwitches);
+constructor TUnitManager.Create(TheError:TError;TheSymbolManager:TSymbolManager;TheCompiler:pointer;TheOptions:TOptions;TheGlobalSwitches:PGlobalSwitches);
 begin
  inherited Create;
  Options:=TheOptions;
