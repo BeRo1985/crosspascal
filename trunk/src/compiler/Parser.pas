@@ -1456,7 +1456,7 @@ end;
 function TParser.ParseFactor:TTreeNode;
 var NewTreeNode,FirstTreeNode,LastTreeNode,LastParameterNode,ParameterNode:TTreeNode;
     ToHandleSymbol,CanHaveQualifiers,Overloaded,OK:boolean;
-    AType,FieldType:PType;
+    AType,FieldType,ClassType,ProcType:PType;
     MethodSymbol,FieldSymbol,Symbol,TempSymbol,PropertySymbol,ParameterSymbol:PSymbol;
     FieldName,Name:ansistring;
     SetConstant:TSetArray;
@@ -1464,7 +1464,6 @@ var NewTreeNode,FirstTreeNode,LastTreeNode,LastParameterNode,ParameterNode:TTree
     Value:int64;
     ParameterImbalance,Counter,WhichWithLevel:longint;
     ConvertType:TConvertType;
-    ProcType:PType;
 begin
  NewTreeNode:=nil;
  AType:=nil;
@@ -1893,6 +1892,44 @@ begin
      end;
      tstLeftBracket:begin
       Scanner.Match(tstLeftBracket);
+      if assigned(NewTreeNode) and (NewTreeNode.TreeNodeType<>ttntProperty) and assigned(AType) and (AType^.TypeDefinition=ttdCLASS) and
+         not assigned(PropertySymbol) then begin
+       ClassType:=AType;
+       while assigned(ClassType) and not assigned(PropertySymbol) do begin
+        if assigned(ClassType^.RecordTable) then begin
+         TempSymbol:=ClassType^.RecordTable.First;
+         while assigned(TempSymbol) do begin
+          case TempSymbol^.SymbolType of
+           Symbols.tstProperty:begin
+            if TempSymbol.PropertyDefaultArray then begin
+             PropertySymbol:=TempSymbol;
+             break;
+            end;
+           end;
+          end;
+          TempSymbol:=TempSymbol^.Next;
+         end;
+        end;
+        if assigned(ClassType^.ChildOf) then begin
+         ClassType:=ClassType^.ChildOf^.TypeDefinition;
+        end else begin
+         break;
+        end;
+       end;
+       if assigned(PropertySymbol) then begin
+        if assigned(PropertySymbol^.PropertyType) then begin
+         NewTreeNode:=TreeManager.GeneratePropertyNode(Symbol,PropertySymbol,nil,NewTreeNode,FieldSymbol^.PropertyType);
+         AType:=FieldSymbol^.PropertyType;
+         if assigned(PropertySymbol^.PropertyIndex) then begin
+          NewTreeNode.Left:=TreeManager.GenerateParameterNode(TreeManager.GenerateOrdConstNode(PropertySymbol^.PropertyIndex^.IntValue,PropertySymbol^.PropertyIndex^.ConstantTypeRecord),nil);
+         end;
+        end else begin
+         Error.InternalError(201306050146000);
+        end;
+       end else begin
+        Error.AbortCode(154);
+       end;
+      end;
       if assigned(NewTreeNode) and (NewTreeNode.TreeNodeType=ttntProperty) and assigned(PropertySymbol) and
          assigned(PropertySymbol.PropertyParameter) and assigned(PropertySymbol.PropertyParameter.First) then begin
        ParameterSymbol:=PropertySymbol.PropertyParameter.First;
