@@ -1924,7 +1924,7 @@ begin
           NewTreeNode.Left:=TreeManager.GenerateParameterNode(TreeManager.GenerateOrdConstNode(PropertySymbol^.PropertyIndex^.IntValue,PropertySymbol^.PropertyIndex^.ConstantTypeRecord),nil);
          end;
         end else begin
-         Error.InternalError(201306050146000);
+         Error.InternalError(201306060037000);
         end;
        end else begin
         Error.AbortCode(154);
