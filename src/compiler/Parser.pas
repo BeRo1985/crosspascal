@@ -1853,6 +1853,9 @@ begin
    if assigned(PropertySymbol^.PropertyType) then begin
     NewTreeNode:=TreeManager.GeneratePropertyNode(Symbol,PropertySymbol,nil,NewTreeNode,FieldSymbol^.PropertyType);
     AType:=FieldSymbol^.PropertyType;
+    if assigned(PropertySymbol^.PropertyIndex) then begin
+     NewTreeNode.Left:=TreeManager.GenerateParameterNode(TreeManager.GenerateOrdConstNode(PropertySymbol^.PropertyIndex^.IntValue,PropertySymbol^.PropertyIndex^.ConstantTypeRecord),nil);
+    end;
     CanHaveQualifiers:=true;
    end else begin
     Error.InternalError(201306050146000);
@@ -1893,8 +1896,10 @@ begin
       if assigned(NewTreeNode) and (NewTreeNode.TreeNodeType=ttntProperty) and assigned(PropertySymbol) and
          assigned(PropertySymbol.PropertyParameter) and assigned(PropertySymbol.PropertyParameter.First) then begin
        ParameterSymbol:=PropertySymbol.PropertyParameter.First;
-       LastParameterNode:=nil;
-//       if assigned(PropertySymbol.PropertyType
+       LastParameterNode:=NewTreeNode.Left;
+       while assigned(LastParameterNode) and assigned(LastParameterNode.Right) do begin
+        LastParameterNode:=LastParameterNode.Right;
+       end;
        while assigned(ParameterSymbol) and not Scanner.IsEOFOrAbortError do begin
         ParameterNode:=TreeManager.GenerateParameterNode(ParseExpression(false),nil);
         case CompareTypesExt(Error,SymbolManager,ParameterNode.Left.Return,ParameterSymbol^.TypeDefinition,ttntEmpty,ConvertType,ProcType,[tctoCHECKOPERATOR,tctoALLOWVARIANT]) of
