@@ -4178,20 +4178,29 @@ begin
          end else begin
           SymbolA:=nil;
          end;
-         if assigned(TempSymbol^.PropertyParameter) and assigned(TempSymbol^.PropertyParameter.First) then begin
-          SymbolB:=TempSymbol^.PropertyParameter.First;
+         if assigned(TempSymbol^.Parameter) and assigned(TempSymbol^.Parameter.First) then begin
+          SymbolB:=TempSymbol^.Parameter.First;
          end else begin
           SymbolB:=nil;
          end;
-         while assigned(SymbolA) and assigned(SymbolB) do begin
-          if not SymbolManager.CompatibleTypes(SymbolA^.TypeDefinition,SymbolB^.TypeDefinition) then begin
-           break;
-          end;
-          SymbolA:=SymbolA^.Next;
-          SymbolB:=SymbolB^.Next;
-         end;
-         if assigned(SymbolA) or assigned(SymbolB) then begin
+         if assigned(Symbol^.PropertyIndex) and
+            ((assigned(SymbolB) and not SymbolManager.CompatibleTypes(Symbol^.PropertyIndex^.TypeDefinition,SymbolB^.TypeDefinition)) or
+             not assigned(SymbolB)) then begin
           Error.AbortCode(7);
+         end else begin
+          if assigned(Symbol^.PropertyIndex) and assigned(SymbolB) then begin
+           SymbolB:=SymbolB^.Next;
+          end;
+          while assigned(SymbolA) and assigned(SymbolB) do begin
+           if not SymbolManager.CompatibleTypes(SymbolA^.TypeDefinition,SymbolB^.TypeDefinition) then begin
+            break;
+           end;
+           SymbolA:=SymbolA^.Next;
+           SymbolB:=SymbolB^.Next;
+          end;
+          if assigned(SymbolA) or assigned(SymbolB) then begin
+           Error.AbortCode(7);
+          end;
          end;
          Symbol^.PropertyRead:=TempSymbol;
         end;
@@ -4224,28 +4233,37 @@ begin
         end else begin
          SymbolA:=nil;
         end;
-        if assigned(TempSymbol^.PropertyParameter) and assigned(TempSymbol^.PropertyParameter.First) then begin
-         SymbolB:=TempSymbol^.PropertyParameter.First;
+        if assigned(TempSymbol^.Parameter) and assigned(TempSymbol^.Parameter.First) then begin
+         SymbolB:=TempSymbol^.Parameter.First;
         end else begin
          SymbolB:=nil;
         end;
-        while assigned(SymbolA) and assigned(SymbolB) do begin
-         if not SymbolManager.CompatibleTypes(SymbolA^.TypeDefinition,SymbolB^.TypeDefinition) then begin
-          break;
-         end;
-         SymbolA:=SymbolA^.Next;
-         SymbolB:=SymbolB^.Next;
-        end;
-        if assigned(SymbolA) or not assigned(SymbolB) then begin
+        if assigned(Symbol^.PropertyIndex) and
+           ((assigned(SymbolB) and not SymbolManager.CompatibleTypes(Symbol^.PropertyIndex^.TypeDefinition,SymbolB^.TypeDefinition)) or
+            not assigned(SymbolB)) then begin
          Error.AbortCode(7);
         end else begin
-         if not EqualTypes(Error,SymbolManager,Symbol^.PropertyType,SymbolB^.TypeDefinition) then begin
+         if assigned(Symbol^.PropertyIndex) and assigned(SymbolB) then begin
           SymbolB:=SymbolB^.Next;
-          if assigned(SymbolB) then begin
+         end;
+         while assigned(SymbolA) and assigned(SymbolB) do begin
+          if not SymbolManager.CompatibleTypes(SymbolA^.TypeDefinition,SymbolB^.TypeDefinition) then begin
+           break;
+          end;
+          SymbolA:=SymbolA^.Next;
+          SymbolB:=SymbolB^.Next;
+         end;
+         if assigned(SymbolA) or not assigned(SymbolB) then begin
+          Error.AbortCode(7);
+         end else begin
+          if not EqualTypes(Error,SymbolManager,Symbol^.PropertyType,SymbolB^.TypeDefinition) then begin
+           SymbolB:=SymbolB^.Next;
+           if assigned(SymbolB) then begin
+            Error.AbortCode(7);
+           end;
+          end else begin
            Error.AbortCode(7);
           end;
-         end else begin
-          Error.AbortCode(7);
          end;
         end;
         Symbol^.PropertyWrite:=TempSymbol;
