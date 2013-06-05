@@ -58,6 +58,8 @@ type TPreprocessorDirectives=(tdNONE,tdDEFINE,tdELSE,tdELSEIF,tdENDIF,tdIF,
                               tdZ4,
                               tdMINENUMSIZE,
                               tdP,
+                              tdPACKRECORDS,
+                              tdPASCALMAINNAME,
                               tdOPENSTRINGS,
                               tdO,
                               tdOPTIMIZATION,
@@ -214,6 +216,8 @@ begin
  AddDirective(tdZ4,'Z4');
  AddDirective(tdMINENUMSIZE,'MINENUMSIZE');
  AddDirective(tdP,'P');
+ AddDirective(tdPACKRECORDS,'PACKRECORDS');
+ AddDirective(tdPASCALMAINNAME,'PASCALMAINNAME');
  AddDirective(tdOPENSTRINGS,'OPENSTRINGS');
  AddDirective(tdO,'O');
  AddDirective(tdOPTIMIZATION,'OPTIMIZATION');
@@ -2797,6 +2801,16 @@ begin
          LocalSwitches^.OpenStrings:=true;
         end else begin
          Error.AbortCode(59,DirectiveName);
+        end;
+       end;
+       tdPACKRECORDS:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
+       end;
+       tdPASCALMAINNAME:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
         end;
        end;
        tdOPENSTRINGS:begin
