@@ -132,7 +132,7 @@ begin
   ttdSubRange:begin
    case FromType^.TypeDefinition of
     ttdShortString,ttdLongString:begin
-     if ToType^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar,tstUnsignedWideChar] then begin
+     if ToType^.SubRangeType in [tstUnsignedChar,tstUnsignedWideChar,tstUnsignedHugeChar] then begin
       ConvertType:=tctCharToString;
       result:=tcteConvertCompatible;
      end;
