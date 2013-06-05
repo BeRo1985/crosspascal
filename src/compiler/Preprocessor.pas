@@ -44,6 +44,8 @@ type TPreprocessorDirectives=(tdNONE,tdDEFINE,tdELSE,tdELSEIF,tdENDIF,tdIF,
                               tdIOCHECKS,
                               tdL,
                               tdLINK,
+                              tdLINKLIB,
+                              tdLINKFRAMEWORK,
                               tdLOCALSYMBOLS,
                               tdH,
                               tdLONGSTRINGS,
@@ -198,6 +200,8 @@ begin
  AddDirective(tdIOCHECKS,'IOCHECKS');
  AddDirective(tdL,'L');
  AddDirective(tdLINK,'LINK');
+ AddDirective(tdLINKLIB,'LINKLIB');
+ AddDirective(tdLINKFRAMEWORK,'LINKFRAMEWORK');
  AddDirective(tdLOCALSYMBOLS,'LOCALSYMBOLS');
  AddDirective(tdH,'H');
  AddDirective(tdLONGSTRINGS,'LONGSTRINGS');
@@ -2606,6 +2610,16 @@ begin
         Parameter:='';
         while (CurrentChar<128) and (ansichar(byte(CurrentChar)) in ['a'..'z','A'..'Z','0'..'9','_','.','/','\','-']) do begin
          Parameter:=Parameter+UpCase(ansichar(byte(CurrentChar)));
+         ReadChar;
+        end;
+       end;
+       tdLINKLIB:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
+         ReadChar;
+        end;
+       end;
+       tdLINKFRAMEWORK:begin
+        while (CurrentChar>0) and (CurrentChar<=32) do begin
          ReadChar;
         end;
        end;
