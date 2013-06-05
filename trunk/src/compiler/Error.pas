@@ -13,7 +13,7 @@ type TErrorPosition=record
 
      TError=class
       private
-       Options:POptions;
+       Options:TOptions;
        procedure AddError(S:ansistring);
        procedure AddWarning(S:ansistring);
        procedure AddHint(S:ansistring);
@@ -30,7 +30,7 @@ type TErrorPosition=record
        ErrorList:TStringList;
        WarningList:TStringList;
        HintList:TStringList;
-       constructor Create(TheOptions:POptions);
+       constructor Create(TheOptions:TOptions);
        destructor Destroy; override;
        procedure Append(From:TError);
        procedure SetFilePosition(FileName:ansistring;Line,Column:longint);
@@ -51,7 +51,7 @@ implementation
 
 uses BeRoUtils,Symbols;
 
-constructor TError.Create(TheOptions:POptions);
+constructor TError.Create(TheOptions:TOptions);
 begin
  inherited Create;
  Options:=TheOptions;

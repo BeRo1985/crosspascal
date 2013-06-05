@@ -62,7 +62,7 @@ type TScannerToken=(tstNone,
 
      TScanner=class
       private
-       Options:POptions;
+       Options:TOptions;
        Error:TError;
        SymbolManager:TSymbolManager;
        LocalSwitches:PLocalSwitches;
@@ -102,7 +102,7 @@ type TScannerToken=(tstNone,
        UseNextToken:boolean;
        ModeStack:array of TScannerMode;
        ModeStackPointer:longint;
-       constructor Create(TheInputStream:TBeRoStream;TheFileName:ansistring;TheError:TError;TheSymbolManager:TSymbolManager;TheOptions:POptions;TheGlobalSwitches:PGlobalSwitches;TheLocalSwitches:PLocalSwitches);
+       constructor Create(TheInputStream:TBeRoStream;TheFileName:ansistring;TheError:TError;TheSymbolManager:TSymbolManager;TheOptions:TOptions;TheGlobalSwitches:PGlobalSwitches;TheLocalSwitches:PLocalSwitches);
        destructor Destroy; override;
        procedure Reset;
        procedure FileStackPush;
@@ -358,7 +358,7 @@ begin
 end;
 {$endif}
 
-constructor TScanner.Create(TheInputStream:TBeRoStream;TheFileName:ansistring;TheError:TError;TheSymbolManager:TSymbolManager;TheOptions:POptions;TheGlobalSwitches:PGlobalSwitches;TheLocalSwitches:PLocalSwitches);
+constructor TScanner.Create(TheInputStream:TBeRoStream;TheFileName:ansistring;TheError:TError;TheSymbolManager:TSymbolManager;TheOptions:TOptions;TheGlobalSwitches:PGlobalSwitches;TheLocalSwitches:PLocalSwitches);
 var Token:TScannerToken;
 begin
  inherited Create;
@@ -463,10 +463,18 @@ begin
 end;
 
 procedure TScanner.FileStackOpenInclude(IncludeFileName:ansistring);
+var FullFileName: ansistring;
 begin
  FileStackPush;
  CurrentFileName:=IncludeFileName;
- InputStream:=TBeRoFileStream.Create(IncludeFileName);
+ FullFileName:=Options.FindInclude(IncludeFilename);
+ if FullFileName='' then
+ begin
+  Error.AddErrorCode(40, IncludeFileName);
+  InputStream:=TBeRoFileStream.Create(IncludeFileName); // just so we return a valid class
+  end else begin
+  InputStream:=TBeRoFileStream.Create(FullFileName);
+ end;
  CurrentLine:=1;
  CurrentColumn:=0;
  Encoding:=tseLATIN1;

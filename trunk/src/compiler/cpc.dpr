@@ -39,21 +39,29 @@ uses
   Unicode in 'Unicode.pas',
   CodePages in 'CodePages.pas';
 
-procedure Compile(FileName:ansistring);
+procedure Compile;
 var ACompiler:TCompiler;
 begin
  ACompiler:=TCompiler.Create;
- ACompiler.Options.TargetCompiler:='e:\tcc\tcc.exe'; //'e:\mingw\bin\gcc.exe'; //
- ACompiler.UnitManager.RebuildAll:=UPPERCASE(PARAMSTR(2))='-B';
- WriteLn('Compiling ',UPPERCASE(ChangeFileExt(ExtractFileName(FileName),'')));
- ACompiler.CompileMainFile(FileName);
- Write(ACompiler.GetErrors);
+ // read own configuration
+ ACompiler.Options.Load;
+ ACompiler.UnitManager.RebuildAll:=ACompiler.Options.BuildAll;
+
+ if ACompiler.Options.ShowHelp or (ACompiler.Options.TargetFilename='') then
+ begin
+  Writeln('--HELP  this help');
+  Writeln;
+
+ end else
+ begin
+  WriteLn('Compiling ',UPPERCASE(ChangeFileExt(ExtractFileName(ACompiler.Options.TargetFilename),'')));
+  ACompiler.CompileMainFile(ACompiler.Options.TargetFilename);
+  Write(ACompiler.GetErrors);
+ end;
  ACompiler.Destroy;
 end;
 
 begin
  WriteLn('ObjPas2C 1.00 - Copyright (C) 2005-2013, BeRo & red');
- if ParamCount>0 then begin
-  Compile(ParamStr(1));
- end;
+ Compile;
 end.

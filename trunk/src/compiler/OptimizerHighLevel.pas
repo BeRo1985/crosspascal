@@ -7,7 +7,7 @@ uses SysUtils,BeRoStream,Globals,Symbols,Error,Tree,HugeString;
 
 type TOptimizerHighLevel=class
       private
-       Options:POptions;
+       Options:TOptions;
        Error:TError;
        SymbolManager:TSymbolManager;
        TreeManager:TTreeManager;
@@ -20,7 +20,7 @@ type TOptimizerHighLevel=class
        ModuleSymbol:PSymbol;
        LocalSwitches:PLocalSwitches;
        CurrentObjectClass:PType;
-       constructor Create(TheError:TError;TheSymbolManager:TSymbolManager;TheTreeManager:TTreeManager;TheOptions:POptions;TheLocalSwitches:PLocalSwitches);
+       constructor Create(TheError:TError;TheSymbolManager:TSymbolManager;TheTreeManager:TTreeManager;TheOptions:TOptions;TheLocalSwitches:PLocalSwitches);
        destructor Destroy; override;
        procedure Initialize;
        procedure MaybeTypeConversion(var Left,Right:TTreeNode);
@@ -118,7 +118,7 @@ begin
  end;
 end;
 
-constructor TOptimizerHighLevel.Create(TheError:TError;TheSymbolManager:TSymbolManager;TheTreeManager:TTreeManager;TheOptions:POptions;TheLocalSwitches:PLocalSwitches);
+constructor TOptimizerHighLevel.Create(TheError:TError;TheSymbolManager:TSymbolManager;TheTreeManager:TTreeManager;TheOptions:TOptions;TheLocalSwitches:PLocalSwitches);
 begin
  inherited Create;
  Options:=TheOptions;
