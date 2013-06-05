@@ -20,7 +20,7 @@ type TTreeNodeType=(ttntEmpty,
                     ttntLABEL,ttntGOTO,
                     ttntTRY,ttntTRYONELSE,ttntRAISE,
                     ttntPROCEDURE,ttntCALL,ttntParameter,ttntIndex,ttntPointer,
-                    ttntAddress,ttntField,
+                    ttntAddress,ttntField,ttntProperty,
                     ttntORDConst,ttntCHARConst,ttntSTRINGConst,ttntFloatConst,
                     ttntSETConst,ttntPCHARConst,
                     ttntCCODE,ttntCEXPRESSION,ttntCBLOCK,ttntPASCALBLOCK,ttntCLOCATION,
@@ -44,7 +44,8 @@ type TTreeNodeType=(ttntEmpty,
        Return,ProcType,CheckType,CompareType,InheritedType,WithType:PType;
        ItemType:TTreeNodeItemType;
        ItemValue:int64;
-       Signed,Forced,Colon,IsDownTo,ReferenceParameter,DoNotOptimize,Warning500:boolean;
+       Signed,Forced,Colon,IsDownTo,ReferenceParameter,DoNotOptimize,Warning500,
+       PropertyReadyForToOptimize,PropertyIsToWrite:boolean;
        Value:int64;
        CharValue:THugeChar;
        StringData:THugeString;
@@ -83,6 +84,7 @@ type TTreeNodeType=(ttntEmpty,
        function GeneratePointerNode(Left:TTreeNode;PointerToType:PType):TTreeNode;
        function GenerateIndexNode(Symbol:PSymbol;Left:TTreeNode):TTreeNode;
        function GenerateFieldNode(Symbol,SymbolField:PSymbol;Left:TTreeNode):TTreeNode;
+       function GeneratePropertyNode(Symbol,SymbolField:PSymbol;Left,Right:TTreeNode;PropertyType:PType):TTreeNode;
        function GenerateCallNode(Symbol:PSymbol):TTreeNode;
        function GenerateMethodCallNode(Symbol,MethodSymbol:PSymbol;Right:TTreeNode;InheritedType:PType):TTreeNode;
        function GenerateOrdConstNode(Value:int64;AType:PType):TTreeNode;
@@ -195,6 +197,8 @@ begin
  ReferenceParameter:=false;
  DoNotOptimize:=false;
  Warning500:=false;
+ PropertyReadyForToOptimize:=false;
+ PropertyIsToWrite:=false;
  Value:=0;
  CharValue:=0;
  StringData:=nil;
@@ -520,6 +524,9 @@ begin
    ttntField:begin
     WriteType('FIELD');
    end;
+   ttntProperty:begin
+    WriteType('PROPERTY');
+   end;
    ttntORDConst:begin
     WriteType('ORDCONST');
     WriteData('Ordinal Value: '+INTTOSTR(TreeNode.Value));
@@ -691,6 +698,17 @@ begin
  if assigned(SymbolField) then begin
   result.Return:=SymbolField^.TypeDefinition;
  end;
+end;
+
+function TTreeManager.GeneratePropertyNode(Symbol,SymbolField:PSymbol;Left,Right:TTreeNode;PropertyType:PType):TTreeNode;
+begin
+ result:=NewNode;
+ result.TreeNodeType:=ttntProperty;
+ result.Symbol:=Symbol;
+ result.SymbolField:=SymbolField;
+ result.Left:=Left;
+ result.Right:=Right;
+ result.Return:=PropertyType;
 end;
 
 function TTreeManager.GenerateCallNode(Symbol:PSymbol):TTreeNode;
