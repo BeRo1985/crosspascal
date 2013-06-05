@@ -1,16 +1,18 @@
 unit ShellHelper;
+{$i Compiler.inc}
 
 interface
 
-function GetDosOutput(const CommandLine: string): string;
+function GetDosOutput(const CommandLine: ansistring): ansistring;
 
 implementation
 
+{$ifdef windows}
 uses
   Windows,
   SysUtils;
 
-function GetDosOutput(const CommandLine: string): string;
+function GetDosOutput(const CommandLine: ansistring): ansistring;
 var
   SA: TSecurityAttributes;
   SI: TStartupInfo;
@@ -85,7 +87,12 @@ begin
     result := Line;
     CloseHandle(StdOutPipeRead);
   end;
+end;       
+{$else}
+function GetDosOutput(const CommandLine: ansistring): ansistring;
+begin
+ result := '';
 end;
-
+{$endif}
 
 end.

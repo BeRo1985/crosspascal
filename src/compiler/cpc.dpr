@@ -1,13 +1,5 @@
 program cpc;
-{$ifdef fpc}
- {$mode delphi}
-{$endif}
-{$ifdef win32}
- {$define windows}
-{$endif}
-{$ifdef win64}
- {$define windows}
-{$endif}
+{$i Compiler.inc}
 {$ifdef windows}
  {$apptype console}
 {$endif}
