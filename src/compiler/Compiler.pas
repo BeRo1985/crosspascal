@@ -18,8 +18,8 @@ type TCompiler=class
        LocalSwitches:TLocalSwitches;
        constructor Create;
        destructor Destroy; override;
-       procedure Compile(TheInputStream:TBeRoStream;TheFileName:ansistring;UnitLevel:longint=0);
-       procedure CompileFile(FileName:ansistring;UnitLevel:longint=0);
+       function Compile(TheInputStream:TBeRoStream;TheFileName:ansistring;UnitLevel:longint=0):boolean;
+       function CompileFile(FileName:ansistring;UnitLevel:longint=0):boolean;
        function GetErrors:ansistring;
        procedure CompileMainFile(FileName:ansistring);
      end;
@@ -89,12 +89,13 @@ begin
  inherited Destroy;
 end;
 
-procedure TCompiler.Compile(TheInputStream:TBeRoStream;TheFileName:ansistring;UnitLevel:longint=0);
+function TCompiler.Compile(TheInputStream:TBeRoStream;TheFileName:ansistring;UnitLevel:longint=0):boolean;
 var Parser:TParser;
     Name:ansistring;
     TCCState:PTCCState;
     OldLocalSwitches:PLocalSwitches;
 begin
+ result:=false;
  New(OldLocalSwitches);
  OldLocalSwitches^:=LocalSwitches;
  LocalSwitches:=DefaultLocalSwitches;
@@ -135,6 +136,9 @@ begin
   end else begin
    DebugLog('Compiling '+name+'.c: '+GetDosOutput(Options.TargetCompiler+' '+Options.TargetCompilerParams+' -c '+pansichar(ChangeFileExt(Name,'.c'))));
   end;
+  if not Error.Errors then begin
+   result:=true;
+  end;
  finally
   Error.LocalSwitches:=@LocalSwitches;
   if UnitLevel<>0 then begin
@@ -144,7 +148,7 @@ begin
  end;
 end;
 
-procedure TCompiler.CompileFile(FileName:ansistring;UnitLevel:longint=0);
+function TCompiler.CompileFile(FileName:ansistring;UnitLevel:longint=0):boolean;
 var FileStream:TBeRoFileStream;
     Stream:TBeRoStream;
     FullFileName: ansistring;
@@ -156,10 +160,11 @@ begin
   Stream.Assign(FileStream);
   FileStream.Destroy;
   Stream.Seek(0);
-  Compile(Stream,FileName,UnitLevel);
+  result:=Compile(Stream,FileName,UnitLevel);
   Stream.Destroy;
  end else begin
   Error.AbortCode(40,FileName);
+  result:=false;
  end;
 end;
 

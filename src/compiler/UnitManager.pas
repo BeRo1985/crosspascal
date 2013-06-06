@@ -2464,14 +2464,17 @@ begin
     if DebugLogActive and DebugLogDumpUnitManager then begin
      DebugLog(LogBegin+'Compile "'+AUnitName+'"');
     end;
-    UnitCompiler.CompileFile(ASrcPath,Level+1);
-    Symbol:=SymbolManager.GetSymbol(tpsIdentifier+AUnitName);
-    if assigned(Symbol) and (Symbol^.SymbolType=Symbols.tstUnit) then begin
-     SymbolManager.AddUnit(ModuleSymbol,Symbol,AfterImplementation,LocalDefined);
-     AddUnit(tpsIdentifier+AUnitName,Symbol);
-     result:=ulrRecompiled;
+    if UnitCompiler.CompileFile(ASrcPath,Level+1) then begin
+     Symbol:=SymbolManager.GetSymbol(tpsIdentifier+AUnitName);
+     if assigned(Symbol) and (Symbol^.SymbolType=Symbols.tstUnit) then begin
+      SymbolManager.AddUnit(ModuleSymbol,Symbol,AfterImplementation,LocalDefined);
+      AddUnit(tpsIdentifier+AUnitName,Symbol);
+      result:=ulrRecompiled;
+     end else begin
+      Error.InternalError(200605181510000);
+     end;
     end else begin
-     Error.InternalError(200605181510000);
+     Error.AbortCode(530,AUnitName);
     end;
    end else begin
     Error.AbortCode(532);
@@ -2491,28 +2494,32 @@ begin
 
  end;
 
- if ShowFinished then begin
-  if DebugLogActive and DebugLogDumpUnitManager then begin
-   DebugLog(LogBegin+'Finished "'+AUnitName+'"');
-  end;
- end;
+ if not (Error.Errors or Error.DoAbort) then begin
 
- Symbol:=SymbolManager.GetSymbol(tpsIdentifier+AUnitName);
- if assigned(Symbol) and (Symbol^.SymbolType=Symbols.tstUnit) then begin
-  Symbol^.OverloadedName:=AUnitPath;
- end;
-
- if Level=0 then begin
-  for Index:=0 to length(LoadedUnits)-1 do begin
-   if not assigned(LoadedUnits[Index].Symbol) then begin
-    Load(CorrectSymbolName(LoadedUnits[Index].Name),'',true,false,ModuleSymbol,Level+1);
+  if ShowFinished then begin
+   if DebugLogActive and DebugLogDumpUnitManager then begin
+    DebugLog(LogBegin+'Finished "'+AUnitName+'"');
    end;
   end;
- end;
 
- ProcessFixUps;
- if (Level=0) and (FixUpList.Count<>0) then begin
-  Error.AbortCode(532);
+  Symbol:=SymbolManager.GetSymbol(tpsIdentifier+AUnitName);
+  if assigned(Symbol) and (Symbol^.SymbolType=Symbols.tstUnit) then begin
+   Symbol^.OverloadedName:=AUnitPath;
+  end;
+
+  if Level=0 then begin
+   for Index:=0 to length(LoadedUnits)-1 do begin
+    if not assigned(LoadedUnits[Index].Symbol) then begin
+     Load(CorrectSymbolName(LoadedUnits[Index].Name),'',true,false,ModuleSymbol,Level+1);
+    end;
+   end;
+  end;
+
+  ProcessFixUps;
+  if (Level=0) and (FixUpList.Count<>0) then begin
+   Error.AbortCode(532);
+  end;
+
  end;
 end;
 
