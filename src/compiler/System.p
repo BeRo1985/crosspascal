@@ -134,6 +134,7 @@ type DWORD=LongWord;
        VTable:pointer;
        IOffset:longint;
        ImplGetter:longint;
+       ImplGetterPtr:pointer;
      end;
 
      PInterfaceTable=^TInterfaceTable;
@@ -373,6 +374,7 @@ typedef struct pasInterfaceEntry {
   void* vTable;
   uint32_t iOffset;
   uint32_t implGetter;
+  void* implGetterPtr;
 } pasInterfaceEntry;
 
 typedef struct pasInterfaceTable {
@@ -380,7 +382,14 @@ typedef struct pasInterfaceTable {
   pasInterfaceEntry entries[10000];
 } pasInterfaceTable;
 
+typedef struct pasInterfaceIUnknown {
+  size_t (*QueryInterface)(void* instance,pasGUID* IID,void* obj);
+  int32_t (*_AddRef)(void* instance);
+  int32_t (*_Release)(void* instance);
+} pasInterfaceIUnknown;
+
 #pragma pack(pop)
+
 
 typedef pasInterfaceEntry* pasInterfaceEntryPointer;
 
@@ -1244,7 +1253,7 @@ end;
 function TObject.GetInterface(const IID:TGUID;out Obj):boolean;
 begin
 [[[
-  *((void*)&<<<Obj>>>) = NULL;
+  void* obj = NULL;
   pasClassVirtualMethodTable* VMT = (void*)<<<self>>>;
   pasGUID* IID = (void*)&<<<IID>>>;
   pasInterfaceEntry* resultInterfaceEntry = NULL;
@@ -1266,22 +1275,31 @@ begin
   }
   done:
   if(resultInterfaceEntry){
+    void* (*method)(void* instance);
+    void* self = (void*)<<<self>>>;
     if(resultInterfaceEntry->iOffset){
-      *((void*)&<<<Obj>>>) = ((void*)<<<self>>>) + resultInterfaceEntry->iOffset;
-      if(*((void*)&<<<Obj>>>)){
-        /* TODO
-        if(*((void*)&<<<Obj>>>)){
-          *((pasIInterface*)(*((void*)&<<<Obj>>>)))->_AddRef(**((void*)&<<<Obj>>>));
-        }
-        */
+      obj = self + resultInterfaceEntry->iOffset;
+      if(obj){
+        ((pasInterfaceIUnknown*)obj)->_AddRef(obj);
       }
     }else{
-      /* TODO
-      *((void*)&<<<Obj>>>) = pasInvokeImplGetter(<<<self>>>, resultInterfaceEntry->implGetter);
-      */
+      uint32_t implGetter = resultInterfaceEntry->implGetter;
+      if((implGetter >= 0xff000000ul) && (implGetter <= 0xfffffffful)){
+        /* Field */
+        obj = self + (implGetter & 0x00fffffful);
+      }else if((implGetter >= 0xfe000000ul) && (implGetter <= 0xfefffffful)){
+        /* Virtual method */
+        method = *(void**)((void*)(self + (int16_t)(implGetter & 0x0000fffful)));
+        obj = method(self);
+      }else{
+        /* Static method */
+        method = resultInterfaceEntry->implGetterPtr;
+        obj = method(self);
+      }
     }
   }
-  <<<result>>> = (*((void*)&<<<Obj>>>)) ? 1 : 0;
+  *((void*)&<<<Obj>>>) = obj;
+  <<<result>>> = obj ? 1 : 0;
 ]]]
 end;
 
