@@ -1649,8 +1649,9 @@ begin
     end;
    end;
   end;
-  if (Symbol^.VariableType in [tvtParameterVariable,tvtParameterResult]) or
-     ((Symbol^.VariableType in [tvtParameterConstant]) and (Symbol^.TypeDefinition^.TypeDefinition=ttdEmpty)) then begin
+{ if (Symbol^.VariableType in [tvtParameterVariable,tvtParameterResult]) or
+     ((Symbol^.VariableType in [tvtParameterConstant]) and (Symbol^.TypeDefinition^.TypeDefinition=ttdEmpty)) then begin}
+  if IsSymbolReference(Symbol) then begin
    if not TreeNode.Left.DoNotOptimize then begin
     OptimizeTree(TreeNode.Left);
     if Symbol^.TypeDefinition^.TypeDefinition=ttdEmpty then begin
