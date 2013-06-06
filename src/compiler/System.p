@@ -1244,7 +1244,7 @@ end;
 function TObject.GetInterface(const IID:TGUID;out Obj):boolean;
 begin
 [[[
-  *(void**)<<<Obj>>> = NULL;
+  *((void*)&<<<Obj>>>) = NULL;
   pasClassVirtualMethodTable* VMT = (void*)<<<self>>>;
   pasGUID* IID = (void*)&<<<IID>>>;
   pasInterfaceEntry* resultInterfaceEntry = NULL;
@@ -1267,21 +1267,21 @@ begin
   done:
   if(resultInterfaceEntry){
     if(resultInterfaceEntry->iOffset){
-      *(void**)<<<Obj>>> = ((void*)<<<self>>>) + resultInterfaceEntry->iOffset;
-      if(*(void**)<<<Obj>>>){
+      *((void*)&<<<Obj>>>) = ((void*)<<<self>>>) + resultInterfaceEntry->iOffset;
+      if(*((void*)&<<<Obj>>>)){
         /* TODO
-        if(*(void**)<<<Obj>>>){
-          *((pasIInterface*)(*(void**)<<<Obj>>>))->_AddRef(*(void**)<<<Obj>>>);
+        if(*((void*)&<<<Obj>>>)){
+          *((pasIInterface*)(*((void*)&<<<Obj>>>)))->_AddRef(**((void*)&<<<Obj>>>));
         }
         */
       }
     }else{
       /* TODO
-      *(void**)<<<Obj>>> = pasInvokeImplGetter(<<<self>>>, resultInterfaceEntry->implGetter);
+      *((void*)&<<<Obj>>>) = pasInvokeImplGetter(<<<self>>>, resultInterfaceEntry->implGetter);
       */
     }
   }
-  <<<result>>> = (*(void**)<<<Obj>>>) ? 1 : 0;
+  <<<result>>> = (*((void*)&<<<Obj>>>)) ? 1 : 0;
 ]]]
 end;
 
