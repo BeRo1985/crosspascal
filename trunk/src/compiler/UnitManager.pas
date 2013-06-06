@@ -1,4 +1,4 @@
-unit UnitManager;  
+unit UnitManager;
 {$i Compiler.inc}
 
 interface
@@ -2324,7 +2324,7 @@ begin
 end;
 
 function TUnitManager.Load(AUnitName,ASrcPath:ansistring;AfterImplementation,LocalDefined:boolean;ModuleSymbol:PSymbol;Level:longint=0):TUnitLoadResult;
-var AUnitPath,LogBegin:ansistring;
+var AUnitPath,LogBegin,FullUnitName, FullSrcPath:ansistring;
     UnitCompiler:TCompiler;
     UnitParser:TParser;
     DoRebuild:boolean;
@@ -2344,7 +2344,9 @@ begin
  end else begin
   AUnitPath:=ChangeFileExt(AUnitName,tfeUnit);
   ASrcPath:=ChangeFileExt(AUnitPath,tfeSrc);
-  if not FileExists(ASrcPath) then begin
+
+  FullUnitName:=Options.FindUnit(ASrcPath);
+  if FullUnitName='' then begin
    ASrcPath:=ChangeFileExt(AUnitPath,tfeSrcAlternative);
   end;
  end;
@@ -2431,15 +2433,16 @@ begin
   end;
 
  end else begin
-
-  if FileExists(ASrcPath) then begin
+  FullSrcPath:=Options.FindUnit(ASrcPath);
+  if FullSrcPath<>'' then begin
    DoRebuild:=RebuildAll;
    if not DoRebuild then begin
-    DoRebuild:=not FileExists(AUnitPath);
+    FullUnitName:=Options.FindUnit(AUnitPath);
+    DoRebuild:=FullUnitName='';
     if not DoRebuild then begin
-     DoRebuild:=FileAge(AUnitPath)<FileAge(ASrcPath);
+     DoRebuild:=FileAge(FullUnitName)<FileAge(FullSrcPath);
     end;
-    if FileExists(AUnitPath) and not DoRebuild then begin
+    if (FullUnitName<>'') and not DoRebuild then begin
      FileStream:=TBeRoFileStream.Create(AUnitPath);
      Stream:=TBeRoStream.Create;
      Stream.Assign(FileStream);
@@ -2473,14 +2476,17 @@ begin
    end else begin
     Error.AbortCode(532);
    end;
-  end else if FileExists(AUnitPath) then begin
-   if DebugLogActive and DebugLogDumpUnitManager then begin
-    DebugLog(LogBegin+'Load "'+AUnitName+'"');
-   end;
-   LoadUnitFile(AUnitPath,ModuleSymbol,AfterImplementation,LocalDefined,Level);
-   result:=ulrNormal;
   end else begin
-   Error.AbortCode(212,AUnitName);
+   FullUnitName:=Options.FindUnit(AUnitPath);
+   if FullUnitName<>'' then begin
+    if DebugLogActive and DebugLogDumpUnitManager then begin
+     DebugLog(LogBegin+'Load "'+AUnitName+'"');
+    end;
+    LoadUnitFile(FullUnitName,ModuleSymbol,AfterImplementation,LocalDefined,Level);
+    result:=ulrNormal;
+   end else begin
+    Error.AbortCode(212,AUnitName);
+   end;
   end;
 
  end;
