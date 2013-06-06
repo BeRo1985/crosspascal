@@ -363,6 +363,29 @@ typedef struct pasClassMethodTableStripped {
   size_t count;
 } pasClassMethodTableStripped;
 
+typedef struct pasGUID {
+   uint8_t digits[16];
+} pasGUID;
+
+#pragma pack(push,1)
+typedef struct pasInterfaceEntry {
+  pasGUID iID;
+  void* vTable;
+  uint32_t iOffset;
+  uint32_t implGetter;
+} pasInterfaceEntry;
+
+typedef struct pasInterfaceTable {
+  uint32_t entryCount;
+  pasInterfaceEntry entries[10000];
+} pasInterfaceTable;
+
+#pragma pack(pop)
+
+typedef pasInterfaceEntry* pasInterfaceEntryPointer;
+
+typedef pasInterfaceTable* pasInterfaceTablePointer;
+
 typedef struct pasClassVirtualMethodTable;
 
 typedef struct pasClassVirtualMethodTable* pasClassVirtualMethodTablePointer;
@@ -397,7 +420,7 @@ typedef struct pasClassVirtualMethodTableStripped {
 } pasClassVirtualMethodTableStripped;
 
 typedef struct {
-	uint32_t dummy;
+  uint32_t dummy;
 } pasFile;
 
 typedef struct pasExceptionStackJmpBufItem {
