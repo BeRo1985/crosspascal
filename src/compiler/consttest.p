@@ -1,4 +1,5 @@
 program consttest;
+{$apptype console}
 
 type TSomeRecord=record
       a,b,c:longint;
