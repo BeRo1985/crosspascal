@@ -207,8 +207,9 @@ begin
  end else begin
   s:=ChangeFileExt(ExtractFileName(FileName),'');
   s:=s+'.o -o '+s+'.exe';
+
   for i:=0 to SymbolManager.UnitList.Count-1 do begin
-   s:=SymbolManager.UnitList[i]+'.o '+s;
+   s:=Options.FindUnit(SymbolManager.UnitList[i]+'.o')+' '+s;
   end;
 
 //  DebugLog(GetDosOutput(Options.TargetCompiler+' -c objpas2c.c'));
