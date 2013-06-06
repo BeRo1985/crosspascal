@@ -1889,7 +1889,7 @@ end;
 
 procedure TSymbolManager.FixSymbolListChilds;
 var AType:PType;
-begin
+begin        
  AType:=TypeList.First;
  while assigned(AType) do begin
   if (AType^.TypeDefinition in [ttdRecord,ttdObject,ttdClass,ttdInterface]) and assigned(AType^.ChildOf) and assigned(AType^.RecordTable) then begin

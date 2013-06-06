@@ -3437,76 +3437,80 @@ begin
    GetDefaultTypes;
   end;
 
-  UnitManager.SaveUnitSymbolTable(Symbol^.SymbolList,Symbol);
+  if not (Error.Errors or Error.DoAbort) then begin
 
-  Symbol^.IsCompileInterface:=false;
-  Symbol^.IsInterfaceReady:=true;
+   UnitManager.SaveUnitSymbolTable(Symbol^.SymbolList,Symbol);
 
-  if Scanner.CurrentToken=tstUSES then begin
-   ParseUSESStatement(true,false,false);
-   if DoBreak then begin
-    exit;
-   end;
-  end;
+   Symbol^.IsCompileInterface:=false;
+   Symbol^.IsInterfaceReady:=true;
 
-  Error.LocalSwitches:=LocalSwitches;
-
-  ParseHeadBlock(false,true);
-
-  FinishCheckMethods(Symbol);
-
-  InitializationCodeTree:=nil;
-  FinalizationCodeTree:=nil;
-  if Scanner.CurrentToken=tstBEGIN then begin
-   InitializationCodeTree:=ParseMainBlock;
-  end else begin
-   if Scanner.CurrentToken=tstINITIALIZATION then begin
-    Scanner.Match(tstINITIALIZATION);
-    InitializationCodeTree:=ParseBlockStatement([tstEND,tstFINALIZATION]);
-   end;
-   if Scanner.CurrentToken=tstFINALIZATION then begin
-    Scanner.Match(tstFINALIZATION);
-    FinalizationCodeTree:=ParseBlockStatement([tstEND]);
-   end;
-   Scanner.Match(tstEND);
-  end;
-
-  FinishCheckSymbols(Symbol,Symbol^.SymbolList);
-
-  OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
-  OptimizerHighLevel.CurrentObjectClass:=CurrentObjectClass;
-
-  if assigned(InitializationCodeTree) then begin
-   OptimizerHighLevel.OptimizeTree(InitializationCodeTree);
-  end;
-  if assigned(FinalizationCodeTree) then begin
-   OptimizerHighLevel.OptimizeTree(FinalizationCodeTree);
-  end;
-  TreeManager.Dump(InitializationCodeTree,CorrectSymbolName(ModuleSymbol^.Name+'_INITIALIZATION'));
-  TreeManager.Dump(FinalizationCodeTree,CorrectSymbolName(ModuleSymbol^.Name+'_FINALIZATION'));
-  if not Error.Errors then begin
-   CodeGenerator.GenerateUnit(Symbol,InitializationCodeTree,FinalizationCodeTree);
-  end;
-  if assigned(InitializationCodeTree) then begin
-   InitializationCodeTree.Destroy;
-  end;
-  if assigned(FinalizationCodeTree) then begin
-   FinalizationCodeTree.Destroy;
-  end;
-
-  if not Error.Errors then begin
-   UnitManager.SaveUnitFile(ChangeFileExt(FileName,tfeUnit),Symbol^.SymbolList,Symbol,ModuleName);
-   CodeFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ModuleSymbol^.OriginalFileName,'.c'));
-   try
-    HeaderFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ModuleSymbol^.OriginalFileName,'.h'));
-    try
-     CodeGenerator.SaveToStreams(CodeFileStream,HeaderFileStream);
-    finally
-     HeaderFileStream.Free;
+   if Scanner.CurrentToken=tstUSES then begin
+    ParseUSESStatement(true,false,false);
+    if DoBreak then begin
+     exit;
     end;
-   finally
-    CodeFileStream.Free;
    end;
+
+   Error.LocalSwitches:=LocalSwitches;
+
+   ParseHeadBlock(false,true);
+
+   FinishCheckMethods(Symbol);
+
+   InitializationCodeTree:=nil;
+   FinalizationCodeTree:=nil;
+   if Scanner.CurrentToken=tstBEGIN then begin
+    InitializationCodeTree:=ParseMainBlock;
+   end else begin
+    if Scanner.CurrentToken=tstINITIALIZATION then begin
+     Scanner.Match(tstINITIALIZATION);
+     InitializationCodeTree:=ParseBlockStatement([tstEND,tstFINALIZATION]);
+    end;
+    if Scanner.CurrentToken=tstFINALIZATION then begin
+     Scanner.Match(tstFINALIZATION);
+     FinalizationCodeTree:=ParseBlockStatement([tstEND]);
+    end;
+    Scanner.Match(tstEND);
+   end;
+
+   FinishCheckSymbols(Symbol,Symbol^.SymbolList);
+
+   OptimizerHighLevel.ModuleSymbol:=ModuleSymbol;
+   OptimizerHighLevel.CurrentObjectClass:=CurrentObjectClass;
+
+   if assigned(InitializationCodeTree) then begin
+    OptimizerHighLevel.OptimizeTree(InitializationCodeTree);
+   end;
+   if assigned(FinalizationCodeTree) then begin
+    OptimizerHighLevel.OptimizeTree(FinalizationCodeTree);
+   end;
+   TreeManager.Dump(InitializationCodeTree,CorrectSymbolName(ModuleSymbol^.Name+'_INITIALIZATION'));
+   TreeManager.Dump(FinalizationCodeTree,CorrectSymbolName(ModuleSymbol^.Name+'_FINALIZATION'));
+   if not (Error.Errors or Error.DoAbort) then begin
+    CodeGenerator.GenerateUnit(Symbol,InitializationCodeTree,FinalizationCodeTree);
+   end;
+   if assigned(InitializationCodeTree) then begin
+    InitializationCodeTree.Destroy;
+   end;
+   if assigned(FinalizationCodeTree) then begin
+    FinalizationCodeTree.Destroy;
+   end;
+
+   if not (Error.Errors or Error.DoAbort) then begin
+    UnitManager.SaveUnitFile(ChangeFileExt(FileName,tfeUnit),Symbol^.SymbolList,Symbol,ModuleName);
+    CodeFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ModuleSymbol^.OriginalFileName,'.c'));
+    try
+     HeaderFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ModuleSymbol^.OriginalFileName,'.h'));
+     try
+      CodeGenerator.SaveToStreams(CodeFileStream,HeaderFileStream);
+     finally
+      HeaderFileStream.Free;
+     end;
+    finally
+     CodeFileStream.Free;
+    end;
+   end;
+   
   end;
 
   ModuleName:=OldModuleName;
