@@ -5225,9 +5225,8 @@ begin
   Scanner.Match(tstLeftBracket);
   if Scanner.CurrentToken=tstStringValue then begin
    result^.GUID:=StringToGUID(HugeStringToAnsiString(Scanner.CurrentString));
-  end else begin
-   Scanner.Match(tstStringValue);
   end;
+  Scanner.Match(tstStringValue);
   Scanner.Match(tstRightBracket);
  end;
  result^.RecordTable:=TSymbolList.Create(SymbolManager);

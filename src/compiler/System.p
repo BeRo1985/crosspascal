@@ -114,33 +114,39 @@ type DWORD=LongWord;
      TWordArray=array[0..16383] of Word;
      PWordArray=^TWordArray;
 
-     TObject=class;
+     HRESULT=type ptrint;
+
+const S_OK=0;
+      S_FALSE=$00000001;
+      E_NOINTERFACE=HRESULT($80004002);
+      E_UNEXPECTED=HRESULT($8000ffff);
+      E_NOTIMPL=HRESULT($80004001);
+
+type TObject=class;
 
      TClass=class of TObject;
 
-     HRESULT=type ptrint;
-
      PGUID=^TGUID;
      TGUID=packed record
-       D1:longword;
-       D2:word;
-       D3:word;
-       D4:array[0..7] of byte;
+      D1:longword;
+      D2:word;
+      D3:word;
+      D4:array[0..7] of byte;
      end;
 
      PInterfaceEntry=^TInterfaceEntry;
      TInterfaceEntry=packed record
-       IID:TGUID;
-       VTable:pointer;
-       IOffset:longint;
-       ImplGetter:longint;
-       ImplGetterPtr:pointer;
+      IID:TGUID;
+      VTable:pointer;
+      IOffset:longint;
+      ImplGetter:longint;
+      ImplGetterPtr:pointer;
      end;
 
      PInterfaceTable=^TInterfaceTable;
      TInterfaceTable=packed record
-       EntryCount:longint;
-       Entries:array[0..9999] of TInterfaceEntry;
+      EntryCount:longint;
+      Entries:array[0..9999] of TInterfaceEntry;
      end;
 
      TMethod=record
@@ -181,6 +187,12 @@ type DWORD=LongWord;
       class function NewInstance:TObject; virtual;
       procedure FreeInstance; virtual;
       destructor Destroy; virtual;
+     end;
+
+     IInterface=interface['{00000000-0000-0000-C000-000000000046}']
+      function QueryInterface(const IID:TGUID;out Obj):HResult; stdcall;
+      function _AddRef:longint; stdcall;
+      function _Release:longint; stdcall;
      end;
 
      Exception=class
