@@ -752,7 +752,7 @@ begin
     end;
    end;
    if CompareTypesEqual=tcteIncompatible then begin
-//  CompareTypesEqual:=CompareTypesExt(Error,SymbolManager,TreeNode.Left.Return,TreeNode.Return,TreeNode.TreeNodeType,ConvertType,ProcType,[tctoEXPLICIT]);
+    CompareTypesEqual:=CompareTypesExt(Error,SymbolManager,TreeNode.Left.Return,TreeNode.Return,TreeNode.TreeNodeType,ConvertType,ProcType,[tctoEXPLICIT]);
     Error.AbortCode(93);
    end;
 {  if SymbolManager.GetSize(TreeNode.Left.Return)=SymbolManager.GetSize(TreeNode.Return) then begin
