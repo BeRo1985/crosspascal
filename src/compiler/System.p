@@ -499,6 +499,28 @@ typedef struct pasClassVirtualMethodTableStripped {
   void* vmtParent;
 } pasClassVirtualMethodTableStripped;
 
+typedef struct pasClassVirtualMethodTableTObject {
+  void* vmtSelfPtr;
+  void* vmtIntfTable;
+  void* vmtAutoTable;
+  void* vmtInitTable;
+  void* vmtTypeInfo;
+  void* vmtFieldTable;
+  void* vmtMethodTable;
+  void* vmtDynamicTable;
+  void* vmtClassName;
+  size_t vmtInstanceSize;
+  void* vmtParent;
+  void* vmtSafeCallException;
+  void* vmtAfterConstruction;
+  void* vmtBeforeDestruction;
+  void* vmtDispatch;
+  void* vmtDefaultHandler;
+  void* vmtNewInstance;
+  void* vmtFreeInstance;
+  void* vmtDestroy;
+} pasClassVirtualMethodTableTObject;
+
 typedef struct {
   uint32_t dummy;
 } pasFile;
@@ -1141,6 +1163,7 @@ begin
     /* INTERFACE TODO */
     <<<ClassPtr>>> = <<<ClassPtr>>>->vmtParent;
   }
+  /* (void*)<<<result>>> = (void*)(((void*)<<<result>>>) - sizeof(pasClassVirtualMethodTableTObject)); */
 ]]]
 end;
 
