@@ -924,7 +924,7 @@ begin
     end;
     if CurrentChar<256 then begin
      case CurrentChar of
-      ord('a')..ord('z'),ord('A')..ord('Z'):begin
+      ord('a')..ord('z'),ord('A')..ord('Z'),ord('_'):begin
    //  CurrentReadNextString:=ReadString(['a'..'z','A'..'Z','0'..'9','_']);
        CurrentReadNextString:='';
        SetLength(CurrentReadNextString,16);
