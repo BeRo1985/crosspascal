@@ -363,13 +363,13 @@ typedef struct pasClassMethodTableStripped {
   size_t count;
 } pasClassMethodTableStripped;
 
+#pragma pack(push,1)
 typedef struct pasGUID {
-   uint8_t digits[16];
+   uint32_t GUID[4];
 } pasGUID;
 
-#pragma pack(push,1)
 typedef struct pasInterfaceEntry {
-  pasGUID iID;
+  pasGUID IID;
   void* vTable;
   uint32_t iOffset;
   uint32_t implGetter;
@@ -1248,7 +1248,28 @@ end;
 
 class function TObject.GetInterfaceEntry(const IID:TGUID):PInterfaceEntry;
 begin
- result:=nil;
+[[[
+  pasClassVirtualMethodTable* VMT = (void*)<<<self>>>;
+  pasGUID* IID = (void*)&<<<IID>>>;
+  <<<result>>> = NULL;
+  while(VMT){
+    pasInterfaceTable* interfaceTable = (void*)(((pasClassVirtualMethodTable*)((void*)<<<self>>>))->vmtIntfTable);
+    if(interfaceTable){
+      for(int i = 0; i < interfaceTable->entryCount; i++){
+        pasInterfaceEntry* interfaceEntry = (void*)&interfaceTable->entries[i];
+        if((interfaceEntry->IID.GUID[0] == IID->GUID[0])&&
+           (interfaceEntry->IID.GUID[1] == IID->GUID[1])&&
+           (interfaceEntry->IID.GUID[2] == IID->GUID[2])&&
+           (interfaceEntry->IID.GUID[3] == IID->GUID[3])){
+          <<<result>>> = (void*)interfaceEntry;
+          goto done;
+        }
+      }
+    }
+    VMT = VMT->vmtParent;
+  }
+  done:
+]]]
 end;
 
 class function TObject.GetInterfaceTable:PInterfaceTable;
