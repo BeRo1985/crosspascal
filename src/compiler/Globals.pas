@@ -1,9 +1,9 @@
-unit Globals;
+  unit Globals;
 {$i Compiler.inc}
 
 interface
 
-uses SysUtils, Classes;
+uses SysUtils, StringList;
 
 const tpsVMT='VMT';
       tpsIdentifier='';
@@ -367,6 +367,10 @@ end;
 function TOptions.FindFile(List: TStringlist; Filename: ansistring): ansistring;
 var i: Integer;
 begin
+ if FileExists(Filename) then begin
+  result:=Filename;
+  Exit;
+ end else
  for i:=0 to List.Count-1 do
   if FileExists(List[i]+Filename) then begin
    result:=List[i]+Filename;

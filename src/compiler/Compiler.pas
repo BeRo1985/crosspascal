@@ -73,11 +73,11 @@ begin
  GlobalSwitches:=DefaultGlobalSwitches;
  Options:=TOptions.Create(@GlobalSwitches);
  LocalSwitches:=DefaultLocalSwitches;
- Error:=TError.Create(@Options);
+ Error:=TError.Create(Options);
  Error.LocalSwitches:=@LocalSwitches;
- SymbolManager:=TSymbolManager.Create(Error,@Options,@GlobalSwitches);
- TreeManager:=TTreeManager.Create(Error,SymbolManager,@Options);
- UnitManager:=TUnitManager.Create(Error,SymbolManager,self,@Options,@GlobalSwitches);
+ SymbolManager:=TSymbolManager.Create(Error,Options,@GlobalSwitches);
+ TreeManager:=TTreeManager.Create(Error,SymbolManager,Options);
+ UnitManager:=TUnitManager.Create(Error,SymbolManager,self,Options,@GlobalSwitches);
 end;
 
 destructor TCompiler.Destroy;
@@ -100,7 +100,7 @@ begin
  LocalSwitches:=DefaultLocalSwitches;
  Error.LocalSwitches:=@LocalSwitches;
  try
-  Parser:=TParser.Create(TheInputStream,TheFileName,Error,SymbolManager,UnitManager,self,UnitLevel,@Options,@GlobalSwitches,@LocalSwitches);
+  Parser:=TParser.Create(TheInputStream,TheFileName,Error,SymbolManager,UnitManager,self,UnitLevel,Options,@GlobalSwitches,@LocalSwitches);
   Parser.Parse;
   if assigned(Parser.ModuleSymbol) then begin
    Name:=Parser.ModuleSymbol.OriginalFileName;
