@@ -229,6 +229,7 @@ procedure Move(var Src; var Dst; Size: Cardinal);
 #include "math.h"
 #include "setjmp.h"
 #include <stdio.h>
+
 #ifdef _MSC_VER
 // MSVC
 #define ___PACKED___ __declspec(align(1))
@@ -257,6 +258,47 @@ procedure Move(var Src; var Dst; Size: Cardinal);
 #include <inttypes.h>
 #else
 #undef C99
+#endif
+
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#define C11
+#else
+#undef C11
+#endif
+
+#ifdef _WIN64
+#define __WIN__
+#elif _WIN32
+#define __WIN__
+#elif __APPLE__
+#include "TargetConditionals.h"
+#include <libkern/OSAtomic.h>
+#elif __android
+#include <cutils/atomic.h>
+#elif __linux
+#elif __unix
+#elif __posix
+#endif
+
+#ifdef __WIN__
+#include <windows.h>
+#endif
+
+#ifdef __WIN__
+#define pasAtomicInc32(x) InterlockedIncrement((int32_t*)&(x))
+#define pasAtomicDec32(x) InterlockedDecrement((int32_t*)&(x))
+#elif __GNUC__
+#define pasAtomicInc32(x) __sync_fetch_and_add((int32_t*)&(x),1)
+#define pasAtomicDec32(x) __sync_fetch_and_sub((int32_t*)&(x),1)
+#elif __android
+#define pasAtomicInc32(x) android_atomic_inc((int32_t*)&(x))
+#define pasAtomicDec32(x) android_atomic_dec((int32_t*)&(x))
+#elif __APPLE__
+#define pasAtomicInc32(x) OSAtomicIncrement32Barrier((int32_t*)&(x))
+#define pasAtomicDec32(x) OSAtomicDecrement32Barrier((int32_t*)&(x))
+#else
+#define pasAtomicInc32(x) do{ x++; }while(0)
+#define pasAtomicDec32(x) do{ x--; }while(0)
 #endif
 
 #define pastkUnknown 0
@@ -1417,12 +1459,16 @@ end;
 
 function TInterfacedObject._AddRef:longint; stdcall;
 begin
- FRefCount:=FRefCount+1; // TODO: MUST BE ATOMIC !
+[[[
+  pasAtomicInc32(<<<FRefCount>>>);
+]]]
 end;
 
 function TInterfacedObject._Release:longint; stdcall;
 begin
- FRefCount:=FRefCount-1; // TODO: MUST BE ATOMIC !
+[[[
+  pasAtomicDec32(<<<FRefCount>>>);
+]]]
  if FRefCount=0 then begin
   Destroy;
  end;
@@ -1430,7 +1476,9 @@ end;
 
 procedure TInterfacedObject.AfterConstruction;
 begin
- FRefCount:=FRefCount-1; // TODO: MUST BE ATOMIC !
+[[[
+  pasAtomicDec32(<<<FRefCount>>>);
+]]]
 end;
 
 procedure TInterfacedObject.BeforeDestruction;
