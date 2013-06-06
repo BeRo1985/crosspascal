@@ -1243,7 +1243,46 @@ end;
 
 function TObject.GetInterface(const IID:TGUID;out Obj):boolean;
 begin
- result:=false;
+[[[
+  *(void**)<<<Obj>>> = NULL;
+  pasClassVirtualMethodTable* VMT = (void*)<<<self>>>;
+  pasGUID* IID = (void*)&<<<IID>>>;
+  pasInterfaceEntry* resultInterfaceEntry = NULL;
+  while(VMT){
+    pasInterfaceTable* interfaceTable = (void*)(((pasClassVirtualMethodTable*)((void*)<<<self>>>))->vmtIntfTable);
+    if(interfaceTable){
+      for(int i = 0; i < interfaceTable->entryCount; i++){
+        pasInterfaceEntry* interfaceEntry = (void*)&interfaceTable->entries[i];
+        if((interfaceEntry->IID.GUID[0] == IID->GUID[0])&&
+           (interfaceEntry->IID.GUID[1] == IID->GUID[1])&&
+           (interfaceEntry->IID.GUID[2] == IID->GUID[2])&&
+           (interfaceEntry->IID.GUID[3] == IID->GUID[3])){
+          resultInterfaceEntry = (void*)interfaceEntry;
+          goto done;
+        }
+      }
+    }
+    VMT = VMT->vmtParent;
+  }
+  done:
+  if(resultInterfaceEntry){
+    if(resultInterfaceEntry->iOffset){
+      *(void**)<<<Obj>>> = ((void*)<<<self>>>) + resultInterfaceEntry->iOffset;
+      if(*(void**)<<<Obj>>>){
+        /* TODO
+        if(*(void**)<<<Obj>>>){
+          *((pasIInterface*)(*(void**)<<<Obj>>>))->_AddRef(*(void**)<<<Obj>>>);
+        }
+        */
+      }
+    }else{
+      /* TODO
+      *(void**)<<<Obj>>> = pasInvokeImplGetter(<<<self>>>, resultInterfaceEntry->implGetter);
+      */
+    }
+  }
+  <<<result>>> = (*(void**)<<<Obj>>>) ? 1 : 0;
+]]]
 end;
 
 class function TObject.GetInterfaceEntry(const IID:TGUID):PInterfaceEntry;
