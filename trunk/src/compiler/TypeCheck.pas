@@ -936,7 +936,8 @@ begin
   ttdClass:begin
    case FromType^.TypeDefinition of
     ttdClass:begin
-     if SymbolManager.IsObjectClassAncestorType(ToType,FromType) then begin
+     if SymbolManager.IsObjectClassAncestorType(ToType,FromType) or
+        SymbolManager.IsObjectClassAncestorType(FromType,ToType) then begin
       ConvertType:=tctEqual;
       result:=tcteConvertCompatible;
      end;

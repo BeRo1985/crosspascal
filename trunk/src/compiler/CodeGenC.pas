@@ -2362,7 +2362,7 @@ begin
       end;
       if assigned(FProcSymbol) and
          assigned(TreeNode.Symbol^.OwnerObjectClass) and
-         (((TreeNode.Symbol.OwnerObjectClass=FProcSymbol.OwnerObjectClass) and
+         (({(TreeNode.Symbol.OwnerObjectClass=FProcSymbol.OwnerObjectClass) and}
           not assigned(TreeNode.MethodSymbol)) or assigned(TreeNode.InheritedType)) then begin
        if HaveParameters then
        begin

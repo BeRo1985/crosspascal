@@ -195,6 +195,23 @@ type TObject=class;
       function _Release:longint; stdcall;
      end;
 
+     IUnknown=IInterface;
+
+     TInterfacedObject=class(TObject,IInterface)
+      protected
+       FRefCount:longint;
+       function QueryInterface(const IID:TGUID;out Obj):HResult; stdcall;
+       function _AddRef:longint; stdcall;
+       function _Release:longint; stdcall;
+      public
+       procedure AfterConstruction; override;
+       procedure BeforeDestruction; override;
+       class function NewInstance:TObject; override;
+       property RefCount:longint read FRefCount;
+     end;
+
+     TInterfacedClass=class of TInterfacedObject;
+
      Exception=class
       public
        Message:ansistring;
@@ -1387,6 +1404,46 @@ end;
 
 destructor TObject.Destroy;
 begin
+end;
+
+function TInterfacedObject.QueryInterface(const IID:TGUID;out Obj):HResult; stdcall;
+begin
+ if GetInterface(IID,Obj) then begin
+  result:=0;
+ end else begin
+  result:=E_NOINTERFACE;
+ enD;
+end;
+
+function TInterfacedObject._AddRef:longint; stdcall;
+begin
+ FRefCount:=FRefCount+1; // TODO: MUST BE ATOMIC !
+end;
+
+function TInterfacedObject._Release:longint; stdcall;
+begin
+ FRefCount:=FRefCount-1; // TODO: MUST BE ATOMIC !
+ if FRefCount=0 then begin
+  Destroy;
+ end;
+end;
+
+procedure TInterfacedObject.AfterConstruction;
+begin
+ FRefCount:=FRefCount-1; // TODO: MUST BE ATOMIC !
+end;
+
+procedure TInterfacedObject.BeforeDestruction;
+begin
+ if FRefCount<>0 then begin
+  // TODO: Error(reInvalidPtr);
+ end;
+end;
+
+class function TInterfacedObject.NewInstance:TObject;
+begin
+ result:=inherited NewInstance;
+ TInterfacedObject(result).FRefCount:=1;
 end;
 
 constructor Exception.Create(Msg:ansistring);
