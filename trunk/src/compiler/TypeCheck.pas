@@ -1087,7 +1087,7 @@ begin
 
   // ------------
 
-  ttdEmpty:BEGIN // Formal
+  ttdEmpty:begin // Formal
    case FromType^.TypeDefinition of
     ttdEmpty:begin
      ConvertType:=tctEqual;
