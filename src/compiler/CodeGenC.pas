@@ -3967,7 +3967,7 @@ begin
      if assigned(Symbol) then begin
       if Symbol^.TypeDefinition^.TypeDefinition in [ttdRecord,ttdObject,ttdClass,ttdInterface] then begin
        Target.AddLn('typedef struct '+GetTypeName(Symbol^.TypeDefinition)+'* '+Name+';');
-      end else if assigned(Symbol^.TypeDefinition) and ((Symbol^.TypeDefinition^.TypeDefinition=ttdPointer) and assigned(Symbol^.TypeDefinition^.Definition^.PointerTo)) and (Symbol^.TypeDefinition^.Definition^.PointerTo^.TypeDefinition=Symbol^.TypeDefinition) then begin
+      end else if assigned(Symbol^.TypeDefinition) and Assigned(Symbol^.TypeDefinition^.Definition)and((Symbol^.TypeDefinition^.TypeDefinition=ttdPointer) and assigned(Symbol^.TypeDefinition^.Definition^.PointerTo)) and (Symbol^.TypeDefinition^.Definition^.PointerTo^.TypeDefinition=Symbol^.TypeDefinition) then begin
        Target.AddLn('typedef void* '+Name+';');
       end else begin
        Target.AddLn('typedef '+GetTypeName(Symbol^.TypeDefinition)+'* '+Name+';');

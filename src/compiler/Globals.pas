@@ -368,7 +368,7 @@ function TOptions.FindFile(List: TStringlist; Filename: ansistring): ansistring;
 var i: Integer;
 begin
  if FileExists(Filename) then begin
-  result:=Filename;
+  result:=GetCurrentDir+PathDelim+Filename;
   Exit;
  end else
  for i:=0 to List.Count-1 do
@@ -376,7 +376,7 @@ begin
    result:=List[i]+Filename;
    Exit;
   end;
-  result:='';
+ result:='';
 end;
 
 function TOptions.FindInclude(const Filename: ansistring): ansistring;
