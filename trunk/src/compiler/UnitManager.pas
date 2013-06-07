@@ -2437,13 +2437,16 @@ begin
   if FullSrcPath<>'' then begin
    DoRebuild:=RebuildAll;
    if not DoRebuild then begin
-    FullUnitName:=Options.FindUnit(AUnitPath);
-    DoRebuild:=FullUnitName='';
+    FullUnitName:=ChangeFileExt(FullSrcPath, tfeUnit);
+    DoRebuild:=(FullUnitName='') {or (not FileExists(ChangeFileExt(ASrcPath, '.h')))
+                or (not FileExists(ChangeFileExt(ASrcPath, '.c')))}
+                or (not FileExists(ChangeFileExt(ASrcPath, '.o')));
     if not DoRebuild then begin
-     DoRebuild:=FileAge(FullUnitName)<FileAge(FullSrcPath);
+     DoRebuild:=(FileAge(FullUnitName)<FileAge(FullSrcPath))
+                or (FileAge(FullUnitName)<FileAge(ChangeFileExt(ASrcPath, '.o')));
     end;
     if (FullUnitName<>'') and not DoRebuild then begin
-     FileStream:=TBeRoFileStream.Create(AUnitPath);
+     FileStream:=TBeRoFileStream.Create(FullUnitName);
      Stream:=TBeRoStream.Create;
      Stream.Assign(FileStream);
      FileStream.Destroy;

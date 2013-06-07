@@ -429,7 +429,7 @@ void AssignShortstring(uint8_t* target, uint32_t maxLength, pasLongstring strInp
         length = maxLength;
     else
         length = header->length;
-
+		
    ((uint8_t*)(target))[0] = length;
    target++;
 

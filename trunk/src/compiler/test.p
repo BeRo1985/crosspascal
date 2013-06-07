@@ -1,6 +1,6 @@
 program test;
 
-{$IFDEF VER150}
+{$IFDEF FPC}
 {$APPTYPE console}
 uses Windows;
 {$ELSE}
@@ -21,20 +21,22 @@ const HelloWorld: PChar = 'Hallo Welt!\n'+#10;
       MyString: string = 'Hallo';
       MyString2: string = ' Stringwelt!';
 	  
-const fooSize = 14999;
+const fooSize = 19999;
 
-var Argh: array[0..fooSize] of Byte;
+var
     A, B: string;
     Temp: PChar;
 	StartTime: Cardinal;
 	
+var Argh: array[0..fooSize] of Integer;
+
 procedure BubbleSort;
 var i,k: integer;
     j: Byte;
     B: Boolean;
 begin
   for i:=0 to fooSize do
-    Argh[i]:=i*119;
+    Argh[i]:=Byte(i*119);
 	
   k:=0;
   repeat
@@ -50,12 +52,57 @@ begin
     end;
   until b;
   Writeln(k, ' iterations');
+  k := 2;
+  for i:=0 to 1 do
+  case k of
+    1: writeln(100);
+	2: begin
+	  writeln(111);
+	  Break;
+	  writeln(112);
+	end;
+	3,4: writeln(123);
+	else Writeln('kotzen');
+  end;
+end;
+
+procedure BubbleSort2;
+var i,k: integer;
+    j: Byte;
+    B: Boolean;
+    x,x2: Cardinal;
+begin
+  for i:=0 to fooSize do
+    Argh[i]:=Byte(i*119);
+	
+  k:=0;
+  x:=foosize - 1;
+  repeat
+   b := True;
+   if x = 0 then
+    Break;
+	
+   for i:=0 to x do
+    if Argh[i]>Argh[i+1] then
+    begin
+      b := False;
+      j := Argh[i];
+      Argh[i] := Argh[i+1];
+      Argh[i+1] := j;
+	    k := k + 1;
+      x2 := i;
+	  Continue;
+	  Break;
+    end;
+   x:=x2;
+  until (b) or (x < 1);
+  Writeln(k, ' iterations');
 end;
 
 procedure TestA;
  procedure TestB;
  begin
- {$IFDEF VER150}
+ {$IFDEF FPC}
  Writeln('Hey!');
  {$ELSE}
  // inline c
@@ -68,20 +115,33 @@ begin
  TestB;
 end;
 
+
+label blrgh;
+
+var
+  i: Integer;
+  
 begin
  Writeln('Hello World!');
+ goto blrgh;
  
+ blrgh:
+ 
+ A:=MyString + Mystring2;
  B:=A;
  
  // bug:
  //B[3]:='X';
  
- A:=MyString + Mystring2;
  WriteLn('"',A,'" has a length of ', Length(MyString + MyString2));
 
  StartTime := GetTickCount;
- BubbleSort;
- Writeln(GetTickCount - StartTime, ' ms for bubblesort');
+  BubbleSort; 
+ Writeln(GetTickCount - StartTime, ' ms');
+ 
+ StartTime := GetTickCount;
+ BubbleSort2;
+ Writeln(GetTickCount - StartTime, ' ms for bubblesort2');
  
  TestA;
 end.

@@ -160,7 +160,7 @@ begin
   Stream.Assign(FileStream);
   FileStream.Destroy;
   Stream.Seek(0);
-  result:=Compile(Stream,FileName,UnitLevel);
+  result:=Compile(Stream,FullFilename,UnitLevel);
   Stream.Destroy;
  end else begin
   Error.AbortCode(40,FileName);
@@ -214,7 +214,7 @@ begin
   s:=s+'.o -o '+s+'.exe';
 
   for i:=0 to SymbolManager.UnitList.Count-1 do begin
-   s:=Options.FindUnit(SymbolManager.UnitList[i]+'.o')+' '+s;
+   s:=SymbolManager.UnitList[i]+'.o'+' '+s;
   end;
 
 //  DebugLog(GetDosOutput(Options.TargetCompiler+' -c objpas2c.c'));

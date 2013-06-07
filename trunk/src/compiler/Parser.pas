@@ -3140,9 +3140,9 @@ begin
     OptimizerHighLevel.OptimizeTree(CodeTree);
     TreeManager.Dump(CodeTree,CorrectSymbolName(ModuleSymbol^.Name));
     CodeGenerator.GenerateProgram(ModuleSymbol,CodeTree);
-    CodeFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ModuleSymbol^.OriginalFileName,'.c'));
+    CodeFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ExtractFilename(ModuleSymbol^.OriginalFileName),'.c'));
     try
-     HeaderFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ModuleSymbol^.OriginalFileName,'.h'));
+     HeaderFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ExtractFilename(ModuleSymbol^.OriginalFileName),'.h'));
      try
       CodeGenerator.SaveToStreams(CodeFileStream,HeaderFileStream);
      finally
@@ -3243,9 +3243,9 @@ begin
     OptimizerHighLevel.OptimizeTree(CodeTree);
     TreeManager.Dump(CodeTree,CorrectSymbolName(ModuleSymbol^.Name));
     CodeGenerator.GeneratePackage(ModuleSymbol);
-    CodeFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ModuleSymbol^.OriginalFileName,'.c'));
+    CodeFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ExtractFilename(ModuleSymbol^.OriginalFileName),'.c'));
     try
-     HeaderFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ModuleSymbol^.OriginalFileName,'.h'));
+     HeaderFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ExtractFilename(ModuleSymbol^.OriginalFileName),'.h'));
      try
       CodeGenerator.SaveToStreams(CodeFileStream,HeaderFileStream);
      finally
@@ -3322,9 +3322,9 @@ begin
     OptimizerHighLevel.OptimizeTree(CodeTree);
     TreeManager.Dump(CodeTree,CorrectSymbolName(ModuleSymbol^.Name));
     CodeGenerator.GenerateLibrary(ModuleSymbol,CodeTree);
-    CodeFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ModuleSymbol^.OriginalFileName,'.c'));
+    CodeFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ExtractFilename(ModuleSymbol^.OriginalFileName),'.c'));
     try
-     HeaderFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ModuleSymbol^.OriginalFileName,'.h'));
+     HeaderFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ExtractFilename(ModuleSymbol^.OriginalFileName),'.h'));
      try
       CodeGenerator.SaveToStreams(CodeFileStream,HeaderFileStream);
      finally
@@ -3498,9 +3498,9 @@ begin
 
    if not (Error.Errors or Error.DoAbort) then begin
     UnitManager.SaveUnitFile(ChangeFileExt(FileName,tfeUnit),Symbol^.SymbolList,Symbol,ModuleName);
-    CodeFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ModuleSymbol^.OriginalFileName,'.c'));
+    CodeFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ExtractFilename(ModuleSymbol^.OriginalFileName),'.c'));
     try
-     HeaderFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ModuleSymbol^.OriginalFileName,'.h'));
+     HeaderFileStream:=TBeRoFileStream.CreateNew(ChangeFileExt(ExtractFilename(ModuleSymbol^.OriginalFileName),'.h'));
      try
       CodeGenerator.SaveToStreams(CodeFileStream,HeaderFileStream);
      finally

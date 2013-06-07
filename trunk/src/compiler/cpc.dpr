@@ -47,11 +47,21 @@ begin
  ACompiler.Options.Load;
  ACompiler.UnitManager.RebuildAll:=ACompiler.Options.BuildAll;
 
- if ACompiler.Options.ShowHelp or (ACompiler.Options.TargetFilename='') then
+ if ACompiler.Options.ShowVersion then begin
+  Writeln('');
+ end else if ACompiler.Options.ShowHelp or (ACompiler.Options.TargetFilename='') then
  begin
-  Writeln('--HELP  this help');
   Writeln;
-
+  Writeln('Syntax: ',ChangeFileExt(ExtractFileName(Paramstr(0)),''), ' [options] filename [options]');
+  Writeln;
+  Writeln('  -B = Build all units                     -U<paths> = Unit directories');
+  Writeln;
+  Writeln('  -I<path> = Include directories           -CS<executable> = target compiler');
+  Writeln;
+  Writeln('  -CP<params> = target compiler parameters -D<syms> = define conditional symbol');
+  Writeln;
+  Writeln('  --HELP = this help                       ');
+  Writeln;
  end else
  begin
   WriteLn('Compiling ',UPPERCASE(ChangeFileExt(ExtractFileName(ACompiler.Options.TargetFilename),'')));
