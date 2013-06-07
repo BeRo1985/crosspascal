@@ -2342,7 +2342,34 @@ begin
           FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol));
          end;
         end else begin
-         FProcCode.Add(GetSymbolName(TreeNode.Symbol));
+         ObjectClassType:=TreeNode.Symbol^.OwnerObjectClass;
+         if assigned(ObjectClassType) and (tpaVirtual in TreeNode.Symbol^.ProcedureAttributes) then begin
+          if ObjectClassType^.TypeDefinition=ttdOBJECT then begin
+           // OBJECT
+           FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_VMT_'+IntToStr(TreeNode.Symbol^.VirtualIndex)+')(((('+GetTypeName(ObjectClassType)+'*)(');
+           FProcCode.Add('instanceData');
+           FProcCode.Add('))->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.Symbol^.VirtualIndex)+']))');
+          end else begin
+           // CLASS
+           FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_VMT_'+IntToStr(TreeNode.Symbol^.VirtualIndex)+')(((('+GetTypeName(ObjectClassType)+')(pasClassVMTUnmask(');
+           FProcCode.Add('instanceData');
+           FProcCode.Add(')))->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.Symbol^.VirtualIndex)+']))');
+          end;
+         end else if assigned(ObjectClassType) and (tpaDynamic in TreeNode.Symbol^.ProcedureAttributes) then begin
+          if ObjectClassType^.TypeDefinition=ttdOBJECT then begin
+           // OBJECT
+           FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_DMT_'+IntToStr(TreeNode.Symbol^.VirtualIndex)+'*)pasObjectDMTDispatch((void*)(');
+           FProcCode.Add('instanceData');
+           FProcCode.Add('),'+IntToStr(TreeNode.Symbol^.VirtualIndex)+'))');
+          end else begin
+           // CLASS
+           FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_DMT_'+IntToStr(TreeNode.Symbol^.VirtualIndex)+')pasClassDMTDispatch((('+GetTypeName(ObjectClassType)+')(pasClassVMTUnmask(');
+           FProcCode.Add('instanceData');
+           FProcCode.Add(')))->INTERNAL_FIELD_VMT,'+IntToStr(TreeNode.Symbol^.VirtualIndex)+'))');
+          end;
+         end else begin
+          FProcCode.Add(GetSymbolName(TreeNode.Symbol));
+         end;
         end;
        end else begin
         Error.InternalError(201304050609000);
