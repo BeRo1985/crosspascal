@@ -5119,10 +5119,7 @@ begin
           break;
          end;
         end;
-        if assigned(ParentSymbol) then begin
-         Symbol^.ProcedureAttributes:=Symbol^.ProcedureAttributes+([tpaVirtual,tpaDynamic]*TempSymbol^.ProcedureAttributes);
-         Symbol^.VirtualIndex:=TempSymbol^.VirtualIndex;
-        end else begin
+        if not assigned(ParentSymbol) then begin
          Error.AddErrorCode(141,CorrectSymbolName(Symbol^.Name));
         end;
        end;
