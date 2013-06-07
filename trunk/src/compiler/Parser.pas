@@ -5123,6 +5123,7 @@ begin
         if assigned(ParentSymbol) then begin
          Symbol^.ProcedureAttributes:=Symbol^.ProcedureAttributes+([tpaVirtual,tpaDynamic]*TempSymbol^.ProcedureAttributes);
          Symbol^.VirtualIndex:=ParentSymbol^.VirtualIndex;
+         Symbol^.DynamicIndex:=ParentSymbol^.DynamicIndex;
         end else begin
          Error.AddErrorCode(141,CorrectSymbolName(Symbol^.Name));
         end;
@@ -5131,7 +5132,7 @@ begin
         Symbol^.ProcedureAttributes:=Symbol.ProcedureAttributes+[tpaReintroduce];
         Scanner.Match(tstREINTRODUCE);
         Scanner.Match(tstSEPARATOR);
-       end;
+       end;                                       
        tstMESSAGE:begin
         Symbol^.ProcedureAttributes:=Symbol^.ProcedureAttributes+[tpaMessage];
         Scanner.Match(tstMESSAGE);
@@ -5150,6 +5151,41 @@ begin
       end;
       Symbol^.PortabilityDirectives:=Symbol^.PortabilityDirectives+ParsePortabilityDirectives;
       Scanner.CheckForDirectives([tstABSTRACT,tstVIRTUAL,tstDYNAMIC,tstOVERRIDE,tstMESSAGE]);
+      if ([tpaVirtual,tpaDynamic,tpaReintroduce]*Symbol^.ProcedureAttributes)=[] then begin
+       ClassType:=result;
+       ParentSymbol:=nil;
+       while assigned(ClassType) and not assigned(ParentSymbol) do begin
+        if assigned(ClassType^.RecordTable) then begin
+         TempSymbol:=ClassType^.RecordTable.First;
+         while assigned(TempSymbol) do begin
+          case TempSymbol^.SymbolType of
+           Symbols.tstFunction,Symbols.tstProcedure:begin
+            if (([tpaVirtual,tpaDynamic]*TempSymbol^.ProcedureAttributes)<>[]) and
+               (not (tpaOverride in TempSymbol^.ProcedureAttributes)) and
+               (Symbol^.Name=TempSymbol^.Name) and
+               (CompareProcToProc(Error,SymbolManager,TempSymbol,Symbol)=tcteEqual) then begin
+             ParentSymbol:=TempSymbol;
+             break;
+            end;
+           end;
+          end;
+          TempSymbol:=TempSymbol^.Next;
+         end;
+        end;
+        if assigned(ClassType^.ChildOf) then begin
+         ClassType:=ClassType^.ChildOf^.TypeDefinition;
+        end else begin
+         break;
+        end;
+       end;
+       if assigned(ParentSymbol) then begin
+        if assigned(ParentSymbol^.OwnerObjectClass) then begin
+         Error.AddWarningCode(168,CorrectSymbolName(Symbol^.Name),CorrectSymbolName(ParentSymbol^.OwnerObjectClass.Symbol^.Name));
+        end else begin
+         Error.AddWarningCode(168,CorrectSymbolName(Symbol^.Name),'???');
+        end;
+       end;
+      end;
      end;
     end;
     tstEND:begin
@@ -5251,8 +5287,14 @@ begin
  result^.RecordPacked:=IsPacked or (LocalSwitches^.Alignment=1);
  result^.ChildOf:=nil;
  SetLength(result^.InterfaceChildOf,length(InterfaceSymbols));
+ result^.VirtualIndexCount:=0;
+ result^.DynamicIndexCount:=0;
  for I:=0 to length(InterfaceSymbols)-1 do begin
   result^.InterfaceChildOf[I]:=InterfaceSymbols[I];
+  if assigned(InterfaceSymbols[I]) then begin
+   inc(result^.VirtualIndexCount,InterfaceSymbols[I]^.TypeDefinition^.VirtualIndexCount);
+   inc(result^.DynamicIndexCount,InterfaceSymbols[I]^.TypeDefinition^.DynamicIndexCount);
+  end;
  end;
  SetLength(InterfaceSymbols,0);
 
@@ -5269,11 +5311,7 @@ begin
  SymbolManager.CurrentList:=result^.RecordTable;
  OldVariableType:=SymbolManager.VariableType;
  SymbolManager.VariableType:=tvtInterfaceField;
-{IF Parent=NIL THEN BEGIN
-  I:=4;
- END ELSE BEGIN
-  I:=SymbolManager.GetSize(Parent^.TypeDefinition);
- END;}
+
  SymbolAttributes:=[tsaOOPPublic];
  while not Scanner.IsEOFOrAbortError do begin
   case Scanner.CurrentToken of
@@ -5313,6 +5351,8 @@ begin
     end;
     Symbol^.PortabilityDirectives:=Symbol^.PortabilityDirectives+ParsePortabilityDirectives;
     Scanner.CheckForDirectives([tstABSTRACT,tstVIRTUAL,tstDYNAMIC,tstOVERRIDE]);
+    Symbol^.VirtualIndex:=result^.VirtualIndexCount;
+    inc(result^.VirtualIndexCount);
    end;
    tstEND:begin
     break;
