@@ -2319,9 +2319,9 @@ begin
             FProcCode.Add('))->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
            end else begin
             // CLASS
-            FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')(((('+GetTypeName(ObjectClassType)+')(pasClassVMTUnmask(');
+            FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')(((pasClassVirtualMethodTable*)pasClassVMTUnmask(((('+GetTypeName(ObjectClassType)+')(');
             TranslateCode(TreeNode.Right);
-            FProcCode.Add(')))->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
+            FProcCode.Add('))->INTERNAL_FIELD_VMT)))->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
            end;
           end else if assigned(TreeNode.MethodSymbol) and (tpaDynamic in TreeNode.MethodSymbol^.ProcedureAttributes) and (ObjectClassType^.TypeDefinition in [ttdOBJECT,ttdCLASS]) then begin
            if assigned(ObjectClassType) and (ObjectClassType^.TypeDefinition=ttdOBJECT) then begin
@@ -2331,9 +2331,9 @@ begin
             FProcCode.Add('),'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+'))');
            end else begin
             // CLASS
-            FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasClassDMTDispatch((('+GetTypeName(ObjectClassType)+')(pasClassVMTUnmask(');
+            FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasClassDMTDispatch(((pasClassVirtualMethodTable*)pasClassVMTUnmask((('+GetTypeName(ObjectClassType)+')(');
             TranslateCode(TreeNode.Right);
-            FProcCode.Add(')))->INTERNAL_FIELD_VMT,'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+'))');
+            FProcCode.Add(')->INTERNAL_FIELD_VMT))),'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+'))');
            end;
           end else begin
            if assigned(ObjectClassType) and (ObjectClassType^.TypeDefinition=ttdINTERFACE) then begin
@@ -2356,9 +2356,9 @@ begin
            FProcCode.Add('))->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.Symbol^.VirtualIndex)+']))');
           end else begin
            // CLASS
-           FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_VMT_'+IntToStr(TreeNode.Symbol^.VirtualIndex)+')(((('+GetTypeName(ObjectClassType)+')(pasClassVMTUnmask(');
+           FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_VMT_'+IntToStr(TreeNode.Symbol^.VirtualIndex)+')(((pasClassVirtualMethodTable*)pasClassVMTUnmask(((('+GetTypeName(ObjectClassType)+')(');
            FProcCode.Add('instanceData');
-           FProcCode.Add(')))->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.Symbol^.VirtualIndex)+']))');
+           FProcCode.Add('))->INTERNAL_FIELD_VMT)))->virtualMethods['+IntToStr(TreeNode.Symbol^.VirtualIndex)+']))');
           end;
          end else if assigned(ObjectClassType) and (tpaDynamic in TreeNode.Symbol^.ProcedureAttributes) and (ObjectClassType^.TypeDefinition in [ttdOBJECT,ttdCLASS]) then begin
           if ObjectClassType^.TypeDefinition=ttdOBJECT then begin
@@ -2368,9 +2368,9 @@ begin
            FProcCode.Add('),'+IntToStr(TreeNode.Symbol^.VirtualIndex)+'))');
           end else begin
            // CLASS
-           FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_DMT_'+IntToStr(TreeNode.Symbol^.VirtualIndex)+')pasClassDMTDispatch((('+GetTypeName(ObjectClassType)+')(pasClassVMTUnmask(');
+           FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_DMT_'+IntToStr(TreeNode.Symbol^.VirtualIndex)+')pasClassDMTDispatch(((pasClassVirtualMethodTable*)pasClassVMTUnmask((('+GetTypeName(ObjectClassType)+')(');
            FProcCode.Add('instanceData');
-           FProcCode.Add(')))->INTERNAL_FIELD_VMT,'+IntToStr(TreeNode.Symbol^.VirtualIndex)+'))');
+           FProcCode.Add(')->INTERNAL_FIELD_VMT))),'+IntToStr(TreeNode.Symbol^.VirtualIndex)+'))');
           end;
          end else begin
           FProcCode.Add(GetSymbolName(TreeNode.Symbol));
