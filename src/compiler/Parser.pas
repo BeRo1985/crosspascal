@@ -1888,6 +1888,8 @@ begin
        CheckParameters(NewTreeNode.Symbol,NewTreeNode.Symbol^.TypeDefinition^.Parameter,NewTreeNode.Left);
        Scanner.Match(tstRightParen);
        AType:=NewTreeNode.Symbol^.ReturnType;
+      end else begin
+       Error.AbortCode(504);
       end;
      end;
      tstLeftBracket:begin
