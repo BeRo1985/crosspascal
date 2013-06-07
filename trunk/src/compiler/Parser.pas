@@ -5864,7 +5864,11 @@ begin
   SymbolManager.CurrentList.AddSymbol(Symbol,ModuleSymbol,CurrentObjectClass,false,false);
   inc(SymbolManager.LexicalScopeLevel);
  end else begin
-  SearchSymbol:=SymbolManager.GetSymbol(Scanner.ProcedureName,ModuleSymbol,CurrentObjectClass);
+   if assigned(SymbolManager.CurrentList) then begin
+   SearchSymbol:=SymbolManager.CurrentList.GetSymbol(Scanner.ProcedureName,ModuleSymbol,CurrentObjectClass);
+  end else begin
+   SearchSymbol:=nil;
+  end;
   if (not assigned(SearchSymbol)) or
      (SearchSymbol^.LexicalScopeLevel<>(SymbolManager.LexicalScopeLevel-1)) or
      ((SearchSymbol^.OwnerModule<>ModuleSymbol) and not (tpaOverload in Symbol^.ProcedureAttributes)) then begin
