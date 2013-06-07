@@ -1400,7 +1400,7 @@ begin
       }
     }
   }
-  *((void*)&<<<Obj>>>) = obj;
+  <<<Obj>>> = obj;
   <<<result>>> = obj ? 1 : 0;
 ]]]
 end;
