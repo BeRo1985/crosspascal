@@ -3982,11 +3982,11 @@ begin
     end;
     ttdProcedure:begin
      Target.AddLn('// procedure');
-     Target.Add('typedef',spacesRIGHT);
+     Target.Add('typedef ',spacesRIGHT);
      ProcessTypeOrName(Type_^.ReturnType, Target, Type_);
-     Target.Add('*',spacesRIGHT);
+     Target.Add('(*');
      Target.Add(Name);
-     Target.Add('(');
+     Target.Add(')(');
      if assigned(Type_.Parameter) then
      begin
        Symbol:=Type_.Parameter.First;
