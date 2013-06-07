@@ -100,7 +100,7 @@ Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=exceptiontest.p -B
+RunParams=classtest.p -B
 HostApplication=
 Launcher=
 UseLauncher=0

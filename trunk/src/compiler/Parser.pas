@@ -4836,7 +4836,7 @@ begin
 end;
 
 function TParser.ParseClassDeclaration(ObjectName:ansistring;IsPacked:boolean):PType;
-var Symbol,Parent,NewSymbol,ForwardClass:PSymbol;
+var Symbol,Parent,NewSymbol,ForwardClass,ParentSymbol,TempSymbol:PSymbol;
     OldList:TSymbolList;
     OldVariableType:TVariableType;
     I,J:longint;
@@ -4844,7 +4844,7 @@ var Symbol,Parent,NewSymbol,ForwardClass:PSymbol;
     SymbolAttributes:TSymbolAttributes;
     NewTreeNode:TTreeNode;
     InterfaceSymbols:array of PSymbol;
-    OldCurrentObjectClass,OldCurrentParseObjectClass,ClassOfType:PType;
+    OldCurrentObjectClass,OldCurrentParseObjectClass,ClassOfType,ClassType:PType;
     IsClassOf,IsForward:boolean;
 begin
  if assigned(CurrentProcedureFunction) then begin
@@ -5094,6 +5094,37 @@ begin
         Symbol^.ProcedureAttributes:=Symbol^.ProcedureAttributes+[tpaOverride];
         Scanner.Match(tstOVERRIDE);
         Scanner.Match(tstSEPARATOR);
+        ClassType:=result;
+        ParentSymbol:=nil;
+        while assigned(ClassType) and not assigned(ParentSymbol) do begin
+         if assigned(ClassType^.RecordTable) then begin
+          TempSymbol:=ClassType^.RecordTable.First;
+          while assigned(TempSymbol) do begin
+           case TempSymbol^.SymbolType of
+            Symbols.tstFunction,Symbols.tstProcedure:begin
+             if (([tpaVirtual,tpaDynamic]*TempSymbol^.ProcedureAttributes)<>[]) and
+                (not (tpaOverride in TempSymbol^.ProcedureAttributes)) and
+                (CompareProcToProc(Error,SymbolManager,TempSymbol,Symbol)=tcteEqual) then begin
+              ParentSymbol:=TempSymbol;
+              break;
+             end;
+            end;
+           end;
+           TempSymbol:=TempSymbol^.Next;
+          end;
+         end;
+         if assigned(ClassType^.ChildOf) then begin
+          ClassType:=ClassType^.ChildOf^.TypeDefinition;
+         end else begin
+          break;
+         end;
+        end;
+        if assigned(ParentSymbol) then begin
+         Symbol^.ProcedureAttributes:=Symbol^.ProcedureAttributes+([tpaVirtual,tpaDynamic]*TempSymbol^.ProcedureAttributes);
+         Symbol^.VirtualIndex:=TempSymbol^.VirtualIndex;
+        end else begin
+         Error.AddErrorCode(141,CorrectSymbolName(Symbol^.Name));
+        end;
        end;
        tstREINTRODUCE:begin
         Symbol^.ProcedureAttributes:=Symbol.ProcedureAttributes+[tpaReintroduce];
@@ -5695,6 +5726,8 @@ begin
   end;
  // Method^.OverloadedName:=Scanner.ProcedureName+'_'+Method^.OverloadedName;
   HashSymbol(Method);
+{ Symbol^.ProcedureAttributes:=Symbol^.ProcedureAttributes+(Method^.ProcedureAttributes*[tpaVirtual,tpaDynamic]);
+  Symbol^.VirtualIndex:=Method^.VirtualIndex;}
  end else begin
   MethodSymbol:=nil;
   Method:=nil;
