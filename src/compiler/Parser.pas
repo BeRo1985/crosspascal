@@ -5377,146 +5377,141 @@ end;
 procedure TParser.ParseParameterList(var Symbol:PSymbol;var SymbolParameter:TSymbolList;Bracket,AllowParameterConstant:boolean;var ParameterSuffix:ansistring);
 var ParameterSymbol,StartSymbol,LastSymbol,NextSymbol,CurrentSymbol:PSymbol;
     AType:PType;
-    VariableType:TVariableType;    
+    VariableType:TVariableType;
     TypeName:ansistring;
+    StartToken,EndToken:TScannerToken;
 begin
  SymbolParameter:=TSymbolList.Create(SymbolManager);
  if Bracket then begin
-  Scanner.Match(tstLeftBracket);
-  if Scanner.CurrentToken=tstRightBracket then begin
-   Scanner.Match(tstRightBracket);
-   exit;
-  end;
+  StartToken:=tstLeftBracket;
+  EndToken:=tstRightBracket;
  end else begin
-  Scanner.Match(tstLeftParen);
-  if Scanner.CurrentToken=tstRightParen then begin
-   Scanner.Match(tstRightParen);
-   SymbolManager.PushSymbolList(SymbolParameter);
-   exit;
-  end;
+  StartToken:=tstLeftParen;
+  EndToken:=tstRightParen;
  end;
- repeat
-  case Scanner.CurrentToken of
-   tstVAR:begin
-    Scanner.Match(tstVAR);
-    VariableType:=tvtParameterVariable;
-   end;
-   tstOUT:begin
-    Scanner.Match(tstOUT);
-    VariableType:=tvtParameterResult;
-   end;
-   tstCONST:begin
-    Scanner.Match(tstCONST);
-    VariableType:=tvtParameterConstant;
-   end;
-   else begin
-    VariableType:=tvtParameterValue;
-   end;
-  end;
-
-  StartSymbol:=nil;
-  LastSymbol:=nil;
-  repeat
-   CurrentSymbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
-   if not assigned(StartSymbol) then begin
-    StartSymbol:=CurrentSymbol;
-   end;
-   if assigned(LastSymbol) then begin
-    LastSymbol^.Next:=CurrentSymbol;
-   end;
-   LastSymbol:=CurrentSymbol;
-   CurrentSymbol^.Name:=Scanner.ReadIdentifier(@CurrentSymbol^.OriginalCaseName);
-   CurrentSymbol^.OverloadedName:=ModuleName+tpsParameter+CurrentSymbol^.Name+tpsParameter+INTTOSTR(ParameterNumber);
-   HashSymbol(CurrentSymbol);
-   inc(ParameterNumber);
-   if Scanner.CurrentToken=tstCOMMA then begin
-    Scanner.Match(tstCOMMA);
-   end else begin
-    break;
-   end;
-  until (Scanner.CurrentToken<>tstIdentifier) or Scanner.IsEOFOrAbortError;
-
-  if Scanner.CurrentToken=tstColon then begin
-   Scanner.Match(tstColon);
-   TypeName:=Scanner.CurrentIdentifier;
-   Scanner.CheckForDirectives([tstOPENSTRING]);
-   Scanner.AllowedDirectives:=Scanner.AllowedDirectives+[tstOPENSTRING];
-   AType:=ParseTypeDefinition('',true);
-   Scanner.AllowedDirectives:=Scanner.AllowedDirectives-[tstOPENSTRING];
-   if not assigned(AType) then begin
-    Error.InternalError(200605181006002);
-    exit;
-   end;
-   TypeName:=AType.OwnerModule.Name+'_'+TypeName;
-  end else begin
-   AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
-   AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
-   AType^.TypeKind:=TypeKindUnknown;
-   AType^.NeedTypeInfo:=false;
-   TypeName:='EMPTY';
-// TypeName:=tpsOverload;
-   AType^.TypeDefinition:=ttdEmpty;
-  end;
-
-  if (Scanner.CurrentToken=tstEQUAL) and AllowParameterConstant then begin
-   Scanner.Match(tstEQUAL);
-   if assigned(StartSymbol) then begin
-    if assigned(StartSymbol.Next) then begin
-     Error.AbortCode(35);
-    end else begin
-     StartSymbol^.Attributes:=StartSymbol^.Attributes+[tsaParameterWithDefault];
-     ParseDefaultParameterTypedConstantDeclaration(AType,StartSymbol);
+ if Scanner.CurrentToken=StartToken then begin
+  Scanner.Match(StartToken);
+  if Scanner.CurrentToken<>EndToken then begin
+   repeat
+    case Scanner.CurrentToken of
+     tstVAR:begin
+      Scanner.Match(tstVAR);
+      VariableType:=tvtParameterVariable;
+     end;
+     tstOUT:begin
+      Scanner.Match(tstOUT);
+      VariableType:=tvtParameterResult;
+     end;
+     tstCONST:begin
+      Scanner.Match(tstCONST);
+      VariableType:=tvtParameterConstant;
+     end;
+     else begin
+      VariableType:=tvtParameterValue;
+     end;
     end;
-   end else begin
-    Error.AbortCode(511);
-    exit;
-   end;
-  end;
 
-  CurrentSymbol:=StartSymbol;
-  while assigned(CurrentSymbol) do begin
-   NextSymbol:=CurrentSymbol^.Next;
-   ParameterSymbol:=CurrentSymbol;
-   ParameterSymbol^.Next:=nil;
-   ParameterSymbol^.SymbolType:=Symbols.tstVariable;
-   ParameterSymbol^.VariableLevel:=SymbolManager.LexicalScopeLevel;
-   ParameterSymbol^.VariableType:=VariableType;
-   ParameterSymbol^.LocalProcSymbol:=CurrentProcedureFunction;
-   ParameterSymbol^.LocalProcSymbolAccessedFromHigherNestedProc:=false;
-   ParameterSymbol^.AbsoluteReference:=false;
-   ParameterSymbol^.Alias:=nil;
-   ParameterSymbol^.Offset:=0;
-   ParameterSymbol^.TypeDefinition:=AType;
-   ParameterSymbol^.TypedConstant:=false;
-   ParameterSymbol^.TypedTrueConstant:=false;
-   ParameterSymbol^.TypedConstantReadOnly:=false;
-   if MakeSymbolsPublic then begin
-    ParameterSymbol^.Attributes:=ParameterSymbol^.Attributes+[tsaPublic,tsaPublicUnitSymbol];
-   end;
-   SymbolParameter.AddSymbol(ParameterSymbol,ModuleSymbol,CurrentObjectClass);
-   if not ((VariableType in [tvtParameterVariable,tvtParameterConstant,tvtParameterResult]) or assigned(ParameterSymbol^.TypeDefinition)) then begin
-    if Error.Errors then begin
-     Error.DoAbort:=true;
+    StartSymbol:=nil;
+    LastSymbol:=nil;
+    repeat
+     CurrentSymbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+     if not assigned(StartSymbol) then begin
+      StartSymbol:=CurrentSymbol;
+     end;
+     if assigned(LastSymbol) then begin
+      LastSymbol^.Next:=CurrentSymbol;
+     end;
+     LastSymbol:=CurrentSymbol;
+     CurrentSymbol^.Name:=Scanner.ReadIdentifier(@CurrentSymbol^.OriginalCaseName);
+     CurrentSymbol^.OverloadedName:=ModuleName+tpsParameter+CurrentSymbol^.Name+tpsParameter+INTTOSTR(ParameterNumber);
+     HashSymbol(CurrentSymbol);
+     inc(ParameterNumber);
+     if Scanner.CurrentToken=tstCOMMA then begin
+      Scanner.Match(tstCOMMA);
+     end else begin
+      break;
+     end;
+    until (Scanner.CurrentToken<>tstIdentifier) or Scanner.IsEOFOrAbortError;
+
+    if Scanner.CurrentToken=tstColon then begin
+     Scanner.Match(tstColon);
+     TypeName:=Scanner.CurrentIdentifier;
+     Scanner.CheckForDirectives([tstOPENSTRING]);
+     Scanner.AllowedDirectives:=Scanner.AllowedDirectives+[tstOPENSTRING];
+     AType:=ParseTypeDefinition('',true);
+     Scanner.AllowedDirectives:=Scanner.AllowedDirectives-[tstOPENSTRING];
+     if not assigned(AType) then begin
+      Error.InternalError(200605181006002);
+      exit;
+     end;
+     TypeName:=AType.OwnerModule.Name+'_'+TypeName;
     end else begin
-     Error.InternalError(200605181006003);
+     AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+     AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
+     AType^.TypeKind:=TypeKindUnknown;
+     AType^.NeedTypeInfo:=false;
+     TypeName:='EMPTY';
+  // TypeName:=tpsOverload;
+     AType^.TypeDefinition:=ttdEmpty;
     end;
-    exit;
-   end;
-   ParameterSuffix:=ParameterSuffix+'_PARAMETER_'+TypeName;
-   CurrentSymbol:=NextSymbol;
+
+    if (Scanner.CurrentToken=tstEQUAL) and AllowParameterConstant then begin
+     Scanner.Match(tstEQUAL);
+     if assigned(StartSymbol) then begin
+      if assigned(StartSymbol.Next) then begin
+       Error.AbortCode(35);
+      end else begin
+       StartSymbol^.Attributes:=StartSymbol^.Attributes+[tsaParameterWithDefault];
+       ParseDefaultParameterTypedConstantDeclaration(AType,StartSymbol);
+      end;
+     end else begin
+      Error.AbortCode(511);
+      exit;
+     end;
+    end;
+
+    CurrentSymbol:=StartSymbol;
+    while assigned(CurrentSymbol) do begin
+     NextSymbol:=CurrentSymbol^.Next;
+     ParameterSymbol:=CurrentSymbol;
+     ParameterSymbol^.Next:=nil;
+     ParameterSymbol^.SymbolType:=Symbols.tstVariable;
+     ParameterSymbol^.VariableLevel:=SymbolManager.LexicalScopeLevel;
+     ParameterSymbol^.VariableType:=VariableType;
+     ParameterSymbol^.LocalProcSymbol:=CurrentProcedureFunction;
+     ParameterSymbol^.LocalProcSymbolAccessedFromHigherNestedProc:=false;
+     ParameterSymbol^.AbsoluteReference:=false;
+     ParameterSymbol^.Alias:=nil;
+     ParameterSymbol^.Offset:=0;
+     ParameterSymbol^.TypeDefinition:=AType;
+     ParameterSymbol^.TypedConstant:=false;
+     ParameterSymbol^.TypedTrueConstant:=false;
+     ParameterSymbol^.TypedConstantReadOnly:=false;
+     if MakeSymbolsPublic then begin
+      ParameterSymbol^.Attributes:=ParameterSymbol^.Attributes+[tsaPublic,tsaPublicUnitSymbol];
+     end;
+     SymbolParameter.AddSymbol(ParameterSymbol,ModuleSymbol,CurrentObjectClass);
+     if not ((VariableType in [tvtParameterVariable,tvtParameterConstant,tvtParameterResult]) or assigned(ParameterSymbol^.TypeDefinition)) then begin
+      if Error.Errors then begin
+       Error.DoAbort:=true;
+      end else begin
+       Error.InternalError(200605181006003);
+      end;
+      exit;
+     end;
+     ParameterSuffix:=ParameterSuffix+'_PARAMETER_'+TypeName;
+     CurrentSymbol:=NextSymbol;
+    end;
+    if Scanner.CurrentToken=tstSEPARATOR then begin
+     Scanner.Match(tstSEPARATOR);
+    end else begin
+     break;
+    end;
+   until Scanner.IsEOFOrAbortError;
   end;
-  if Scanner.CurrentToken=tstSEPARATOR then begin
-   Scanner.Match(tstSEPARATOR);
-  end else begin
-   break;
-  end;
- until Scanner.IsEOFOrAbortError;
+  Scanner.Match(EndToken);
+ end;
  SymbolManager.PushSymbolList(SymbolParameter);
- if Bracket then begin
-  Scanner.Match(tstRightBracket);
- end else begin
-  Scanner.Match(tstRightParen);
- end;
  HashSymbol(Symbol);
 end;
 
