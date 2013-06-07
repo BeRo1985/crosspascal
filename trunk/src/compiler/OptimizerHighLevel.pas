@@ -883,7 +883,7 @@ var Symbol,TempSymbol,NewSymbol:PSymbol;
     AType:PType;
 begin
  if TreeNode.Left.TreeNodeType=ttntCALL then begin
-  // Get function adress AND do not call!
+  // Get function address AND do not call!
   TreeNode.Left.TreeNodeType:=ttntVAR;
   Symbol:=TreeNode.Left.Symbol;
   AType:=SymbolManager.NewType(Symbol.OwnerModule);
