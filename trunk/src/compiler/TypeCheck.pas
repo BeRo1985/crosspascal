@@ -72,7 +72,8 @@ function AreTypesCompatible(Error:TError;SymbolManager:TSymbolManager;FromType,T
 function AreTypesEqualCompatible(Error:TError;SymbolManager:TSymbolManager;FromType,ToType:PType):boolean;
 function AreTypesSubEqual(Error:TError;SymbolManager:TSymbolManager;FromType,ToType:PType):boolean;
 function CompareParameters(Error:TError;SymbolManager:TSymbolManager;ParametersA,ParametersB:TSymbolList;ParametersType:TCompareParametersType;Options:TCompareParametersOptions):TCompareTypesEqual;
-function CompareProcToProcVar(Error:TError;SymbolManager:TSymbolManager;ProcFrom,ProcTo:PType):TCompareTypesEqual;
+function CompareProcVarToProcVar(Error:TError;SymbolManager:TSymbolManager;ProcFrom,ProcTo:PType):TCompareTypesEqual;
+function CompareProcToProcVar(Error:TError;SymbolManager:TSymbolManager;ProcFrom:PSymbol;ProcTo:PType):TCompareTypesEqual;
 function CompareProcToProc(Error:TError;SymbolManager:TSymbolManager;ProcFrom,ProcTo:PSymbol):TCompareTypesEqual;
 function CompareCallParameters(Error:TError;SymbolManager:TSymbolManager;SymbolParameters:TSymbolList;CallParameters:TTreeNode;var ParameterImbalance:longint;var TypeA,TypeB:PType;var FirstNeededDefaultSymbol:PSymbol):TCompareTypesEqual;
 
@@ -902,7 +903,7 @@ begin
   ttdProcedure:begin
    case FromType^.TypeDefinition of
     ttdProcedure:begin
-     result:=CompareProcToProcVar(Error,SymbolManager,FromType,ToType);
+     result:=CompareProcVarToProcVar(Error,SymbolManager,FromType,ToType);
      if result<>tcteIncompatible then begin
       ConvertType:=tctEqual;
      end;
@@ -912,9 +913,12 @@ begin
       ConvertType:=tctEqual;
       result:=tcteConvertCompatible;
      end;
-    end else if ToType^.AddressOnly and not assigned(FromType^.PointerTo) then begin
-     ConvertType:=tctEqual;
-     result:=tcteConvertCompatible;
+    end;
+    else begin
+     if ToType^.AddressOnly and not assigned(FromType^.PointerTo) then begin
+      ConvertType:=tctEqual;
+      result:=tcteConvertCompatible;
+     end;
     end;
    end;
   end;
@@ -1296,7 +1300,7 @@ begin
  end;
 end;
 
-function CompareProcToProcVar(Error:TError;SymbolManager:TSymbolManager;ProcFrom,ProcTo:PType):TCompareTypesEqual;
+function CompareProcVarToProcVar(Error:TError;SymbolManager:TSymbolManager;ProcFrom,ProcTo:PType):TCompareTypesEqual;
 var ProcedureAttributes:TProcedureAttributes;
     HasReturnTypes:boolean;
 begin
@@ -1304,6 +1308,27 @@ begin
  if (assigned(ProcFrom) and assigned(ProcTo)) and not
     ((ProcFrom^.MethodPointer xor ProcTo^.MethodPointer) or
      (ProcFrom^.AddressOnly xor ProcTo^.AddressOnly)) then begin
+  ProcedureAttributes:=[tpaInterrupt,tpaSTDCALL,tpaPASCAL,tpaCDECL,tpaSAFECALL,tpaFASTCALL,tpaREGISTER];
+  HasReturnTypes:=assigned(ProcFrom^.ReturnType) and assigned(ProcTo^.ReturnType);
+  if ((ProcFrom^.ProcedureAttributes*ProcedureAttributes)=(ProcTo^.ProcedureAttributes*ProcedureAttributes)) and
+     ((HasReturnTypes and EqualTypes(Error,SymbolManager,ProcFrom^.ReturnType,ProcTo^.ReturnType)) or not
+      HasReturnTypes) then begin
+   result:=CompareParameters(Error,SymbolManager,ProcFrom^.Parameter,ProcTo^.Parameter,tcptPROCVAR,[]);
+   if result=tcteExact then begin
+    result:=tcteEqual;
+   end;
+  end;
+ end;
+end;
+
+function CompareProcToProcVar(Error:TError;SymbolManager:TSymbolManager;ProcFrom:PSymbol;ProcTo:PType):TCompareTypesEqual;
+var ProcedureAttributes:TProcedureAttributes;
+    HasReturnTypes:boolean;
+begin
+ result:=tcteIncompatible;
+ if (assigned(ProcFrom) and assigned(ProcTo)) and not
+    ((assigned(ProcFrom^.OwnerObjectClass) xor ProcTo^.MethodPointer) or
+     ((not (tpaClass in ProcFrom^.ProcedureAttributes)) xor ProcTo^.AddressOnly)) then begin
   ProcedureAttributes:=[tpaInterrupt,tpaSTDCALL,tpaPASCAL,tpaCDECL,tpaSAFECALL,tpaFASTCALL,tpaREGISTER];
   HasReturnTypes:=assigned(ProcFrom^.ReturnType) and assigned(ProcTo^.ReturnType);
   if ((ProcFrom^.ProcedureAttributes*ProcedureAttributes)=(ProcTo^.ProcedureAttributes*ProcedureAttributes)) and

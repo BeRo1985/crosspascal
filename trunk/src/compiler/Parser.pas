@@ -6661,6 +6661,7 @@ begin
   tstPROCEDURE,tstFUNCTION:begin
    Scanner.Match(Scanner.CurrentToken);
    CurrentType:=ParseProcedureVariable(Symbol);
+   Symbol^.ReturnType:=nil;
    if OldToken=tstFUNCTION then begin
 //  CurrentType:=ParseProcedureVariable(Symbol);
     Scanner.Match(tstCOLON);
@@ -6680,6 +6681,7 @@ begin
    ParseProcedureType(Symbol,false);
    CurrentType^.ProcedureAttributes:=CurrentType^.ProcedureAttributes+Symbol^.ProcedureAttributes;
    CurrentType^.PortabilityDirectives:=CurrentType^.PortabilityDirectives+Symbol^.PortabilityDirectives;
+   CurrentType^.ReturnType:=Symbol^.ReturnType;
    CheckProcedureType(Symbol);
    if (Scanner.CurrentToken<>tstSeparator) and (Scanner.LastToken=tstSeparator) then begin
     Scanner.UseNextToken:=true;

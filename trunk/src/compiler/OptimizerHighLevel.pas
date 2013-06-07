@@ -752,7 +752,7 @@ begin
     end;
    end;
    if CompareTypesEqual=tcteIncompatible then begin
-    CompareTypesEqual:=CompareTypesExt(Error,SymbolManager,TreeNode.Left.Return,TreeNode.Return,TreeNode.TreeNodeType,ConvertType,ProcType,[tctoEXPLICIT]);
+//  CompareTypesEqual:=CompareTypesExt(Error,SymbolManager,TreeNode.Left.Return,TreeNode.Return,TreeNode.TreeNodeType,ConvertType,ProcType,[tctoEXPLICIT]);
     Error.AbortCode(93);
    end;
 {  if SymbolManager.GetSize(TreeNode.Left.Return)=SymbolManager.GetSize(TreeNode.Return) then begin
@@ -2067,7 +2067,8 @@ begin
   if assigned(TreeNode.Left) and assigned(Symbol^.TypeDefinition^.Parameter) then begin
    OptimizeParameter(TreeNode.Left,Symbol^.TypeDefinition^.Parameter.First);
   end;
-  TreeNode.Return:=Symbol^.TypeDefinition;
+  TreeNode.ProcType:=Symbol^.TypeDefinition;
+  TreeNode.Return:=Symbol^.TypeDefinition^.ReturnType;
  end else begin
   if assigned(TreeNode.Left) and assigned(Symbol) and assigned(Symbol^.Parameter) then begin
    OptimizeParameter(TreeNode.Left,Symbol^.Parameter.First);
@@ -2078,7 +2079,7 @@ begin
  end else begin
   if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdCLASS) then begin
    TreeNode.Return:=Symbol^.OwnerObjectClass;
-  end else if not assigned(TreeNode.Return) then begin
+  end else if assigned(Symbol^.ReturnType) and not assigned(TreeNode.Return) then begin
    TreeNode.Return:=Symbol^.ReturnType;
   end;
   if Symbol.SymbolType=Symbols.tstFunction then begin
@@ -2122,12 +2123,27 @@ begin
   exit;
  end;
  OptimizeTree(TreeNode.Right);
- if (TreeNode.Left.TreeNodeType=ttntCALL) and
+ if (TreeNode.Right.TreeNodeType=ttntCALL) and
+    assigned(TreeNode.Left.Return) and
+    assigned(TreeNode.Right.Symbol) and
+    (TreeNode.Left.Return^.TypeDefinition=ttdProcedure) and
+    (TreeNode.Right.Symbol^.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction]) then begin
+  case CompareProcToProcVar(Error,SymbolManager,TreeNode.Right.Symbol,TreeNode.Left.Return) of
+   tcteIncompatible:begin
+    Error.AbortCode(7);
+   end;
+  end;
+  TreeNode.Right:=TreeManager.GenerateLeftNode(ttntAddress,TreeNode.Right);
+  OptimizeTree(TreeNode.Right);
+  TreeNode.Right.Return:=TreeNode.Left.Return;
+ end;
+{if (TreeNode.Left.TreeNodeType=ttntCALL) and
     (TreeNode.Right.TreeNodeType=ttntCALL) and
     assigned(TreeNode.Left.Return) and
     assigned(TreeNode.Right.Symbol) and
-    (TreeNode.Left.Return^.TypeDefinition=ttdProcedure) then begin
-  case CompareProcToProcVar(Error,SymbolManager,TreeNode.Right.Return,TreeNode.Left.Return) of
+    (TreeNode.Left.Return^.TypeDefinition=ttdProcedure) and
+    (TreeNode.Left.Symbol^.TypeDefinition^.TypeDefinition=ttdProcedure) then begin
+  case CompareProcVarToProcVar(Error,SymbolManager,TreeNode.Right.Symbol^.TypeDefinition,TreeNode.Left.Return) of
    tcteIncompatible:begin
     Error.AbortCode(7);
    end;
@@ -2136,12 +2152,25 @@ begin
   TreeNode.Right:=TreeManager.GenerateLeftNode(ttntAddress,TreeNode.Right);
   OptimizeTree(TreeNode.Right);
   TreeNode.Right.Return:=TreeNode.Left.Return;
+ end else if (TreeNode.Right.TreeNodeType=ttntCALL) and
+             assigned(TreeNode.Left.Return) and
+             assigned(TreeNode.Right.Symbol) and
+             (TreeNode.Left.Return^.TypeDefinition=ttdProcedure) and
+             (TreeNode.Right.Symbol^.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction]) then begin
+  case CompareProcToProcVar(Error,SymbolManager,TreeNode.Right.Symbol,TreeNode.Left.Return) of
+   tcteIncompatible:begin
+    Error.AbortCode(7);
+   end;
+  end;
+  TreeNode.Right:=TreeManager.GenerateLeftNode(ttntAddress,TreeNode.Right);
+  OptimizeTree(TreeNode.Right);
+  TreeNode.Right.Return:=TreeNode.Left.Return;
  end else if TreeNode.Left.TreeNodeType=ttntCALL then begin
   TreeNode.Left.TreeNodeType:=ttntVAR;
   TreeNode.Left.Return:=TreeNode.Left.Symbol^.ReturnType;
   TreeNode.Left.Symbol:=TreeNode.Left.Symbol^.ResultSymbol;
   TreeNode.Left.ItemType:=ttnitMemoryReference;
- end;
+ end;{}
  if (TreeNode.Right.TreeNodeType in [ttntSTRINGConst,ttntCHARConst]) and
     assigned(TreeNode.Left.Return) and (TreeNode.Left.Return^.TypeDefinition=ttdPointer) and
     assigned(TreeNode.Left.Return^.PointerTo) and (TreeNode.Left.Return^.PointerTo^.TypeDefinition^.TypeDefinition=ttdSubRange) and
