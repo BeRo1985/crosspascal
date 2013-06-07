@@ -5389,6 +5389,7 @@ begin
   Scanner.Match(tstLeftParen);
   if Scanner.CurrentToken=tstRightParen then begin
    Scanner.Match(tstRightParen);
+   SymbolManager.PushSymbolList(SymbolParameter);
    exit;
   end;
  end;

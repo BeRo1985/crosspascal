@@ -107,6 +107,7 @@ type TPreprocessorDirectives=(tdNONE,tdDEFINE,tdELSE,tdELSEIF,tdENDIF,tdIF,
 
      TPreprocessor=class
       private
+       Options: TOptions;
        Error:TError;
        SymbolManager:TSymbolManager;
        DirectiveStringTree:TBeRoStringTree;
@@ -125,7 +126,7 @@ type TPreprocessorDirectives=(tdNONE,tdDEFINE,tdELSE,tdELSEIF,tdENDIF,tdIF,
        ModuleSymbol:PSymbol;
        GlobalSwitches:PGlobalSwitches;
        LocalSwitches:PLocalSwitches;
-       constructor Create(TheError:TError;TheSymbolManager:TSymbolManager;TheFileStackOpenInclude:TPreprocessorFileStackOpenIncludeProc;TheGlobalSwitches:PGlobalSwitches;TheLocalSwitches:PLocalSwitches);
+       constructor Create(TheError:TError;TheSymbolManager:TSymbolManager;TheFileStackOpenInclude:TPreprocessorFileStackOpenIncludeProc;TheGlobalSwitches:PGlobalSwitches;TheLocalSwitches:PLocalSwitches;TheOptions:TOptions);
        destructor Destroy; override;
        procedure Reset;
        procedure AddDirective(Directive:TPreprocessorDirectives;Name:ansistring);
@@ -144,11 +145,12 @@ implementation
 
 uses Scanner;
 
-constructor TPreprocessor.Create(TheError:TError;TheSymbolManager:TSymbolManager;TheFileStackOpenInclude:TPreprocessorFileStackOpenIncludeProc;TheGlobalSwitches:PGlobalSwitches;TheLocalSwitches:PLocalSwitches);
+constructor TPreprocessor.Create(TheError:TError;TheSymbolManager:TSymbolManager;TheFileStackOpenInclude:TPreprocessorFileStackOpenIncludeProc;TheGlobalSwitches:PGlobalSwitches;TheLocalSwitches:PLocalSwitches;TheOptions:TOptions);
 begin
  inherited Create;
  CurrentComment:=nil;
  Error:=TheError;
+ Options:=TheOptions;
  SymbolManager:=TheSymbolManager;
  DirectiveStringTree:=TBeRoStringTree.Create;
  DefineStringHashMap:=TBeRoStringHashMap.Create;
@@ -267,6 +269,7 @@ end;
 
 procedure TPreprocessor.Reset;
 var StackNext:PPreprocessorStack;
+    i: Integer;
 begin
  CurrentComment:=nil;
  DefineStringHashMap.Clear;
@@ -276,6 +279,11 @@ begin
  AddDefine('VER100');
  AddDefine('CPUC');
  AddDefine('CONDITIONALEXPRESSIONS');
+
+ for i:=0 to Options.CompilerDefines.Count-1 do begin
+  AddDefine(Options.CompilerDefines[i]);
+ end;
+
  while assigned(Stack) do begin
   StackNext:=Stack^.Next;
   Dispose(Stack);
