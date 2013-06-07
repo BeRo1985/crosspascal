@@ -2805,7 +2805,7 @@ begin
   begin
    Target.AddInclude(Symbol.LibraryName);
 
-   // Target.Add('__inline ');
+   Target.Add('inline ');
    if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
     Target.Add('int',spacesRIGHT);
    end else begin
