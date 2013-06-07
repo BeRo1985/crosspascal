@@ -2311,7 +2311,7 @@ begin
           if assigned(TreeNode.MethodSymbol) and (tpaConstructor in TreeNode.MethodSymbol^.ProcedureAttributes) and assigned(ObjectClassType) and (ObjectClassType^.TypeDefinition=ttdCLASS) then begin
            InjectNullPointer:=true;
           end;
-          if assigned(TreeNode.MethodSymbol) and (tpaVirtual in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
+          if assigned(TreeNode.MethodSymbol) and (tpaVirtual in TreeNode.MethodSymbol^.ProcedureAttributes) and (ObjectClassType^.TypeDefinition in [ttdOBJECT,ttdCLASS]) then begin
            if assigned(ObjectClassType) and (ObjectClassType^.TypeDefinition=ttdOBJECT) then begin
             // OBJECT
             FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_VMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')(((('+GetTypeName(ObjectClassType)+'*)&(');
@@ -2323,7 +2323,7 @@ begin
             TranslateCode(TreeNode.Right);
             FProcCode.Add(')))->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+']))');
            end;
-          end else if assigned(TreeNode.MethodSymbol) and (tpaDynamic in TreeNode.MethodSymbol^.ProcedureAttributes) then begin
+          end else if assigned(TreeNode.MethodSymbol) and (tpaDynamic in TreeNode.MethodSymbol^.ProcedureAttributes) and (ObjectClassType^.TypeDefinition in [ttdOBJECT,ttdCLASS]) then begin
            if assigned(ObjectClassType) and (ObjectClassType^.TypeDefinition=ttdOBJECT) then begin
             // OBJECT
             FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+'*)pasObjectDMTDispatch((void*)&(');
@@ -2332,18 +2332,23 @@ begin
            end else begin
             // CLASS
             FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_DMT_'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+')pasClassDMTDispatch((('+GetTypeName(ObjectClassType)+')(pasClassVMTUnmask(');
-            TranslateCode(TreeNode.Right);        
+            TranslateCode(TreeNode.Right);
             FProcCode.Add(')))->INTERNAL_FIELD_VMT,'+IntToStr(TreeNode.MethodSymbol^.VirtualIndex)+'))');
            end;
           end else begin
-           FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol));
+           if assigned(ObjectClassType) and (ObjectClassType^.TypeDefinition=ttdINTERFACE) then begin
+            // TODO!!!!!!
+            Error.InternalError(201306070328000);
+           end else begin
+            FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol));
+           end;
           end;
          end else begin
           FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol));
          end;
         end else begin
          ObjectClassType:=TreeNode.Symbol^.OwnerObjectClass;
-         if assigned(ObjectClassType) and (tpaVirtual in TreeNode.Symbol^.ProcedureAttributes) then begin
+         if assigned(ObjectClassType) and (tpaVirtual in TreeNode.Symbol^.ProcedureAttributes) and (ObjectClassType^.TypeDefinition in [ttdOBJECT,ttdCLASS]) then begin
           if ObjectClassType^.TypeDefinition=ttdOBJECT then begin
            // OBJECT
            FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_VMT_'+IntToStr(TreeNode.Symbol^.VirtualIndex)+')(((('+GetTypeName(ObjectClassType)+'*)(');
@@ -2355,7 +2360,7 @@ begin
            FProcCode.Add('instanceData');
            FProcCode.Add(')))->INTERNAL_FIELD_VMT)->virtualMethods['+IntToStr(TreeNode.Symbol^.VirtualIndex)+']))');
           end;
-         end else if assigned(ObjectClassType) and (tpaDynamic in TreeNode.Symbol^.ProcedureAttributes) then begin
+         end else if assigned(ObjectClassType) and (tpaDynamic in TreeNode.Symbol^.ProcedureAttributes) and (ObjectClassType^.TypeDefinition in [ttdOBJECT,ttdCLASS]) then begin
           if ObjectClassType^.TypeDefinition=ttdOBJECT then begin
            // OBJECT
            FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_DMT_'+IntToStr(TreeNode.Symbol^.VirtualIndex)+'*)pasObjectDMTDispatch((void*)(');
