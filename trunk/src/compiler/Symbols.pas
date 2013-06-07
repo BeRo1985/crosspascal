@@ -820,8 +820,10 @@ begin
  if (not (Symbol^.SymbolType in [Symbols.tstCaseVariantLevelPush,Symbols.tstCaseVariantLevelPop,
                                  Symbols.tstCaseVariantPush,Symbols.tstCaseVariantPop])) and
     (assigned(TestSymbol) and
-     (TestSymbol^.LexicalScopeLevel=SymbolManager.LexicalScopeLevel)) and
-     (assigned(TestSymbol^.OwnerObjectClass)=assigned(Symbol^.OwnerObjectClass)) then begin
+     (TestSymbol^.LexicalScopeLevel=SymbolManager.LexicalScopeLevel) and
+     (assigned(TestSymbol^.OwnerObjectClass)=assigned(Symbol^.OwnerObjectClass)) and
+     ((assigned(Symbol^.OwnerModule) and (Symbol^.OwnerModule.SymbolList=self)) and
+      (Symbol^.OwnerModule=TestSymbol^.OwnerModule))) then begin
   SymbolManager.Error.AddErrorCode(3,CorrectSymbolName(Symbol^.Name));
  end else begin
   if Symbol^.OwnerModule<>ModuleSymbol then begin
