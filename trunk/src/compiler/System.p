@@ -107,12 +107,16 @@ type DWORD=LongWord;
      PInt64=^Int64;
      PUInt64=^UInt64;
      PQWord=^QWord;
+	 PInteger=^Integer;
+	 PDouble=^Double;
 
      TByteArray=array[0..32767] of Byte;
      PByteArray=^TByteArray;
 
      TWordArray=array[0..16383] of Word;
      PWordArray=^TWordArray;
+	 
+	 THandle=Cardinal;
 
      HRESULT=type ptrint;
 
@@ -975,28 +979,28 @@ void pasFinalizeArray(void* p, pasTypeInfo* t, size_t count){
     switch(t->kind){
       case pastkLString:{
         while(count--){
-          FreeLongstring(*((void**)p));
+		  FreeLongstring((pasLongstring*)(p));
           p += sizeof(void*);
         }
         break;
       }
       case pastkWString:{
         while(count--){
-          FreeLongstring(*((void**)p));
+		  FreeLongstring((pasLongstring*)(p));
           p += sizeof(void*);
         }
         break;
       }
       case pastkUString:{
         while(count--){
-          FreeLongstring(*((void**)p));
+		  FreeLongstring((pasLongstring*)(p));
           p += sizeof(void*);
         }
         break;
       }
       case pastkHString:{
         while(count--){
-          FreeLongstring(*((void**)p));
+		  FreeLongstring((pasLongstring*)(p));
           p += sizeof(void*);
         }
         break;
@@ -1548,4 +1552,5 @@ finalization
 [[[
  printf("string references left: %i\n", stringRefCount);
 ]]]
+
 end.
