@@ -5104,6 +5104,7 @@ begin
             Symbols.tstFunction,Symbols.tstProcedure:begin
              if (([tpaVirtual,tpaDynamic]*TempSymbol^.ProcedureAttributes)<>[]) and
                 (not (tpaOverride in TempSymbol^.ProcedureAttributes)) and
+                (Symbol^.Name=TempSymbol^.Name) and
                 (CompareProcToProc(Error,SymbolManager,TempSymbol,Symbol)=tcteEqual) then begin
               ParentSymbol:=TempSymbol;
               break;
@@ -5119,7 +5120,10 @@ begin
           break;
          end;
         end;
-        if not assigned(ParentSymbol) then begin
+        if assigned(ParentSymbol) then begin
+         Symbol^.ProcedureAttributes:=Symbol^.ProcedureAttributes+([tpaVirtual,tpaDynamic]*TempSymbol^.ProcedureAttributes);
+         Symbol^.VirtualIndex:=ParentSymbol^.VirtualIndex;
+        end else begin
          Error.AddErrorCode(141,CorrectSymbolName(Symbol^.Name));
         end;
        end;
