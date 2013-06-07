@@ -5,9 +5,9 @@ type TTestClass=class
       public
        a:longint;
        constructor Create;
-       destructor Destroy;
-      published 
-       procedure Test; 
+       destructor Destroy; override;
+      published
+       procedure Test; virtual;
      end;
 
 constructor TTestClass.Create;
@@ -23,11 +23,13 @@ end;
 
 procedure TTestClass.Test;
 begin
+ a:=a*2;
 end;
 
 var TestClass:TTestClass;
 begin
  TestClass:=TTestClass.Create;
+ TestClass.Test;
  writeln(TestClass.a);
  TestClass.Destroy;
 end.                                                              
