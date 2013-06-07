@@ -721,11 +721,11 @@ begin
      IsVisible:=false;
 
      // Check if the symbol is defined as public unit symbol or an unit
-     if {(Symbol^.SymbolType=tstUnit) AND} not assigned(ModuleSymbol) then begin
+     if {(Symbol^.SymbolType=tstUnit) and} not assigned(ModuleSymbol) then begin
       // for TUnitManager, TOptimizerHighLevel, TOptimizerLowLevel, TOptimizerDataFlow
       IsVisible:=true;
      end else if ((tsaPublicUnitSymbol in Symbol^.Attributes) or (Symbol^.SymbolType=tstUnit)) and assigned(Symbol^.OwnerModule) and assigned(ModuleSymbol) then begin
-      // Unit-wise symbol visible chck
+      // Unit-wise symbol visible cehck
       IsVisible:=SymbolManager.CheckUnits(ModuleSymbol,ObjectClassType,Symbol);
      end;
 
