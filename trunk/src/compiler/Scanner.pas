@@ -368,7 +368,7 @@ begin
  LocalSwitches:=TheLocalSwitches;
  KeywordStringTree:=TBeRoStringTree.Create;
  InputStream:=TheInputStream;
- Preprocessor:=TPreprocessor.Create(Error,SymbolManager,FileStackOpenInclude,TheGlobalSwitches,TheLocalSwitches);
+ Preprocessor:=TPreprocessor.Create(Error,SymbolManager,FileStackOpenInclude,TheGlobalSwitches,TheLocalSwitches,TheOptions);
  FileStack:=nil;
  FileNames:=nil;
  setlength(FileNames,1);
