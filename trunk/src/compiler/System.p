@@ -521,7 +521,7 @@ typedef struct pasClassVirtualMethodTableTObject {
   void* vmtDestroy;
 } pasClassVirtualMethodTableTObject;
 
-#if 0
+#if 1
 #define pasClassVMTMask(x) ((void*)(((void*)x) - sizeof(pasClassVirtualMethodTableTObject)))
 #define pasClassVMTUnmask(x) ((void*)(((void*)x) + sizeof(pasClassVirtualMethodTableTObject)))
 #else
@@ -1166,10 +1166,10 @@ begin
   <<<result>>> = <<<Instance>>>;
   memset(<<<result>>>, 0, <<<InstanceSize>>>);
   <<<result>>>->INTERNAL_FIELD_VMT = (void*)<<<self>>>;
-  <<<ClassPtr>>> = pasClassVMTUnmask(<<<self>>>);
+  <<<ClassPtr>>> = <<<self>>>;
   while(<<<ClassPtr>>>){
     /* INTERFACE TODO */
-    <<<ClassPtr>>> = pasClassVMTUnmask(<<<ClassPtr>>>->vmtParent);
+    <<<ClassPtr>>> = ((pasClassVirtualMethodTable*)pasClassVMTUnmask(<<<ClassPtr>>>))->vmtParent;
   }
 ]]]
 end;
@@ -1179,13 +1179,13 @@ var ClassPtr: TClass;
     InitTable: pointer;
 begin
 [[[
-  <<<ClassPtr>>> = pasClassVMTUnmask(<<<ClassType>>>);
-  <<<InitTable>>> = <<<ClassPtr>>>->vmtInitTable;
+  <<<ClassPtr>>> = <<<ClassType>>>;
+  <<<InitTable>>> = ((pasClassVirtualMethodTable*)pasClassVMTUnmask(<<<ClassPtr>>>))->vmtInitTable;
   while(<<<ClassPtr>>> && <<<InitTable>>>){
     pasFinalizeRecord(<<<self>>>, <<<InitTable>>>);
-    <<<ClassPtr>>> = pasClassVMTUnmask(<<<ClassPtr>>>->vmtParent);
+    <<<ClassPtr>>> = ((pasClassVirtualMethodTable*)pasClassVMTUnmask(<<<ClassPtr>>>))->vmtParent;
     if(<<<ClassPtr>>>){
-      <<<InitTable>>> = <<<ClassPtr>>>->vmtInitTable;
+      <<<InitTable>>> = ((pasClassVirtualMethodTable*)pasClassVMTUnmask(<<<ClassPtr>>>))->vmtInitTable;
     }
   }
 ]]]
@@ -1232,21 +1232,21 @@ end;
 class function TObject.ClassParent:TClass;
 begin
 [[[
-  <<<result>>> = ((pasClassVirtualMethodTable*)((void*)pasClassVMTUnmask(<<<self>>>)))->vmtParent;
+  <<<result>>> = ((pasClassVirtualMethodTable*)(pasClassVMTUnmask(<<<self>>>)))->vmtParent;
 ]]]
 end;
 
 class function TObject.ClassInfo:pointer;
 begin
 [[[
-  <<<result>>> = ((pasClassVirtualMethodTable*)((void*)pasClassVMTUnmask(<<<self>>>)))->vmtTypeInfo;
+  <<<result>>> = ((pasClassVirtualMethodTable*)(pasClassVMTUnmask(<<<self>>>)))->vmtTypeInfo;
 ]]]
 end;
 
 class function TObject.InstanceSize:longint;
 begin
 [[[
-  <<<result>>> = ((pasClassVirtualMethodTable*)((void*)pasClassVMTUnmask(<<<self>>>)))->vmtInstanceSize;
+  <<<result>>> = ((pasClassVirtualMethodTable*)(pasClassVMTUnmask(<<<self>>>)))->vmtInstanceSize;
 ]]]
 end;
 
@@ -1254,13 +1254,13 @@ class function TObject.InheritsFrom(AClass:TClass):boolean;
 begin
 [[[
   <<<result>>> = 0;
-  pasClassVirtualMethodTable* VMT = (void*)pasClassVMTUnmask(<<<self>>>);
+  pasClassVirtualMethodTable* VMT = (void*)<<<self>>>;
   while(VMT){
     if(VMT == <<<AClass>>>){
       <<<result>>> = 1;
       break;
     }
-    VMT = pasClassVMTUnmask(VMT->vmtParent);
+    VMT = ((pasClassVirtualMethodTable*)pasClassVMTUnmask(VMT))->vmtParent;
   }
 ]]]
 end;
@@ -1270,9 +1270,9 @@ begin
 [[[
   <<<result>>> = NULL;
   if(*((uint8_t*)&<<<Name>>>)){
-    pasClassVirtualMethodTable* VMT = (void*)pasClassVMTUnmask(<<<self>>>);
+    pasClassVirtualMethodTable* VMT = (void*)<<<self>>>;
     while(VMT){
-      pasClassMethodTable* methodTable = (void*)(VMT->vmtMethodTable);
+      pasClassMethodTable* methodTable = (void*)(((pasClassVirtualMethodTable*)pasClassVMTUnmask(VMT))->vmtMethodTable);
       for(int i = 0; i < methodTable->count; i++){
         pasClassMethodTableItem* methodTableItem = &methodTable->methods[i];
         uint8_t* name = (void*)&<<<Name>>>;
@@ -1290,7 +1290,7 @@ begin
           }
         }
       }
-      VMT = pasClassVMTUnmask(VMT->vmtParent);
+      VMT = ((pasClassVirtualMethodTable*)pasClassVMTUnmask(VMT))->vmtParent;
     }
   }
   done:
@@ -1302,9 +1302,9 @@ begin
 [[[
   *((uint8_t*)&<<<result>>>) = 0;
   if(<<<Address>>>){
-    pasClassVirtualMethodTable* VMT = (void*)pasClassVMTUnmask(<<<self>>>);
+    pasClassVirtualMethodTable* VMT = (void*)<<<self>>>;
     while(VMT){
-      pasClassMethodTable* methodTable = (void*)(VMT->vmtMethodTable);
+      pasClassMethodTable* methodTable = (void*)(((pasClassVirtualMethodTable*)pasClassVMTUnmask(VMT))->vmtMethodTable);
       for(int i = 0; i < methodTable->count; i++){
         pasClassMethodTableItem* methodTableItem = &methodTable->methods[i];
         uint8_t* methodName = (void*)(methodTableItem->name);
@@ -1313,7 +1313,7 @@ begin
           goto done;
         }
       }
-      VMT = pasClassVMTUnmask(VMT->vmtParent);
+      VMT = ((pasClassVirtualMethodTable*)pasClassVMTUnmask(VMT))->vmtParent;
     }
   }
   done:
@@ -1325,9 +1325,9 @@ begin
 [[[
   <<<result>>> = NULL;
   if(*((uint8_t*)&<<<Name>>>)){
-    pasClassVirtualMethodTable* VMT = (void*)pasClassVMTUnmask(<<<self>>>->INTERNAL_FIELD_VMT);
+    pasClassVirtualMethodTable* VMT = (void*)(<<<self>>>->INTERNAL_FIELD_VMT);
     while(VMT){
-      pasClassFieldTable* fieldTable = (void*)(VMT->vmtFieldTable);
+      pasClassFieldTable* fieldTable = (void*)(((pasClassVirtualMethodTable*)pasClassVMTUnmask(VMT))->vmtFieldTable);
       for(int i = 0; i < fieldTable->count; i++){
         pasClassFieldTableItem* fieldTableItem = &fieldTable->fields[i];
         uint8_t* name = (void*)&<<<Name>>>;
@@ -1345,7 +1345,7 @@ begin
           }
         }
       }
-      VMT = pasClassVMTUnmask(VMT->vmtParent);
+      VMT = ((pasClassVirtualMethodTable*)pasClassVMTUnmask(VMT))->vmtParent;
     }
   }
   done:
@@ -1356,11 +1356,11 @@ function TObject.GetInterface(const IID:TGUID;out Obj):boolean;
 begin
 [[[
   void* obj = NULL;
-  pasClassVirtualMethodTable* VMT = (void*)pasClassVMTUnmask(<<<self>>>->INTERNAL_FIELD_VMT);
+  pasClassVirtualMethodTable* VMT = (void*)(<<<self>>>->INTERNAL_FIELD_VMT);
   pasGUID* IID = (void*)&<<<IID>>>;
   pasInterfaceEntry* resultInterfaceEntry = NULL;
   while(VMT){
-    pasInterfaceTable* interfaceTable = (void*)(VMT->vmtIntfTable);
+    pasInterfaceTable* interfaceTable = (void*)(((pasClassVirtualMethodTable*)pasClassVMTUnmask(VMT))->vmtIntfTable);
     if(interfaceTable){
       for(int i = 0; i < interfaceTable->entryCount; i++){
         pasInterfaceEntry* interfaceEntry = (void*)&interfaceTable->entries[i];
@@ -1373,7 +1373,7 @@ begin
         }
       }
     }
-    VMT = pasClassVMTUnmask(VMT->vmtParent);
+    VMT = ((pasClassVirtualMethodTable*)pasClassVMTUnmask(VMT))->vmtParent;
   }
   done:
   if(resultInterfaceEntry){
@@ -1408,11 +1408,11 @@ end;
 class function TObject.GetInterfaceEntry(const IID:TGUID):PInterfaceEntry;
 begin
 [[[
-  pasClassVirtualMethodTable* VMT = (void*)pasClassVMTUnmask(<<<self>>>);
+  pasClassVirtualMethodTable* VMT = (void*)<<<self>>>;
   pasGUID* IID = (void*)&<<<IID>>>;
   <<<result>>> = NULL;
   while(VMT){
-    pasInterfaceTable* interfaceTable = (void*)(VMT->vmtIntfTable);
+    pasInterfaceTable* interfaceTable = (void*)(((pasClassVirtualMethodTable*)pasClassVMTUnmask(VMT))->vmtIntfTable);
     if(interfaceTable){
       for(int i = 0; i < interfaceTable->entryCount; i++){
         pasInterfaceEntry* interfaceEntry = (void*)&interfaceTable->entries[i];
@@ -1425,7 +1425,7 @@ begin
         }
       }
     }
-    VMT = pasClassVMTUnmask(VMT->vmtParent);
+    VMT = ((pasClassVirtualMethodTable*)pasClassVMTUnmask(VMT))->vmtParent;
   }
   done:
 ]]]
@@ -1434,7 +1434,7 @@ end;
 class function TObject.GetInterfaceTable:PInterfaceTable;
 begin
 [[[
-  <<<result>>> = ((pasClassVirtualMethodTable*)((void*)pasClassVMTUnmask(<<<self>>>)))->vmtIntfTable;
+  <<<result>>> = ((pasClassVirtualMethodTable*)(pasClassVMTUnmask(<<<self>>>)))->vmtIntfTable;
 ]]]
 end;
 

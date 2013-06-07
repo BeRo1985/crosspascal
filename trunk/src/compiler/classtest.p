@@ -7,7 +7,7 @@ type TTestClass=class
        constructor Create;
        destructor Destroy; override;
       published
-       procedure Test; virtual;
+       procedure Test; dynamic;
      end;
 
 constructor TTestClass.Create;
@@ -28,7 +28,9 @@ end;
 
 var TestClass:TTestClass;
 begin
+ writeln('1');
  TestClass:=TTestClass.Create;
+ writeln('2');
  TestClass.Test;
  writeln(TestClass.a);
  TestClass.Destroy;
