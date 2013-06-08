@@ -87,7 +87,7 @@ type TCodeWriter = class
 
        procedure ProcessTypeOrName(AType: PType; Target: TCodeWriter; OwnType: PType = nil);
        procedure ProcessTypedConstant(var Constant: PConstant; AType: PType; Target: TCodeWriter);
-       procedure ProcessFunctionType(Symbol:PSymbol; ReturnType: PType; Parameter: TSymbolList; const funcName: ansistring; Target: TCodeWriter);
+       procedure ProcessFunctionType(Symbol:PSymbol; ReturnType: PType; Parameter: TSymbolList; const funcName: ansistring; Target: TCodeWriter; InjectinstanceData:boolean=false);
 
        function TranslateStringConstant(ConstantStr: THugeString): ansistring;
 
@@ -924,9 +924,10 @@ begin
 
 end;
 
-procedure TCodeGenC.ProcessFunctionType(Symbol:PSymbol; ReturnType: PType; Parameter: TSymbolList; const funcName: ansistring; Target: TCodeWriter);
+procedure TCodeGenC.ProcessFunctionType(Symbol:PSymbol; ReturnType: PType; Parameter: TSymbolList; const funcName: ansistring; Target: TCodeWriter; InjectinstanceData:boolean=false);
 var //i: integer;
     Sym: PSymbol;
+    HasParameter:boolean;
 begin
  if (tpaConstructor in Symbol^.ProcedureAttributes) and assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdOBJECT) then begin
   Target.Add('int',spacesRIGHT);
@@ -934,16 +935,26 @@ begin
   ProcessTypeOrName(ReturnType, Target);
  end;
  Target.Add('(*'+funcName+')(',spacesLEFT);
- Sym:=Parameter.First;
+ if assigned(Parameter) then begin
+  Sym:=Parameter.First;
+ end else begin
+  Sym:=nil;
+ end;
+ HasParameter:=false;
+ if InjectinstanceData or (assigned(Symbol^.OwnerObjectClass) and (Symbol^.OwnerObjectClass^.TypeDefinition=ttdINTERFACE)) then begin
+  Target.Add('void*');
+  HasParameter:=true;
+ end;
  while Assigned(sym) do
  begin
-  if Sym<>Parameter.First then begin
+  if HasParameter then begin
    Target.Add(',',spacesRIGHT);
   end;
   ProcessTypeOrName(Sym.TypeDefinition, Target);
   if IsSymbolReference(Sym) then begin
    Target.Add('*');
   end;
+  HasParameter:=true;
   Sym := Sym.Next;
  end;
  Target.Add(')');
@@ -3668,7 +3679,7 @@ begin
           end;
          end;
         end;
-        Target.AddLn('typedef struct {');
+        Target.AddLn('typedef struct '+Name+'_FIELDTABLE_TYPE {');
         Target.IncTab;
         Target.AddLn('pasFieldTableStripped fieldTable;');
         Target.AddLn('pasFieldInfo fields['+IntToStr(k)+'];');
@@ -4023,6 +4034,59 @@ begin
    Type_:=TypeItems[i];
    Name:=GetTypeName(Type_);
    case Type_.TypeDefinition of
+    ttdInterface:begin
+     k:=0;
+     MethodTableList:=TStringList.Create;
+     TypeChain:=TPointerList.Create;
+     try
+      CurrentType:=Type_;
+      while assigned(CurrentType) do begin
+       TypeChain.Add(CurrentType);
+       if assigned(CurrentType^.ChildOf) then begin
+        CurrentType:=CurrentType^.ChildOf^.TypeDefinition;
+       end else begin
+        break;
+       end;
+      end;
+      for j:=TypeChain.Count-1 downto 0 do begin
+       CurrentType:=TypeChain.Items[j];
+       if assigned(CurrentType^.RecordTable) then begin
+        Symbol:=CurrentType^.RecordTable.First;
+        while assigned(Symbol) do begin
+         case Symbol^.SymbolType of
+          tstFunction,tstProcedure:begin
+           MethodTableList.AddObject(Symbol^.Name,Symbol);
+          end;
+         end;
+         Symbol:=Symbol^.Next;
+        end;
+       end;
+      end;
+      Target.AddLn('typedef struct '+Name+'_VTABLE_NAMED_TYPE {');
+      Target.IncTab;
+      for j:=0 to MethodTableList.Count-1 do begin
+       Symbol:=pointer(MethodTableList.Objects[j]);
+       ProcessFunctionType(Symbol,Symbol^.ReturnType,Symbol^.Parameter,Symbol^.Name,Target,true);
+       Target.AddLn(';');
+      end;
+      Target.DecTab;
+      Target.AddLn('} '+Name+'_VTABLE_NAMED_TYPE;');
+      Target.AddLn('typedef struct '+Name+'_VTABLE_INDEXED_TYPE {');
+      Target.IncTab;
+      Target.AddLn('void* methods['+IntToStr(MethodTableList.Count)+'];');
+      Target.DecTab;
+      Target.AddLn('} '+Name+'_VTABLE_INDEXED_TYPE;');
+      Target.AddLn('typedef union '+Name+'_VTABLE_TYPE {');
+      Target.IncTab;
+      Target.AddLn(Name+'_VTABLE_NAMED_TYPE namedMethods;');
+      Target.AddLn(Name+'_VTABLE_INDEXED_TYPE indexedMethods;');
+      Target.DecTab;
+      Target.AddLn('} '+Name+'_VTABLE_TYPE;');
+     finally
+      TypeChain.Free;
+      MethodTableList.Free;
+     end;
+    end;
     ttdObject,ttdClass:begin
      MethodTableList:=TStringList.Create;
      FieldTableList:=TPointerList.Create;
