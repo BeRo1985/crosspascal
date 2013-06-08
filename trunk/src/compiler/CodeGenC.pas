@@ -2348,8 +2348,9 @@ begin
            end;
           end else begin
            if assigned(ObjectClassType) and (ObjectClassType^.TypeDefinition=ttdINTERFACE) then begin
-            // TODO!!!!!!
-            Error.InternalError(201306070328000);
+            FProcCode.Add('(('+GetTypeName(ObjectClassType)+'_VTABLE_NAMED_TYPE)(*((void**)(');
+            TranslateCode(TreeNode.Right);
+            FProcCode.Add(')))))->'+TreeNode.MethodSymbol^.Name);
            end else begin
             FProcCode.Add(GetSymbolName(TreeNode.MethodSymbol));
            end;
@@ -2438,7 +2439,7 @@ begin
         TranslateCode(TreeNode.Right);
         FProcCode.Add(')');}
        end else begin
-        // CLASS
+        // CLASS and INTERFACE
         if InjectNullPointer then begin
          FProcCode.Add('NULL');
         end else begin
@@ -2457,7 +2458,7 @@ begin
         // OBJECT
         FProcCode.Add('((void*)&('+GetSymbolName(TreeNode.Symbol)+'))');
        end else begin
-        // CLASS
+        // CLASS and INTERFACE
         FProcCode.Add('(void*)'+GetSymbolName(TreeNode.Symbol));
        end;
        HaveParameters:=true;
