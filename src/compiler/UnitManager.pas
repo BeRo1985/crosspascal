@@ -1045,9 +1045,14 @@ begin
      ReadSymbolReference(AType^.ChildOf);
     end;
     if (Flags and 8)<>0 then begin
-     SetLength(AType^.InterfaceChildOf,longint(Stream.ReadDWord));
-     for SubIndex:=0 to length(AType^.InterfaceChildOf)-1 do begin
-      ReadSymbolReference(AType^.InterfaceChildOf[SubIndex]);
+     SetLength(AType^.ImplementedInterfaces,longint(Stream.ReadDWord));
+     for SubIndex:=0 to length(AType^.ImplementedInterfaces)-1 do begin
+      ReadSymbolReference(AType^.ImplementedInterfaces[SubIndex].Symbol);
+      ReadSymbolReference(AType^.ImplementedInterfaces[SubIndex].Field);
+      if Stream.Read(AType^.ImplementedInterfaces[SubIndex].Offset,SizeOf(longword))<>SizeOf(longword) then begin
+       SetLength(UsedUnits,0);
+       exit;
+      end;
      end;
     end;
     if (Flags and 16)<>0 then begin
@@ -1983,7 +1988,7 @@ begin
      end;
     end;
     if AType^.TypeDefinition in [ttdClass,ttdInterface] then begin
-     if length(AType^.InterfaceChildOf)>0 then begin
+     if length(AType^.ImplementedInterfaces)>0 then begin
       Flags:=Flags or 8;
      end;
     end;
@@ -2016,9 +2021,13 @@ begin
      WriteSymbolReference(AType^.ChildOf);
     end;
     if (Flags and 8)<>0 then begin
-     Stream.WriteLongInt(length(AType^.InterfaceChildOf));
-     for SubIndex:=0 to length(AType^.InterfaceChildOf)-1 do begin
-      WriteSymbolReference(AType^.InterfaceChildOf[SubIndex]);
+     Stream.WriteLongInt(length(AType^.ImplementedInterfaces));
+     for SubIndex:=0 to length(AType^.ImplementedInterfaces)-1 do begin
+      WriteSymbolReference(AType^.ImplementedInterfaces[SubIndex].Symbol);
+      WriteSymbolReference(AType^.ImplementedInterfaces[SubIndex].Field);
+      if Stream.Write(AType^.ImplementedInterfaces[SubIndex].Offset,SizeOf(longword))<>SizeOf(longword) then begin
+       exit;
+      end;
      end;
     end;
     if (Flags and 16)<>0 then begin

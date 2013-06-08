@@ -4842,13 +4842,14 @@ function TParser.ParseClassDeclaration(ObjectName:ansistring;IsPacked:boolean):P
 var Symbol,Parent,NewSymbol,ForwardClass,ParentSymbol,TempSymbol:PSymbol;
     OldList:TSymbolList;
     OldVariableType:TVariableType;
-    I,J:longint;
+    i,j,k:longint;
     NewName,ParentName,OldObjectClassName:ansistring;
     SymbolAttributes:TSymbolAttributes;
     NewTreeNode:TTreeNode;
     InterfaceSymbols:array of PSymbol;
     OldCurrentObjectClass,OldCurrentParseObjectClass,ClassOfType,ClassType:PType;
-    IsClassOf,IsForward:boolean;
+    IsClassOf,IsForward,OK:boolean;
+    ImplementedInterface:PImplementedInterface;
 begin
  if assigned(CurrentProcedureFunction) then begin
   Error.AbortCode(62);
@@ -4867,7 +4868,7 @@ begin
    ForwardClass:=NewSymbol;
   end;
   if Scanner.CurrentToken=tstOF then begin
-// IsClassOf:=TRUE;
+// IsClassOf:=true;
    Scanner.Match(tstOF);
    NewName:=Scanner.ReadIdentifier(nil);
    NewSymbol:=SymbolManager.GetSymbol(NewName,ModuleSymbol,CurrentObjectClass);
@@ -4896,7 +4897,7 @@ begin
    exit;
   end else if Scanner.CurrentToken=tstLeftParen then begin
    Scanner.Match(tstLeftParen);
-   I:=0;
+   i:=0;
    while not Scanner.IsEOFOrAbortError do begin
     NewName:=Scanner.ReadIdentifier(nil);
     NewSymbol:=SymbolManager.GetSymbol(NewName,ModuleSymbol,CurrentObjectClass);
@@ -4906,28 +4907,47 @@ begin
      NewSymbol:=NewSymbol^.SymbolList.GetSymbol(NewName,ModuleSymbol,CurrentObjectClass);
     end;
     if not assigned(NewSymbol) then begin
-     if I=0 then begin
+     if i=0 then begin
       Error.AbortCode(510);
      end else begin
       Error.AbortCode(217);
      end;
     end else begin
-     if (I=0) and (NewSymbol^.SymbolType=Symbols.tstType) and (NewSymbol^.TypeDefinition^.TypeDefinition=ttdClass) then begin
+     if (i=0) and (NewSymbol^.SymbolType=Symbols.tstType) and (NewSymbol^.TypeDefinition^.TypeDefinition=ttdClass) then begin
       ParentName:=NewName;
       Parent:=NewSymbol;
      end else if (NewSymbol^.SymbolType=Symbols.tstType) and (NewSymbol^.TypeDefinition^.TypeDefinition=ttdInterface) then begin
-      J:=length(InterfaceSymbols);
-      SetLength(InterfaceSymbols,J+1);
-      InterfaceSymbols[J]:=NewSymbol;
+      OK:=true;
+      if assigned(Parent) then begin
+       ClassType:=Parent^.TypeDefinition;
+       while assigned(ClassType) and OK do begin
+        for k:=0 to length(ClassType^.ImplementedInterfaces)-1 do begin
+         if ClassType^.ImplementedInterfaces[k].Symbol=NewSymbol then begin
+          OK:=false;
+          break;
+         end;
+        end;
+        if OK and assigned(ClassType^.ChildOf) then begin
+         ClassType:=ClassType^.ChildOf^.TypeDefinition;
+        end else begin
+         break;
+        end;
+       end;
+      end;
+      if OK then begin
+       j:=length(InterfaceSymbols);
+       SetLength(InterfaceSymbols,j+1);
+       InterfaceSymbols[j]:=NewSymbol;
+      end;
      end else begin
-      if I=0 then begin
+      if i=0 then begin
        Error.AbortCode(510);
       end else begin
        Error.AbortCode(217);
       end;
      end;
     end;
-    inc(I);
+    inc(i);
     if Scanner.CurrentToken=tstComma then begin
      Scanner.Match(tstComma);
     end else begin
@@ -5003,9 +5023,13 @@ begin
   SetLength(InterfaceSymbols,0);
   exit;
  end;
- SetLength(result^.InterfaceChildOf,length(InterfaceSymbols));
- for I:=0 to length(InterfaceSymbols)-1 do begin
-  result^.InterfaceChildOf[I]:=InterfaceSymbols[I];
+ SetLength(result^.ImplementedInterfaces,length(InterfaceSymbols));
+ for i:=0 to length(InterfaceSymbols)-1 do begin
+  ImplementedInterface:=@result^.ImplementedInterfaces[i];
+  FillChar(ImplementedInterface^,SizeOf(TImplementedInterface),AnsiChar(#0));
+  ImplementedInterface^.Symbol:=InterfaceSymbols[I];
+  ImplementedInterface^.Field:=nil;
+  ImplementedInterface^.Offset:=0;
  end;
  SetLength(InterfaceSymbols,0);
 
@@ -5223,7 +5247,28 @@ begin
   result^.RecordTable.AddSymbol(Symbol,ModuleSymbol,result,true);
  end;
 
+ for i:=0 to length(result^.ImplementedInterfaces)-1 do begin
+  ImplementedInterface:=@result^.ImplementedInterfaces[i];
+  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,result);
+  Symbol^.Name:=TempSymbol^.Name+'_VTABLE';
+  Symbol^.Attributes:=Symbol^.Attributes+[tsaField,tsaInternalField,tsaClassInterfaceVTable];
+  Symbol^.SymbolType:=Symbols.tstVariable;
+  Symbol^.TypeDefinition:=ImplementedInterface^.Symbol^.TypeDefinition;
+  Symbol^.Offset:=0;
+  Symbol^.TypedConstant:=false;
+  Symbol^.TypedTrueConstant:=false;
+  Symbol^.TypedConstantReadOnly:=false;
+  Symbol^.OwnerType:=result;
+  result^.RecordTable.AddSymbol(Symbol,ModuleSymbol,result);
+  ImplementedInterface^.Field:=Symbol;
+ end;
+
  SymbolManager.AlignRecord(result,LocalSwitches^.Alignment);
+
+ for i:=0 to length(result^.ImplementedInterfaces)-1 do begin
+  ImplementedInterface:=@result^.ImplementedInterfaces[i];
+  ImplementedInterface^.Offset:=ImplementedInterface^.Field^.Offset;
+ end;
 
  result^.PortabilityDirectives:=ParsePortabilityDirectives;
 
