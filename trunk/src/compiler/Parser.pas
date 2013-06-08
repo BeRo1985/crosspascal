@@ -4654,7 +4654,8 @@ begin
   result^.RecordPacked:=CurrentObject^.RecordPacked;
   result^.RecordSize:=CurrentObject^.RecordSize;
   result^.RecordAlignment:=CurrentObject^.RecordAlignment;
-  result^.VirtualIndexCount:=CurrentObject^.VirtualIndexCount;            
+  result^.VirtualIndexCount:=CurrentObject^.VirtualIndexCount;
+//result^.DynamicIndexCount:=CurrentObject^.DynamicIndexCount;
 { Symbol:=CurrentObject^.RecordTable.First;
   while assigned(Symbol) do begin
    if Symbol^.SymbolType=Symbols.tstVariable then begin
@@ -5236,20 +5237,18 @@ begin
 end;
 
 function TParser.ParseInterfaceDeclaration(ObjectName:ansistring;IsPacked:boolean):PType;
-var Symbol,NewSymbol:PSymbol;
+var Symbol,NewSymbol,Parent:PSymbol;
     OldList:TSymbolList;
     OldVariableType:TVariableType;
-    I,J:longint;
     NewName:ansistring;
     SymbolAttributes:TSymbolAttributes;
-    InterfaceSymbols:array of PSymbol;
 //  NewTreeNode:TTreeNode;
 begin
  if assigned(CurrentProcedureFunction) then begin
   Error.AbortCode(62);
  end;
  Scanner.Match(Scanner.CurrentToken);
- InterfaceSymbols:=nil;
+ Parent:=nil;
  OldList:=SymbolManager.CurrentList;
  if Scanner.CurrentToken=tstLeftParen then begin
   Scanner.Match(tstLeftParen);
@@ -5265,9 +5264,8 @@ begin
     Error.AbortCode(217);
    end else begin
     if (NewSymbol^.SymbolType=Symbols.tstType) and (NewSymbol^.TypeDefinition^.TypeDefinition=ttdInterface) then begin
-     J:=length(InterfaceSymbols);
-     SetLength(InterfaceSymbols,J+1);
-     InterfaceSymbols[J]:=NewSymbol;
+     Parent:=NewSymbol;
+     break;
     end else begin
      Error.AbortCode(217);
     end;
@@ -5287,18 +5285,15 @@ begin
  result^.TypeDefinition:=ttdInterface;
  result^.RecordAlignment:=0;
  result^.RecordPacked:=IsPacked or (LocalSwitches^.Alignment=1);
- result^.ChildOf:=nil;
- SetLength(result^.InterfaceChildOf,length(InterfaceSymbols));
- result^.VirtualIndexCount:=0;
- result^.DynamicIndexCount:=0;
- for I:=0 to length(InterfaceSymbols)-1 do begin
-  result^.InterfaceChildOf[I]:=InterfaceSymbols[I];
-  if assigned(InterfaceSymbols[I]) then begin
-   inc(result^.VirtualIndexCount,InterfaceSymbols[I]^.TypeDefinition^.VirtualIndexCount);
-   inc(result^.DynamicIndexCount,InterfaceSymbols[I]^.TypeDefinition^.DynamicIndexCount);
-  end;
+ result^.ChildOf:=Parent;
+
+ if assigned(result^.ChildOf) then begin
+  result^.VirtualIndexCount:=result^.ChildOf^.TypeDefinition^.VirtualIndexCount;
+  result^.DynamicIndexCount:=result^.ChildOf^.TypeDefinition^.DynamicIndexCount;
+ end else begin
+  result^.VirtualIndexCount:=0;
+  result^.DynamicIndexCount:=0;
  end;
- SetLength(InterfaceSymbols,0);
 
  FillChar(result^.GUID,SizeOf(TGUID),#0);
  if Scanner.CurrentToken=tstLeftBracket then begin
@@ -5370,6 +5365,8 @@ begin
 
  result^.NeedTypeInfo:=SymbolManager.TypeDoNeedTypeInfo(result);
 
+ SymbolManager.AlignRecord(result,LocalSwitches^.Alignment);
+ 
  SymbolManager.VariableType:=OldVariableType;
  SymbolManager.CurrentList:=OldList;
 end;
