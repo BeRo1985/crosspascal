@@ -5030,6 +5030,8 @@ begin
   ImplementedInterface.InterfaceTypeSymbol:=InterfaceSymbols[i];
   ImplementedInterface.InternalClassVTableField:=nil;
   ImplementedInterface.InternalClassVTableFieldOffset:=0;
+  ImplementedInterface.VTableImplementedInterface:=ImplementedInterface;
+  ImplementedInterface.VTableImplementedInterfaceIndex:=i;
  end;
  SetLength(InterfaceSymbols,0);
 
@@ -5159,7 +5161,7 @@ begin
         Symbol^.ProcedureAttributes:=Symbol.ProcedureAttributes+[tpaReintroduce];
         Scanner.Match(tstREINTRODUCE);
         Scanner.Match(tstSEPARATOR);
-       end;                                       
+       end;
        tstMESSAGE:begin
         Symbol^.ProcedureAttributes:=Symbol^.ProcedureAttributes+[tpaMessage];
         Scanner.Match(tstMESSAGE);
