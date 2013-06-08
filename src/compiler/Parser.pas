@@ -4849,7 +4849,7 @@ var Symbol,Parent,NewSymbol,ForwardClass,ParentSymbol,TempSymbol:PSymbol;
     InterfaceSymbols:array of PSymbol;
     OldCurrentObjectClass,OldCurrentParseObjectClass,ClassOfType,ClassType:PType;
     IsClassOf,IsForward,OK:boolean;
-    ImplementedInterface:PImplementedInterface;
+    ImplementedInterface:TImplementedInterface;
 begin
  if assigned(CurrentProcedureFunction) then begin
   Error.AbortCode(62);
@@ -4922,7 +4922,7 @@ begin
        ClassType:=Parent^.TypeDefinition;
        while assigned(ClassType) and OK do begin
         for k:=0 to length(ClassType^.ImplementedInterfaces)-1 do begin
-         if ClassType^.ImplementedInterfaces[k].Symbol=NewSymbol then begin
+         if ClassType^.ImplementedInterfaces[k].InterfaceTypeSymbol=NewSymbol then begin
           OK:=false;
           break;
          end;
@@ -5025,11 +5025,11 @@ begin
  end;
  SetLength(result^.ImplementedInterfaces,length(InterfaceSymbols));
  for i:=0 to length(InterfaceSymbols)-1 do begin
-  ImplementedInterface:=@result^.ImplementedInterfaces[i];
-  FillChar(ImplementedInterface^,SizeOf(TImplementedInterface),AnsiChar(#0));
-  ImplementedInterface^.Symbol:=InterfaceSymbols[I];
-  ImplementedInterface^.Field:=nil;
-  ImplementedInterface^.Offset:=0;
+  ImplementedInterface:=TImplementedInterface.Create;
+  result^.ImplementedInterfaces[i]:=ImplementedInterface;
+  ImplementedInterface.InterfaceTypeSymbol:=InterfaceSymbols[i];
+  ImplementedInterface.InternalClassVTableField:=nil;
+  ImplementedInterface.InternalClassVTableFieldOffset:=0;
  end;
  SetLength(InterfaceSymbols,0);
 
@@ -5248,26 +5248,26 @@ begin
  end;
 
  for i:=0 to length(result^.ImplementedInterfaces)-1 do begin
-  ImplementedInterface:=@result^.ImplementedInterfaces[i];
+  ImplementedInterface:=result^.ImplementedInterfaces[i];
   Symbol:=SymbolManager.NewSymbol(ModuleSymbol,result);
   Symbol^.Name:=TempSymbol^.Name+'_VTABLE';
   Symbol^.Attributes:=Symbol^.Attributes+[tsaField,tsaInternalField,tsaClassInterfaceVTable];
   Symbol^.SymbolType:=Symbols.tstVariable;
-  Symbol^.TypeDefinition:=ImplementedInterface^.Symbol^.TypeDefinition;
+  Symbol^.TypeDefinition:=ImplementedInterface.InterfaceTypeSymbol^.TypeDefinition;
   Symbol^.Offset:=0;
   Symbol^.TypedConstant:=false;
   Symbol^.TypedTrueConstant:=false;
   Symbol^.TypedConstantReadOnly:=false;
   Symbol^.OwnerType:=result;
   result^.RecordTable.AddSymbol(Symbol,ModuleSymbol,result);
-  ImplementedInterface^.Field:=Symbol;
+  ImplementedInterface.InternalClassVTableField:=Symbol;
  end;
 
  SymbolManager.AlignRecord(result,LocalSwitches^.Alignment);
 
  for i:=0 to length(result^.ImplementedInterfaces)-1 do begin
-  ImplementedInterface:=@result^.ImplementedInterfaces[i];
-  ImplementedInterface^.Offset:=ImplementedInterface^.Field^.Offset;
+  ImplementedInterface:=result^.ImplementedInterfaces[i];
+  ImplementedInterface.InternalClassVTableFieldOffset:=ImplementedInterface.InternalClassVTableField^.Offset;
  end;
 
  result^.PortabilityDirectives:=ParsePortabilityDirectives;
