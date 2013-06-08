@@ -4042,7 +4042,6 @@ begin
    Name:=GetTypeName(Type_);
    case Type_.TypeDefinition of
     ttdInterface:begin
-     k:=0;
      MethodTableList:=TStringList.Create;
      TypeChain:=TPointerList.Create;
      try

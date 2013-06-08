@@ -114,11 +114,13 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
 
      TSymbolList=class;
 
-     PImplementedInterface=^TImplementedInterface;
-     TImplementedInterface=record
-      Symbol:PSymbol;
-      Field:PSymbol;
-      Offset:longword;
+     TImplementedInterface=class
+      public
+       InterfaceTypeSymbol:PSymbol;
+       InternalClassVTableField:PSymbol;
+       InternalClassVTableFieldOffset:longword;
+       constructor Create;
+       destructor Destroy; override;
      end;
 
      TImplementedInterfaces=array of TImplementedInterface;
@@ -569,6 +571,19 @@ begin
            (Symbol^.TypeDefinition^.TypeDefinition in [ttdEnumerated,ttdBoolean,ttdSubRange,ttdCurrency,ttdFloat,ttdLongstring,ttdShortstring,ttdPointer])));
 end;
 
+constructor TImplementedInterface.Create;
+begin
+ inherited Create;
+ InterfaceTypeSymbol:=nil;
+ InternalClassVTableField:=nil;
+ InternalClassVTableFieldOffset:=0;
+end;
+
+destructor TImplementedInterface.Destroy;
+begin
+ inherited Destroy;
+end;
+
 constructor TSymbolList.Create(TheSymbolManager:TSymbolManager);
 begin
  inherited Create;
@@ -908,10 +923,14 @@ begin
 end;
 
 procedure TTypeList.DeleteType(var AType:PType);
+var i:longint;
 begin
  if assigned(AType) then begin
   if assigned(AType^.OwnerModule) and assigned(AType^.OwnerModule^.TypePointerList) then begin
    AType^.OwnerModule^.TypePointerList.Remove(AType);
+  end;
+  for i:=0 to length(AType^.ImplementedInterfaces)-1 do begin
+   FreeAndNil(AType^.ImplementedInterfaces[i]);
   end;
   setlength(AType^.ImplementedInterfaces,0);
   if First=AType then begin

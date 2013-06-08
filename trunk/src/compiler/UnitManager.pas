@@ -407,6 +407,7 @@ var UnitHeader:TUnitHeader;
     c:byte;
     wc:word;
     hc:longword;
+    ImplementedInterface:TImplementedInterface;
 
  procedure BuildList(List:TSymbolList);
  var Symbol:PSymbol;
@@ -1047,9 +1048,11 @@ begin
     if (Flags and 8)<>0 then begin
      SetLength(AType^.ImplementedInterfaces,longint(Stream.ReadDWord));
      for SubIndex:=0 to length(AType^.ImplementedInterfaces)-1 do begin
-      ReadSymbolReference(AType^.ImplementedInterfaces[SubIndex].Symbol);
-      ReadSymbolReference(AType^.ImplementedInterfaces[SubIndex].Field);
-      if Stream.Read(AType^.ImplementedInterfaces[SubIndex].Offset,SizeOf(longword))<>SizeOf(longword) then begin
+      ImplementedInterface:=TImplementedInterface.Create;
+      AType^.ImplementedInterfaces[SubIndex]:=ImplementedInterface;
+      ReadSymbolReference(ImplementedInterface.InterfaceTypeSymbol);
+      ReadSymbolReference(ImplementedInterface.InternalClassVTableField);
+      if Stream.Read(ImplementedInterface.InternalClassVTableFieldOffset,SizeOf(longword))<>SizeOf(longword) then begin
        SetLength(UsedUnits,0);
        exit;
       end;
@@ -1286,6 +1289,7 @@ var Index,SubIndex:longint;
     c:byte;
     wc:word;
     hc:longword;
+    ImplementedInterface:TImplementedInterface;
 
  procedure WriteSymbolReference(Symbol:PSymbol);
  var Flags:byte;
@@ -2023,9 +2027,10 @@ begin
     if (Flags and 8)<>0 then begin
      Stream.WriteLongInt(length(AType^.ImplementedInterfaces));
      for SubIndex:=0 to length(AType^.ImplementedInterfaces)-1 do begin
-      WriteSymbolReference(AType^.ImplementedInterfaces[SubIndex].Symbol);
-      WriteSymbolReference(AType^.ImplementedInterfaces[SubIndex].Field);
-      if Stream.Write(AType^.ImplementedInterfaces[SubIndex].Offset,SizeOf(longword))<>SizeOf(longword) then begin
+      ImplementedInterface:=AType^.ImplementedInterfaces[SubIndex];
+      WriteSymbolReference(ImplementedInterface.InterfaceTypeSymbol);
+      WriteSymbolReference(ImplementedInterface.InternalClassVTableField);
+      if Stream.Write(ImplementedInterface.InternalClassVTableFieldOffset,SizeOf(longword))<>SizeOf(longword) then begin
        exit;
       end;
      end;

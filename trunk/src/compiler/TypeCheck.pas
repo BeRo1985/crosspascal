@@ -982,9 +982,9 @@ begin
      ClassType:=FromType;
      while assigned(ClassType) do begin
       for Counter:=0 to length(ClassType^.ImplementedInterfaces)-1 do begin
-       if assigned(ClassType^.ImplementedInterfaces[Counter].Symbol) and
-          ((ToType=ClassType^.ImplementedInterfaces[Counter].Symbol^.TypeDefinition) {or
-           SymbolManager.IsObjectClassAncestorType(ToType,ClassType^.ImplementedInterfaces[Counter].Symbol^.TypeDefinition)}) then begin
+       if assigned(ClassType^.ImplementedInterfaces[Counter].InterfaceTypeSymbol) and
+          ((ToType=ClassType^.ImplementedInterfaces[Counter].InterfaceTypeSymbol^.TypeDefinition) {or
+           SymbolManager.IsObjectClassAncestorType(ToType,ClassType^.ImplementedInterfaces[Counter].InterfaceTypeSymbol^.TypeDefinition)}) then begin
         ConvertType:=tctClassToInterface;
         result:=tcteConvertWithLessPreferedConversion;
         break;
