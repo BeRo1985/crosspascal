@@ -981,18 +981,20 @@ begin
     ttdClass:begin
      ClassType:=FromType;
      while assigned(ClassType) do begin
-      for Counter:=0 to length(ClassType^.InterfaceChildOf)-1 do begin
-       if assigned(ClassType^.InterfaceChildOf[Counter]) and
-          ((ToType=ClassType^.InterfaceChildOf[Counter]^.TypeDefinition) {OR
-           SymbolManager.IsObjectClassAncestorType(ToType,ClassType^.InterfaceChildOf[Counter]^.TypeDefinition)}) then begin
+      for Counter:=0 to length(ClassType^.ImplementedInterfaces)-1 do begin
+       if assigned(ClassType^.ImplementedInterfaces[Counter].Symbol) and
+          ((ToType=ClassType^.ImplementedInterfaces[Counter].Symbol^.TypeDefinition) {or
+           SymbolManager.IsObjectClassAncestorType(ToType,ClassType^.ImplementedInterfaces[Counter].Symbol^.TypeDefinition)}) then begin
         ConvertType:=tctClassToInterface;
         result:=tcteConvertWithLessPreferedConversion;
         break;
        end;
       end;
-      if (ConvertType=tctClassToInterface) or not
-         assigned(ClassType^.ChildOf) then break;
-      ClassType:=ClassType^.ChildOf^.TypeDefinition;
+      if (ConvertType=tctClassToInterface) or not assigned(ClassType^.ChildOf) then begin
+       break;
+      end else begin
+       ClassType:=ClassType^.ChildOf^.TypeDefinition;
+      end;
      end;
     end;
     ttdPointer:begin

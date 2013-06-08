@@ -35,7 +35,8 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
                        tsaHiddenParameter,tsaParameterSelf,tsaParameterResult,
                        tsaTemporaryExceptionVariable,tsaField,tsaInternalField,
                        tsaInherited,tsaInheritedInClass,tsaObjectVMT,tsaClassVMT,
-                       tsaHidden,tsaInternalHidden,tsaMethodDefined,tsaMapped);
+                       tsaClassInterfaceVTable,tsaHidden,tsaInternalHidden,
+                       tsaMethodDefined,tsaMapped);
      TSymbolAttributes=set of TSymbolAttribute;
 
      TPortabilityDirective=(tpdPLATFORM,tpdDEPRECATED,tpdLIBRARY);
@@ -113,6 +114,15 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
 
      TSymbolList=class;
 
+     PImplementedInterface=^TImplementedInterface;
+     TImplementedInterface=record
+      Symbol:PSymbol;
+      Field:PSymbol;
+      Offset:longword;
+     end;
+
+     TImplementedInterfaces=array of TImplementedInterface;
+
      PType=^TType;
      TType=record
       Previous,Next:PType;
@@ -125,7 +135,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
       ID:longword;
 
       // ttdInterface
-      InterfaceChildOf:array of PSymbol;
+      ImplementedInterfaces:TImplementedInterfaces;
 
       Number,LowerLimit,UpperLimit:int64;
 
@@ -173,7 +183,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
         RecordTable:TSymbolList;
         ChildOf:PSymbol;
         ClassOfType:PType;
-      //InterfaceChildOf:array of PSymbol;
+      //ImplementedInterfaces:array of PSymbol;
         GUID:TGUID;
         VirtualIndexCount:longint;
         DynamicIndexCount:longint;
@@ -903,7 +913,7 @@ begin
   if assigned(AType^.OwnerModule) and assigned(AType^.OwnerModule^.TypePointerList) then begin
    AType^.OwnerModule^.TypePointerList.Remove(AType);
   end;
-  setlength(AType^.InterfaceChildOf,0);
+  setlength(AType^.ImplementedInterfaces,0);
   if First=AType then begin
    First:=AType^.Next;
   end;

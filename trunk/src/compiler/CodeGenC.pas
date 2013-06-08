@@ -3633,6 +3633,9 @@ begin
     ttdClass:begin
      Target.AddLn('typedef struct '+Name+'_CLASS;');
     end;
+    ttdInterface:begin
+     Target.AddLn('typedef struct '+Name+'_VTABLE_NAMED_TYPE;');
+    end;
    end;
   end;
   Target.AddLn(''); *)
@@ -3921,6 +3924,9 @@ begin
             Target.AddLn('pasObjectVirtualMethodTable* '+GetSymbolName(Symbol)+';');
            end else if tsaClassVMT in Symbol^.Attributes then begin
             Target.AddLn('pasClassVirtualMethodTable* '+GetSymbolName(Symbol)+';');
+           end else if tsaClassInterfaceVTable in Symbol^.Attributes then begin
+            Target.AddLn('void* '+GetSymbolName(Symbol)+';');
+//          Target.AddLn(GetTypeName(Symbol^.TypeDefinition)+'_VTABLE_NAMED_TYPE* '+GetSymbolName(Symbol)+';');
            end else if (Symbol^.TypeDefinition^.TypeDefinition=ttdPOINTER) and not assigned(Symbol^.TypeDefinition^.PointerTo) then begin
             Target.AddLn('void* '+GetSymbolName(Symbol)+';');
            end else if (Symbol^.TypeDefinition^.TypeDefinition=ttdPOINTER) and (Symbol^.TypeDefinition^.PointerTo=Type_^.Symbol) then begin
