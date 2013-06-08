@@ -533,7 +533,12 @@ typedef struct pasClassVirtualMethodTableTObject {
 #define pasClassVMTUnmask(x) ((void*)(x))
 #endif
 
-typedef struct {
+typedef struct pasMethod {
+  void* Code;
+  void* Data;
+} pasMethod;
+
+typedef struct pasFile {
   uint32_t dummy;
 } pasFile;
 
