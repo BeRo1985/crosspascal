@@ -119,6 +119,8 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
        InterfaceTypeSymbol:PSymbol;
        InternalClassVTableField:PSymbol;
        InternalClassVTableFieldOffset:longword;
+       VTableImplementedInterface:TImplementedInterface;
+       VTableImplementedInterfaceIndex:longint;
        constructor Create;
        destructor Destroy; override;
      end;
@@ -577,6 +579,8 @@ begin
  InterfaceTypeSymbol:=nil;
  InternalClassVTableField:=nil;
  InternalClassVTableFieldOffset:=0;
+ VTableImplementedInterface:=nil;
+ VTableImplementedInterfaceIndex:=0;
 end;
 
 destructor TImplementedInterface.Destroy;

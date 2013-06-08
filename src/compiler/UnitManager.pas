@@ -1056,6 +1056,18 @@ begin
        SetLength(UsedUnits,0);
        exit;
       end;
+      if Stream.Read(ImplementedInterface.VTableImplementedInterfaceIndex,SizeOf(longint))<>SizeOf(longint) then begin
+       SetLength(UsedUnits,0);
+       exit;
+      end;
+     end;
+     for SubIndex:=0 to length(AType^.ImplementedInterfaces)-1 do begin
+      ImplementedInterface:=AType^.ImplementedInterfaces[SubIndex];
+      if ImplementedInterface.VTableImplementedInterfaceIndex>=0 then begin
+       ImplementedInterface.VTableImplementedInterface:=AType^.ImplementedInterfaces[ImplementedInterface.VTableImplementedInterfaceIndex];
+      end else begin
+       ImplementedInterface.VTableImplementedInterface:=nil;
+      end;
      end;
     end;
     if (Flags and 16)<>0 then begin
@@ -1277,7 +1289,7 @@ begin
 end;
 
 function TUnitManager.SaveUnitSymbolTable(List:TSymbolList;UnitSymbol:PSymbol):boolean;
-var Index,SubIndex:longint;
+var Index,SubIndex,SubSubIndex:longint;
     Symbol:PSymbol;
     AType:PType;
     AUnit:PUnit;
@@ -2031,6 +2043,20 @@ begin
       WriteSymbolReference(ImplementedInterface.InterfaceTypeSymbol);
       WriteSymbolReference(ImplementedInterface.InternalClassVTableField);
       if Stream.Write(ImplementedInterface.InternalClassVTableFieldOffset,SizeOf(longword))<>SizeOf(longword) then begin
+       exit;
+      end;
+      if ImplementedInterface.VTableImplementedInterface=ImplementedInterface then begin
+       ImplementedInterface.VTableImplementedInterfaceIndex:=SubIndex;
+      end else begin  
+       ImplementedInterface.VTableImplementedInterfaceIndex:=-1;
+       for SubSubIndex:=0 to length(AType^.ImplementedInterfaces)-1 do begin
+        if ImplementedInterface.VTableImplementedInterface=AType^.ImplementedInterfaces[SubSubIndex] then begin
+         ImplementedInterface.VTableImplementedInterfaceIndex:=SubSubIndex;
+         break;
+        end;
+       end;
+      end;
+      if Stream.Write(ImplementedInterface.VTableImplementedInterfaceIndex,SizeOf(longint))<>SizeOf(longint) then begin
        exit;
       end;
      end;
