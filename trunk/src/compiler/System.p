@@ -378,6 +378,15 @@ typedef struct pasPropInfo {
 typedef pasPropInfo* pasPropInfoPointer;
 typedef pasPropInfoPointer* pasPropInfoPointerPointer;
 
+typedef struct pasParamInfo {
+  uint8_t paramFlags;
+  char* paramName;
+  char* typeName;
+} pasParamInfo;
+
+typedef pasParamInfo* pasParamInfoPointer;
+typedef pasParamInfoPointer* pasParamInfoPointerPointer;
+
 typedef struct pasObjectDynamicMethodTable;
 
 typedef struct pasObjectDynamicMethodTableItem {
