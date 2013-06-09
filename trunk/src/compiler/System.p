@@ -323,9 +323,10 @@ procedure Move(var Src; var Dst; Size: Cardinal);
 #define pastkInterface 15
 #define pastkInt64 16
 #define pastkDynArray 17
-#define pastkHugeChar 18
-#define pastkUString 19
-#define pastkHString 20
+#define pastkUInt64 18
+#define pastkHugeChar 19
+#define pastkUString 20
+#define pastkHString 21
 
 typedef struct pasTypeInfo {
   size_t kind;

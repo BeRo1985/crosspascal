@@ -24,9 +24,10 @@ const TypeKindUnknown=0;
       TypeKindInterface=15;
       TypeKindInt64=16;
       TypeKindDynArray=17;
-      TypeKindHugeChar=18;
-      TypeKindUString=19;
-      TypeKindHString=20;
+      TypeKindUInt64=18;
+      TypeKindHugeChar=19;
+      TypeKindUString=20;
+      TypeKindHString=21;
 
       otSByte=0;
       otUByte=1;
@@ -34,6 +35,8 @@ const TypeKindUnknown=0;
       otUWord=3;
       otSLong=4;
       otULong=5;
+      otSQuad=6;
+      otUQuad=7;
 
       ftSingle=0;
       ftDouble=1;

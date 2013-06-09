@@ -351,7 +351,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  Symbol^.TypeDefinition:=AType;
- AType^.TypeKind:=TypeKindInt64;
+ AType^.TypeKind:=TypeKindUInt64;
  AType^.NeedTypeInfo:=false;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdSubRange;
@@ -6350,6 +6350,7 @@ begin
      end;
      inc(Value);
      CurrentType^.Definition:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+     CurrentType^.Definition^.Symbol:=Symbol;
      CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
      CurrentType:=CurrentType^.Definition;
      CurrentType^.TypeDefinition:=ttdEnumerated;

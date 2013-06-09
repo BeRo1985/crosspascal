@@ -3684,6 +3684,22 @@ begin
        Target.IncTab;
        Target.AddLn('size_t kind;');
        Target.AddLn('uint8_t* name;');
+       Target.AddLn('size_t ordType;');
+       case Type_.TypeKind of
+        TypeKindInteger,TypeKindAnsiChar,TypeKindEnumeration,TypeKindWideChar,TypeKindHugeChar:begin
+         Target.AddLn('int64_t minValue;');
+         Target.AddLn('int64_t maxValue;');
+         case Type_.TypeKind of
+          TypeKindEnumeration:begin
+           Target.AddLn('void* baseType;');
+           Target.AddLn('void* nameList;');
+          end;
+         end;
+        end;
+        TypeKindSet:begin
+         Target.AddLn('void* compType;');
+        end;
+       end;
        Target.DecTab;
        Target.AddLn('} '+Name+'_RTTI_TYPEINFO_TYPE;');
        Target.AddLn('typedef '+Name+'_RTTI_TYPEINFO_TYPE* '+Name+'_RTTI_TYPEINFO_POINTER_TYPE;');
@@ -3691,6 +3707,175 @@ begin
        CodeTarget.IncTab;
        CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
        CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+       case Type_.TypeKind of
+        TypeKindInteger:begin
+         case Type_.SubRangeType of
+          tstSigned8Bit:begin
+           CodeTarget.AddLn(IntToStr(otSByte)+',');
+          end;
+          tstSigned16Bit:begin
+           CodeTarget.AddLn(IntToStr(otSWord)+',');
+          end;
+          tstSigned32Bit:begin
+           CodeTarget.AddLn(IntToStr(otSLong)+',');
+          end;
+          tstSigned64Bit:begin
+           CodeTarget.AddLn(IntToStr(otSQuad)+',');
+          end;
+          tstUnsigned8Bit,tstUnsignedChar:begin
+           CodeTarget.AddLn(IntToStr(otUByte)+',');
+          end;
+          tstUnsigned16Bit,tstUnsignedWideChar:begin
+           CodeTarget.AddLn(IntToStr(otUWord)+',');
+          end;
+          tstUnsigned32Bit,tstUnsignedHugeChar:begin
+           CodeTarget.AddLn(IntToStr(otULong)+',');
+          end;
+          tstUnsigned64Bit:begin
+           CodeTarget.AddLn(IntToStr(otUQuad)+',');
+          end;
+         end;
+         CodeTarget.AddLn(IntToStr(Type_^.LowerLimit)+'ll,');
+         CodeTarget.AddLn(IntToStr(Type_^.UpperLimit)+'ll');
+        end;
+        TypeKindAnsiChar:begin
+         CodeTarget.AddLn(IntToStr(otUByte)+',');
+         CodeTarget.AddLn(IntToStr(Type_^.LowerLimit)+'ll,');
+         CodeTarget.AddLn(IntToStr(Type_^.UpperLimit)+'ll');
+        end;
+        TypeKindEnumeration:begin
+         case Type_.SubRangeType of
+          tstSigned8Bit:begin
+           CodeTarget.AddLn(IntToStr(otSByte)+',');
+          end;
+          tstSigned16Bit:begin
+           CodeTarget.AddLn(IntToStr(otSWord)+',');
+          end;
+          tstSigned32Bit:begin
+           CodeTarget.AddLn(IntToStr(otSLong)+',');
+          end;
+          tstSigned64Bit:begin
+           CodeTarget.AddLn(IntToStr(otSQuad)+',');
+          end;
+          tstUnsigned8Bit,tstUnsignedChar:begin
+           CodeTarget.AddLn(IntToStr(otUByte)+',');
+          end;
+          tstUnsigned16Bit,tstUnsignedWideChar:begin
+           CodeTarget.AddLn(IntToStr(otUWord)+',');
+          end;
+          tstUnsigned32Bit,tstUnsignedHugeChar:begin
+           CodeTarget.AddLn(IntToStr(otULong)+',');
+          end;
+          tstUnsigned64Bit:begin
+           CodeTarget.AddLn(IntToStr(otUQuad)+',');
+          end;
+         end;
+         CodeTarget.AddLn(IntToStr(Type_^.LowerLimit)+'ll,');
+         CodeTarget.AddLn(IntToStr(Type_^.UpperLimit)+'ll,');
+         if assigned(Type_^.Definition) then begin
+          CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.Definition)+'_RTTI_TYPEINFO,');
+         end else begin
+          CodeTarget.AddLn('NULL,');
+         end;
+         CodeTarget.AddLn('NULL');
+        end;
+        TypeKindSet:begin
+         case Type_.SubRangeType of
+          tstSigned8Bit:begin
+           CodeTarget.AddLn(IntToStr(otSByte)+',');
+          end;
+          tstSigned16Bit:begin
+           CodeTarget.AddLn(IntToStr(otSWord)+',');
+          end;
+          tstSigned32Bit:begin
+           CodeTarget.AddLn(IntToStr(otSLong)+',');
+          end;
+          tstSigned64Bit:begin
+           CodeTarget.AddLn(IntToStr(otSQuad)+',');
+          end;
+          tstUnsigned8Bit,tstUnsignedChar:begin
+           CodeTarget.AddLn(IntToStr(otUByte)+',');
+          end;
+          tstUnsigned16Bit,tstUnsignedWideChar:begin
+           CodeTarget.AddLn(IntToStr(otUWord)+',');
+          end;
+          tstUnsigned32Bit,tstUnsignedHugeChar:begin
+           CodeTarget.AddLn(IntToStr(otULong)+',');
+          end;
+          tstUnsigned64Bit:begin
+           CodeTarget.AddLn(IntToStr(otUQuad)+',');
+          end;
+         end;
+         if assigned(Type_^.SetOf) then begin
+          CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.SetOf)+'_RTTI_TYPEINFO');
+         end else begin
+          CodeTarget.AddLn('NULL');
+         end;
+        end;
+        TypeKindWideChar:begin
+         CodeTarget.AddLn(IntToStr(otUWord)+',');
+         CodeTarget.AddLn(IntToStr(Type_^.LowerLimit)+'ll,');
+         CodeTarget.AddLn(IntToStr(Type_^.UpperLimit)+'ll');
+        end;
+        TypeKindHugeChar:begin
+         CodeTarget.AddLn(IntToStr(otULong)+',');
+         CodeTarget.AddLn(IntToStr(Type_^.LowerLimit)+'ll,');
+         CodeTarget.AddLn(IntToStr(Type_^.UpperLimit)+'ll');
+        end;
+       end;
+       CodeTarget.DecTab;
+       CodeTarget.AddLn('};');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER = (void*)(&'+Name+'_RTTI_TYPEINFO);');
+      end;
+      TypeKindFloat:begin
+       Target.AddLn('typedef struct '+Name+'_RTTI_TYPEINFO_TYPE {');
+       Target.IncTab;
+       Target.AddLn('size_t kind;');
+       Target.AddLn('uint8_t* name;');
+       Target.AddLn('size_t floatType;');
+       Target.DecTab;
+       Target.AddLn('} '+Name+'_RTTI_TYPEINFO_TYPE;');
+       Target.AddLn('typedef '+Name+'_RTTI_TYPEINFO_TYPE* '+Name+'_RTTI_TYPEINFO_POINTER_TYPE;');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_TYPE '+Name+'_RTTI_TYPEINFO={');
+       CodeTarget.IncTab;
+       CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
+       CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+       case Type_^.TypeDefinition of
+        ttdCurrency:begin
+         CodeTarget.AddLn(IntToStr(ftCurr));
+        end;
+        else begin
+         case Type_^.FloatType of
+          tstFloat32Bit:begin
+           CodeTarget.AddLn(IntToStr(ftSingle));
+          end;
+          tstFloat64Bit:begin
+           CodeTarget.AddLn(IntToStr(ftDouble));
+          end;
+          tstFloat80Bit:begin
+           CodeTarget.AddLn(IntToStr(ftExtended));
+          end;
+         end;
+        end;
+       end;
+       CodeTarget.DecTab;
+       CodeTarget.AddLn('};');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER = (void*)(&'+Name+'_RTTI_TYPEINFO);');
+      end;
+      TypeKindString:begin
+       Target.AddLn('typedef struct '+Name+'_RTTI_TYPEINFO_TYPE {');
+       Target.IncTab;
+       Target.AddLn('size_t kind;');
+       Target.AddLn('uint8_t* name;');
+       Target.AddLn('uint8_t maxLength;');
+       Target.DecTab;
+       Target.AddLn('} '+Name+'_RTTI_TYPEINFO_TYPE;');
+       Target.AddLn('typedef '+Name+'_RTTI_TYPEINFO_TYPE* '+Name+'_RTTI_TYPEINFO_POINTER_TYPE;');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_TYPE '+Name+'_RTTI_TYPEINFO={');
+       CodeTarget.IncTab;
+       CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
+       CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+       CodeTarget.AddLn(IntToStr(Type_^.Length));
        CodeTarget.DecTab;
        CodeTarget.AddLn('};');
        CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER = (void*)(&'+Name+'_RTTI_TYPEINFO);');
@@ -3706,7 +3891,7 @@ begin
        CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_TYPE '+Name+'_RTTI_TYPEINFO={');
        CodeTarget.IncTab;
        CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
-       CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+       CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME');
        CodeTarget.DecTab;
        CodeTarget.AddLn('};');
        CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER = (void*)(&'+Name+'_RTTI_TYPEINFO);');
