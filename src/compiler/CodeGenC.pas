@@ -3661,8 +3661,61 @@ begin
     if (Type_^.RuntimeTypeInfo and (not Type_^.RuntimeTypeInfoDumped) and (DumpedRTTIList.IndexOf(Name)<0) and
         (Type_^.NeedTypeInfo or not (Type_.TypeKind in [TypeKindUnknown,TypeKindRecord,TypeKindArray]))) and
         not ((Type_^.TypeDefinition in [ttdCEXPRESSION]) or (Type_=SymbolManager.TypeEmpty) or ((length(Name)>0) and (Name[1]='$'))) then begin
+
      DumpedRTTIList.Add(Name);
      Type_^.RuntimeTypeInfoDumped:=true;
+
+     if assigned(Type_.Symbol) then begin
+      Target.AddLn('extern static uint8_t '+Name+'_TYPE_NAME['+IntToStr(length(Type_.Symbol.OriginalCaseName)+1)+'];');
+      CodeTarget.Add('static uint8_t '+Name+'_TYPE_NAME['+IntToStr(length(Type_.Symbol.OriginalCaseName)+1)+'] = {');
+      CodeTarget.Add(IntToStr(length(Type_.Symbol.OriginalCaseName)));
+      for j:=1 to length(Type_.Symbol.OriginalCaseName) do begin
+       CodeTarget.Add(','+IntToStr(byte(ansichar(Type_.Symbol.OriginalCaseName[j]))));
+      end;
+      CodeTarget.AddLn('};');
+     end else begin
+      Target.AddLn('extern static uint8_t '+Name+'_TYPE_NAME[1];');
+      CodeTarget.AddLn('static uint8_t '+Name+'_TYPE_NAME[1] = { 0 };');
+     end;
+
+     case Type_.TypeKind of
+      TypeKindInteger,TypeKindAnsiChar,TypeKindEnumeration,TypeKindSet,TypeKindWideChar,TypeKindHugeChar:begin
+       Target.AddLn('typedef struct '+Name+'_RTTI_TYPEINFO_TYPE {');
+       Target.IncTab;
+       Target.AddLn('size_t kind;');
+       Target.AddLn('uint8_t* name;');
+       Target.DecTab;
+       Target.AddLn('} '+Name+'_RTTI_TYPEINFO_TYPE;');
+       Target.AddLn('typedef '+Name+'_RTTI_TYPEINFO_TYPE* '+Name+'_RTTI_TYPEINFO_POINTER_TYPE;');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_TYPE '+Name+'_RTTI_TYPEINFO={');
+       CodeTarget.IncTab;
+       CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
+       CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+       CodeTarget.DecTab;
+       CodeTarget.AddLn('};');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER = (void*)(&'+Name+'_RTTI_TYPEINFO);');
+      end;
+      else {TypeKindUnknown,TypeKindLString,TypeKindWString,TypeKindHString,TypeKindVariant:}begin
+       Target.AddLn('typedef struct '+Name+'_RTTI_TYPEINFO_TYPE {');
+       Target.IncTab;
+       Target.AddLn('size_t kind;');
+       Target.AddLn('uint8_t* name;');
+       Target.DecTab;
+       Target.AddLn('} '+Name+'_RTTI_TYPEINFO_TYPE;');
+       Target.AddLn('typedef '+Name+'_RTTI_TYPEINFO_TYPE* '+Name+'_RTTI_TYPEINFO_POINTER_TYPE;');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_TYPE '+Name+'_RTTI_TYPEINFO={');
+       CodeTarget.IncTab;
+       CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
+       CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+       CodeTarget.DecTab;
+       CodeTarget.AddLn('};');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER = (void*)(&'+Name+'_RTTI_TYPEINFO);');
+      end;
+     end;
+
+     Target.AddLn('extern '+Name+'_RTTI_TYPEINFO_TYPE '+Name+'_RTTI_TYPEINFO;');
+     Target.AddLn('extern '+Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER;');
+
      Target.AddLn('extern pasTypeInfo '+Name+'_TYPEINFO;');
      Target.AddLn('extern pasTypeInfoPointer '+Name+'_TYPEINFO_POINTER;');
      case Type_.TypeDefinition of
@@ -3786,10 +3839,11 @@ begin
      end;
      CodeTarget.AddLn('pasTypeInfo '+Name+'_TYPEINFO={');
      CodeTarget.IncTab;
-     if (Type_^.TypeKind = TypeKindArray)and(Type_^.DynamicArray) then
-      CodeTarget.AddLn(IntToStr(TypeKindDynArray)+',')
-     else
+     if (Type_^.TypeKind=TypeKindArray) and Type_^.DynamicArray then begin
+      CodeTarget.AddLn(IntToStr(TypeKindDynArray)+',');
+     end else begin
       CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
+     end;
      if Type_^.TypeDefinition=ttdLongString then begin
       CodeTarget.AddLn(IntToStr(Type_^.LongStringCodePage)+',');
      end else begin
@@ -3800,12 +3854,7 @@ begin
      end else begin
       CodeTarget.AddLn('NULL,');
      end;
-     if assigned(Type_.Symbol) then begin
-      TranslateShortStringConstant(Type_.Symbol.OriginalCaseName,CodeTarget);
-     end else begin
-      TranslateShortStringConstant('???',CodeTarget);
-     end;
-     CodeTarget.AddLn(',');
+     CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
      case Type_.TypeDefinition of
       ttdRecord,ttdObject,ttdClass,ttdArray:begin
        CodeTarget.AddLn('(void*)&'+Name+'_FIELDTABLE');
@@ -3817,6 +3866,7 @@ begin
      CodeTarget.DecTab;
      CodeTarget.AddLn('};');
      CodeTarget.AddLn('pasTypeInfoPointer '+Name+'_TYPEINFO_POINTER = &'+Name+'_TYPEINFO;');
+
     end;
    end;
    Target.AddLn('');

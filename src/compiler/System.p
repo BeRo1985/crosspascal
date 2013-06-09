@@ -331,7 +331,7 @@ typedef struct pasTypeInfo {
   size_t kind;
   size_t codePage;
   void* vmt;
-  char* name;
+  uint8_t* name;
   void* data;
 } pasTypeInfo;
 
