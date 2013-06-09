@@ -142,9 +142,9 @@ type TObject=class;
      TInterfaceEntry=packed record
       IID:TGUID;
       VTable:pointer;
+      IType:longint;
       IOffset:longint;
-      ImplGetter:longint;
-      ImplGetterPtr:pointer;
+      IPointer:pointer;
      end;
 
      PInterfaceTable=^TInterfaceTable;
@@ -447,9 +447,9 @@ typedef struct pasGUID {
 typedef struct pasInterfaceEntry {
   pasGUID IID;
   void* vTable;
-  uint32_t iOffset;
-  uint32_t implGetter;
-  void* implGetterPtr;
+  int32_t iType;
+  int32_t iOffset;
+  void* iPointer;
 } pasInterfaceEntry;
 
 typedef struct pasInterfaceTable {
@@ -1388,24 +1388,36 @@ begin
   if(resultInterfaceEntry){
     void* (*method)(void* instance);
     void* self = (void*)<<<self>>>;
-    if(resultInterfaceEntry->iOffset){
-      obj = self + resultInterfaceEntry->iOffset;
-      if(obj){
-        ((pasInterfaceIUnknown*)obj)->_AddRef(obj);
+    switch(resultInterfaceEntry->iType){
+      case 0:{
+        /* Standard */
+        obj = self + resultInterfaceEntry->iOffset;
+        if(obj){
+          ((pasInterfaceIUnknown*)obj)->_AddRef(obj);
+        }
+        break;
       }
-    }else{
-      uint32_t implGetter = resultInterfaceEntry->implGetter;
-      if((implGetter >= 0xff000000ul) && (implGetter <= 0xfffffffful)){
-        /* Field */
-        obj = self + (implGetter & 0x00fffffful);
-      }else if((implGetter >= 0xfe000000ul) && (implGetter <= 0xfefffffful)){
+      case 1:{
+        /* Field value */
+        obj = self + resultInterfaceEntry->iOffset;
+        break;
+      }
+      case 2:{
         /* Virtual method */
-        method = *(void**)((void*)(self + (int16_t)(implGetter & 0x0000fffful)));
+        method = *(void**)((void*)(self + resultInterfaceEntry->iOffset));
         obj = method(self);
-      }else{
+        break;
+      }
+      case 3:{
         /* Static method */
-        method = resultInterfaceEntry->implGetterPtr;
+        method = resultInterfaceEntry->iPointer;
         obj = method(self);
+        break;
+      }
+      default:{
+        /* Ups? This case should never happen! :-) */ 
+        obj = NULL;
+        break;
       }
     }
   }
