@@ -3794,11 +3794,12 @@ begin
          end;
          CodeTarget.AddLn(IntToStr(Type_^.LowerLimit)+'ll,');
          CodeTarget.AddLn(IntToStr(Type_^.UpperLimit)+'ll,');
-         if assigned(Type_^.Definition) then begin
+{        if assigned(Type_^.Definition) then begin
           CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.Definition)+'_RTTI_TYPEINFO,');
          end else begin
           CodeTarget.AddLn('NULL,');
-         end;
+         end;}
+         CodeTarget.AddLn('NULL,');
          CodeTarget.AddLn('NULL');
         end;
         TypeKindSet:begin
@@ -3828,7 +3829,7 @@ begin
            CodeTarget.AddLn(IntToStr(otUQuad)+',');
           end;
          end;
-         if assigned(Type_^.SetOf) then begin
+         if assigned(Type_^.SetOf) and Type_^.SetOf^.NeedTypeInfo then begin
           CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.SetOf)+'_RTTI_TYPEINFO');
          end else begin
           CodeTarget.AddLn('NULL');
@@ -3936,7 +3937,7 @@ begin
        CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
        CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
        CodeTarget.AddLn('(void*)pasClassVMTMask((void*)&'+Name+'_VMT),');
-       if assigned(Type_^.ChildOf) then begin
+       if assigned(Type_^.ChildOf) and Type_^.ChildOf^.TypeDefinition^.NeedTypeInfo then begin
         CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.ChildOf^.TypeDefinition)+'_RTTI_TYPEINFO,');
        end else begin
         CodeTarget.AddLn('NULL,');
@@ -3952,7 +3953,7 @@ begin
             dec(k);
             CodeTarget.AddLn('{');
             CodeTarget.IncTab;
-            if assigned(Symbol.PropertyType) then begin
+            if assigned(Symbol.PropertyType) and Symbol.PropertyType^.NeedTypeInfo then begin
              CodeTarget.AddLn('(void*)&'+GetTypeName(Symbol.PropertyType)+'_RTTI_TYPEINFO,');
             end else begin
              CodeTarget.AddLn('NULL,');
@@ -4118,7 +4119,7 @@ begin
        CodeTarget.IncTab;
        CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
        CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
-       if assigned(Type_^.ChildOf) then begin
+       if assigned(Type_^.ChildOf) and Type_^.ChildOf^.TypeDefinition^.NeedTypeInfo then begin
         CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.ChildOf^.TypeDefinition)+'_RTTI_TYPEINFO,');
        end else begin
         CodeTarget.AddLn('NULL,');
@@ -4184,7 +4185,11 @@ begin
        CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
        if assigned(Type_^.Definition) then begin
         CodeTarget.AddLn(IntToStr(SymbolManager.GetSize(Type_^.Definition))+',');
-        CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.Definition)+'_RTTI_TYPEINFO,');
+        if Type_^.Definition^.NeedTypeInfo then begin
+         CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.Definition)+'_RTTI_TYPEINFO,');
+        end else begin
+         CodeTarget.AddLn('NULL,');
+        end;
        end else begin
         CodeTarget.AddLn('0,');
         CodeTarget.AddLn('NULL,');
