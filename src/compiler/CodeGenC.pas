@@ -4102,6 +4102,47 @@ begin
        CodeTarget.AddLn('};');
        CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER = (void*)(&'+Name+'_RTTI_TYPEINFO);');
       end;
+      TypeKindInterface:begin
+       Target.AddLn('typedef struct '+Name+'_RTTI_TYPEINFO_TYPE {');
+       Target.IncTab;
+       Target.AddLn('uint8_t kind;');
+       Target.AddLn('uint8_t* name;');
+       Target.AddLn('void* intfParent;');
+       Target.AddLn('uint8_t intfFlags;');
+       Target.AddLn('uint8_t intfGUID[16];');
+       Target.AddLn('uint8_t* intfUnitName;');
+       Target.DecTab;
+       Target.AddLn('} '+Name+'_RTTI_TYPEINFO_TYPE;');
+       Target.AddLn('typedef '+Name+'_RTTI_TYPEINFO_TYPE* '+Name+'_RTTI_TYPEINFO_POINTER_TYPE;');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_TYPE '+Name+'_RTTI_TYPEINFO={');
+       CodeTarget.IncTab;
+       CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
+       CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+       if assigned(Type_^.ChildOf) then begin
+        CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.ChildOf^.TypeDefinition)+'_RTTI_TYPEINFO,');
+       end else begin
+        CodeTarget.AddLn('NULL,');
+       end;
+       j:=0;
+       GUIDCastedBytes:=pointer(@Type_.GUID);
+       for k:=0 to 15 do begin
+        if GUIDCastedBytes^[k]<>0 then begin
+         j:=j or ifHasGuid;
+         break;
+        end;
+       end;
+{      ifDispInterface=1 shl 1;
+       ifDispatch=1 shl 2;}
+       CodeTarget.AddLn(IntToStr(j)+',');
+       for k:=0 to 15 do begin
+        j:=GUIDCastedBytes^[k];
+        CodeTarget.AddLn(IntToStr(j)+',');
+       end;
+       CodeTarget.AddLn('(void*)&'+GetSymbolName(ModuleSymbol)+'_UNIT_NAME');
+       CodeTarget.DecTab;
+       CodeTarget.AddLn('};');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER = (void*)(&'+Name+'_RTTI_TYPEINFO);');
+      end;
       else {TypeKindUnknown,TypeKindLString,TypeKindWString,TypeKindHString,TypeKindVariant:}begin
        Target.AddLn('typedef struct '+Name+'_RTTI_TYPEINFO_TYPE {');
        Target.IncTab;
