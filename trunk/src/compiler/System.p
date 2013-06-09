@@ -364,6 +364,20 @@ typedef struct pasFieldTableStripped {
 
 typedef pasFieldTable* pasFieldTablePointer;
 
+typedef struct pasPropInfo {
+  void* propType;
+  void* getProc;
+  void* setProc;
+  void* storedProc;
+  int32_t index;
+  int32_t default;
+  int32_t nameIndex;
+  char* name;
+} pasPropInfo;
+
+typedef pasPropInfo* pasPropInfoPointer;
+typedef pasPropInfoPointer* pasPropInfoPointerPointer;
+
 typedef struct pasObjectDynamicMethodTable;
 
 typedef struct pasObjectDynamicMethodTableItem {

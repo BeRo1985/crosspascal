@@ -3889,6 +3889,20 @@ begin
        CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER = (void*)(&'+Name+'_RTTI_TYPEINFO);');
       end;
       TypeKindClass:begin
+       k:=0;
+       if assigned(Type_.RecordTable) then begin
+        Symbol:=Type_.RecordTable.First;
+        while assigned(Symbol) do begin
+         case Symbol^.SymbolType of
+          Symbols.tstProperty:begin
+           if tsaOOPPublished in Symbol^.Attributes then begin
+            inc(k);
+           end;
+          end;
+         end;
+         Symbol:=Symbol^.Next;
+        end;
+       end;
        Target.AddLn('typedef struct '+Name+'_RTTI_TYPEINFO_TYPE {');
        Target.IncTab;
        Target.AddLn('uint8_t kind;');
@@ -3897,7 +3911,9 @@ begin
        Target.AddLn('void* parentInfo;');
        Target.AddLn('uint32_t propCount;');
        Target.AddLn('uint8_t* unitName;');
-//      Target.AddLn(';');
+       if k>0 then begin
+        Target.AddLn('pasPropInfo props['+IntToStr(k)+'];');
+       end;
        Target.DecTab;
        Target.AddLn('} '+Name+'_RTTI_TYPEINFO_TYPE;');
        Target.AddLn('typedef '+Name+'_RTTI_TYPEINFO_TYPE* '+Name+'_RTTI_TYPEINFO_POINTER_TYPE;');
@@ -3912,7 +3928,63 @@ begin
         CodeTarget.AddLn('NULL,');
        end;
        CodeTarget.AddLn('0,');
-       CodeTarget.AddLn('(void*)&'+GetSymbolName(ModuleSymbol)+'_UNIT_NAME');
+       if assigned(Type_.RecordTable) then begin
+        CodeTarget.AddLn('(void*)&'+GetSymbolName(ModuleSymbol)+'_UNIT_NAME,');
+        Symbol:=Type_.RecordTable.First;
+        while assigned(Symbol) do begin
+         case Symbol^.SymbolType of
+          Symbols.tstProperty:begin
+           if tsaOOPPublished in Symbol^.Attributes then begin
+            dec(k);
+            CodeTarget.AddLn('{');
+            CodeTarget.IncTab;
+            if assigned(Symbol.PropertyType) then begin
+             CodeTarget.AddLn('(void*)&'+GetTypeName(Symbol.PropertyType)+'_RTTI_TYPEINFO,');
+            end else begin
+             CodeTarget.AddLn('NULL,');
+            end;
+            if assigned(Symbol.PropertyRead) then begin
+             CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol.PropertyRead)+',');
+            end else begin
+             CodeTarget.AddLn('NULL,');
+            end;
+            if assigned(Symbol.PropertyWrite) then begin
+             CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol.PropertyWrite)+',');
+            end else begin
+             CodeTarget.AddLn('NULL,');
+            end;
+            if assigned(Symbol.PropertyStored) and (Symbol.PropertyStored.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction]) then begin
+             CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol.PropertyStored)+',');
+            end else begin
+             CodeTarget.AddLn('NULL,');
+            end;
+            if assigned(Symbol.PropertyIndex) and (Symbol.PropertyIndex.SymbolType=Symbols.tstConstant) and (Symbol.PropertyIndex.ConstantType=tctOrdinal) then begin
+             CodeTarget.AddLn(IntToStr(Symbol.PropertyIndex.IntValue)+',');
+            end else begin
+             CodeTarget.AddLn('NULL,');
+            end;
+            if assigned(Symbol.PropertyDefault) and (Symbol.PropertyDefault.SymbolType=Symbols.tstConstant) and (Symbol.PropertyDefault.ConstantType=tctOrdinal) then begin
+             CodeTarget.AddLn(IntToStr(Symbol.PropertyDefault.IntValue)+',');
+            end else begin
+             CodeTarget.AddLn('-1,');
+            end;
+            CodeTarget.AddLn('-1,');
+            TranslateShortStringConstant(Symbol.OriginalCaseName,CodeTarget);
+            CodeTarget.AddLn('');
+            CodeTarget.DecTab;
+            if k>0 then begin
+             CodeTarget.AddLn('},');
+            end else begin
+             CodeTarget.AddLn('}');
+            end;
+           end;
+          end;
+         end;
+         Symbol:=Symbol^.Next;
+        end;
+       end else begin
+        CodeTarget.AddLn('(void*)&'+GetSymbolName(ModuleSymbol)+'_UNIT_NAME');
+       end;
        CodeTarget.DecTab;
        CodeTarget.AddLn('};');
        CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER = (void*)(&'+Name+'_RTTI_TYPEINFO);');
