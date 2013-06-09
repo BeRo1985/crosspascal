@@ -3652,6 +3652,14 @@ begin
   end;
   Target.AddLn(''); *)
 
+  Target.AddLn('extern static uint8_t '+GetSymbolName(ModuleSymbol)+'_UNIT_NAME['+IntToStr(length(ModuleSymbol.OriginalCaseName)+1)+'];');
+  CodeTarget.Add('static uint8_t '+GetSymbolName(ModuleSymbol)+'_UNIT_NAME['+IntToStr(length(ModuleSymbol.OriginalCaseName)+1)+'] = {');
+  CodeTarget.Add(IntToStr(length(ModuleSymbol.OriginalCaseName)));
+  for j:=1 to length(ModuleSymbol.OriginalCaseName) do begin
+   CodeTarget.Add(','+IntToStr(byte(ansichar(ModuleSymbol.OriginalCaseName[j]))));
+  end;
+  CodeTarget.AddLn('};');
+
   DumpedRTTIList:=TStringList.Create;
   try
    Target.AddLn('// Type info definitions');
@@ -3904,7 +3912,7 @@ begin
         CodeTarget.AddLn('NULL,');
        end;
        CodeTarget.AddLn('0,');
-       CodeTarget.AddLn('NULL');
+       CodeTarget.AddLn('(void*)&'+GetSymbolName(ModuleSymbol)+'_UNIT_NAME');
        CodeTarget.DecTab;
        CodeTarget.AddLn('};');
        CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER = (void*)(&'+Name+'_RTTI_TYPEINFO);');
