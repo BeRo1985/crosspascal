@@ -76,6 +76,7 @@ type TCodeWriter = class
        function GetModuleName(Sym: PSymbol): ansistring;
        function GetSymbolName(Sym: PSymbol; const Prefix: ansistring = ''; Wrapping: boolean = true): ansistring;
        function GetTypeName(Type_:PType):ansistring;
+       function GetOriginalTypeName(Type_:PType):ansistring;
 
        function ConvertStdType(const StdType: TStandardType): ansistring;
        function ConvertUnsignedStdType(const StdType: TStandardType): ansistring;
@@ -301,6 +302,19 @@ begin
  if assigned(Type_^.OwnerModule) then begin
   if assigned(Type_^.Symbol) and (Type_^.Symbol^.LexicalScopeLevel=0) and (tsaPublicUnitSymbol in Type_^.Symbol^.Attributes) then begin
    result:=GetModuleName(Type_^.OwnerModule)+'_TYPE_'+Type_^.Symbol^.Name;
+  end else begin
+   result:=GetModuleName(Type_^.OwnerModule)+'_TYPE_ID_'+IntToStr(Type_^.ID);
+  end;
+ end else begin
+  result:=IntToStr(PtrUInt(Type_));
+ end;
+end;
+
+function TCodeGenC.GetOriginalTypeName(Type_:PType):ansistring;
+begin
+ if assigned(Type_^.OwnerModule) then begin
+  if assigned(Type_^.Symbol) and (Type_^.Symbol^.LexicalScopeLevel=0) and (tsaPublicUnitSymbol in Type_^.Symbol^.Attributes) then begin
+   result:=Type_^.Symbol^.OriginalCaseName;
   end else begin
    result:=GetModuleName(Type_^.OwnerModule)+'_TYPE_ID_'+IntToStr(Type_^.ID);
   end;
@@ -3984,6 +3998,105 @@ begin
         end;
        end else begin
         CodeTarget.AddLn('(void*)&'+GetSymbolName(ModuleSymbol)+'_UNIT_NAME');
+       end;
+       CodeTarget.DecTab;
+       CodeTarget.AddLn('};');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER = (void*)(&'+Name+'_RTTI_TYPEINFO);');
+      end;
+      TypeKindMethod:begin
+       k:=0;
+       if assigned(Type_.Parameter) then begin
+        Symbol:=Type_.Parameter.First;
+        while assigned(Symbol) do begin
+         if not (tsaHiddenParameter in Symbol^.Attributes) then begin
+          inc(k);
+         end;
+         Symbol:=Symbol^.Next;
+        end;
+       end;
+       Target.AddLn('typedef struct '+Name+'_RTTI_TYPEINFO_TYPE {');
+       Target.IncTab;
+       Target.AddLn('uint8_t kind;');
+       Target.AddLn('uint8_t* name;');
+       Target.AddLn('uint8_t methodKind;');
+       Target.AddLn('uint8_t paramCount;');
+       if k>0 then begin
+        Target.AddLn('pasParamInfo params['+IntToStr(k)+'];');
+       end;
+       Target.AddLn('char* resultType;');
+       Target.DecTab;
+       Target.AddLn('} '+Name+'_RTTI_TYPEINFO_TYPE;');
+       Target.AddLn('typedef '+Name+'_RTTI_TYPEINFO_TYPE* '+Name+'_RTTI_TYPEINFO_POINTER_TYPE;');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_TYPE '+Name+'_RTTI_TYPEINFO={');
+       CodeTarget.IncTab;
+       CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
+       CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+       if assigned(Type_.ReturnType) then begin
+        if tpaClass in Type_^.ProcedureAttributes then begin
+         Target.AddLn(IntToStr(mkClassFunction)+',');
+        end else begin
+         Target.AddLn(IntToStr(mkFunction)+',');
+        end;
+       end else begin
+        if tpaConstructor in Type_^.ProcedureAttributes then begin
+         Target.AddLn(IntToStr(mkConstructor)+',');
+        end else if tpaDestructor in Type_^.ProcedureAttributes then begin
+         Target.AddLn(IntToStr(mkDestructor)+',');
+        end else begin
+         if tpaClass in Type_^.ProcedureAttributes then begin
+          Target.AddLn(IntToStr(mkClassProcedure)+',');
+         end else begin
+          Target.AddLn(IntToStr(mkProcedure)+',');
+         end;
+        end;
+       end;
+       Target.AddLn(IntToStr(k)+',');
+       if (k>0) and assigned(Type_.Parameter) then begin
+        Symbol:=Type_.Parameter.First;
+        while assigned(Symbol) do begin
+         if not (tsaHiddenParameter in Symbol^.Attributes) then begin
+          dec(k);
+          CodeTarget.AddLn('{');
+          CodeTarget.IncTab;
+          j:=0;
+          if Symbol^.VariableType=tvtParameterVariable then begin
+           j:=j or pfVar;
+          end;
+          if Symbol^.VariableType=tvtParameterConstant then begin
+           j:=j or pfConst;
+          end;
+          if assigned(Symbol^.TypeDefinition) and (Symbol^.TypeDefinition^.TypeDefinition=ttdArray) then begin
+           j:=j or pfArray;
+          end;                                                                                      
+          if assigned(Symbol^.TypeDefinition) and (Symbol^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
+           j:=j or pfAddress;
+          end;
+          if IsSymbolReference(Symbol) then begin
+           j:=j or pfReference;
+          end;
+          if Symbol^.VariableType=tvtParameterResult then begin
+           j:=j or pfOut;
+          end;
+          CodeTarget.AddLn(IntToStr(k)+',');
+          TranslateShortStringConstant(Symbol.OriginalCaseName,CodeTarget);
+          CodeTarget.AddLn(',');
+          TranslateShortStringConstant(GetOriginalTypeName(Symbol^.TypeDefinition),CodeTarget);
+          CodeTarget.AddLn('');
+          CodeTarget.DecTab;
+          if k>0 then begin
+           CodeTarget.AddLn('},');
+          end else begin
+           CodeTarget.AddLn('}');
+          end;
+         end;
+         Symbol:=Symbol^.Next;
+        end;
+       end;
+       if assigned(Type_^.ReturnType) then begin
+        TranslateShortStringConstant(GetOriginalTypeName(Type_^.ReturnType),CodeTarget);
+        Target.AddLn('');
+       end else begin
+        Target.AddLn('NULL');
        end;
        CodeTarget.DecTab;
        CodeTarget.AddLn('};');
