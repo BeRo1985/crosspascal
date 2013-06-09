@@ -1050,6 +1050,10 @@ begin
      for SubIndex:=0 to length(AType^.ImplementedInterfaces)-1 do begin
       ImplementedInterface:=TImplementedInterface.Create;
       AType^.ImplementedInterfaces[SubIndex]:=ImplementedInterface;
+      if Stream.Read(ImplementedInterface.IType,SizeOf(longint))<>SizeOf(longint) then begin
+       SetLength(UsedUnits,0);
+       exit;
+      end;
       ReadSymbolReference(ImplementedInterface.InterfaceTypeSymbol);
       ReadSymbolReference(ImplementedInterface.InternalClassVTableField);
       if Stream.Read(ImplementedInterface.InternalClassVTableFieldOffset,SizeOf(longword))<>SizeOf(longword) then begin
@@ -2040,6 +2044,9 @@ begin
      Stream.WriteLongInt(length(AType^.ImplementedInterfaces));
      for SubIndex:=0 to length(AType^.ImplementedInterfaces)-1 do begin
       ImplementedInterface:=AType^.ImplementedInterfaces[SubIndex];
+      if Stream.Write(ImplementedInterface.IType,SizeOf(longint))<>SizeOf(longint) then begin
+       exit;
+      end;
       WriteSymbolReference(ImplementedInterface.InterfaceTypeSymbol);
       WriteSymbolReference(ImplementedInterface.InternalClassVTableField);
       if Stream.Write(ImplementedInterface.InternalClassVTableFieldOffset,SizeOf(longword))<>SizeOf(longword) then begin
@@ -2047,7 +2054,7 @@ begin
       end;
       if ImplementedInterface.VTableImplementedInterface=ImplementedInterface then begin
        ImplementedInterface.VTableImplementedInterfaceIndex:=SubIndex;
-      end else begin  
+      end else begin
        ImplementedInterface.VTableImplementedInterfaceIndex:=-1;
        for SubSubIndex:=0 to length(AType^.ImplementedInterfaces)-1 do begin
         if ImplementedInterface.VTableImplementedInterface=AType^.ImplementedInterfaces[SubSubIndex] then begin
