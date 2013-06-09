@@ -4143,6 +4143,57 @@ begin
        CodeTarget.AddLn('};');
        CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER = (void*)(&'+Name+'_RTTI_TYPEINFO);');
       end;
+      TypeKindInt64,TypeKindUInt64:begin
+       Target.AddLn('typedef struct '+Name+'_RTTI_TYPEINFO_TYPE {');
+       Target.IncTab;
+       Target.AddLn('uint8_t kind;');
+       Target.AddLn('uint8_t* name;');
+       Target.AddLn('int64_t minValue;');
+       Target.AddLn('int64_t maxValue;');
+       Target.DecTab;
+       Target.AddLn('} '+Name+'_RTTI_TYPEINFO_TYPE;');
+       Target.AddLn('typedef '+Name+'_RTTI_TYPEINFO_TYPE* '+Name+'_RTTI_TYPEINFO_POINTER_TYPE;');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_TYPE '+Name+'_RTTI_TYPEINFO={');
+       CodeTarget.IncTab;
+       CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
+       CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+       CodeTarget.AddLn(IntToStr(Type_^.LowerLimit)+',');
+       CodeTarget.AddLn(IntToStr(Type_^.UpperLimit));
+       CodeTarget.DecTab;
+       CodeTarget.AddLn('};');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER = (void*)(&'+Name+'_RTTI_TYPEINFO);');
+      end;
+      TypeKindArray,TypeKindDynArray:begin
+       Target.AddLn('typedef struct '+Name+'_RTTI_TYPEINFO_TYPE {');
+       Target.IncTab;
+       Target.AddLn('uint8_t kind;');
+       Target.AddLn('uint8_t* name;');
+       Target.AddLn('uint32_t elSize;');
+       Target.AddLn('void* elType;');
+       Target.AddLn('uint8_t* dynUnitName;');
+       Target.DecTab;
+       Target.AddLn('} '+Name+'_RTTI_TYPEINFO_TYPE;');
+       Target.AddLn('typedef '+Name+'_RTTI_TYPEINFO_TYPE* '+Name+'_RTTI_TYPEINFO_POINTER_TYPE;');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_TYPE '+Name+'_RTTI_TYPEINFO={');
+       CodeTarget.IncTab;
+       if Type_^.DynamicArray then begin
+        CodeTarget.AddLn(IntToStr(TypeKindDynArray)+',');
+       end else begin
+        CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
+       end;
+       CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+       if assigned(Type_^.Definition) then begin
+        CodeTarget.AddLn(IntToStr(SymbolManager.GetSize(Type_^.Definition))+',');
+        CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.Definition)+'_RTTI_TYPEINFO,');
+       end else begin
+        CodeTarget.AddLn('0,');
+        CodeTarget.AddLn('NULL,');
+       end;
+       CodeTarget.AddLn('(void*)&'+GetSymbolName(ModuleSymbol)+'_UNIT_NAME');
+       CodeTarget.DecTab;
+       CodeTarget.AddLn('};');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER = (void*)(&'+Name+'_RTTI_TYPEINFO);');
+      end;
       else {TypeKindUnknown,TypeKindLString,TypeKindWString,TypeKindHString,TypeKindVariant:}begin
        Target.AddLn('typedef struct '+Name+'_RTTI_TYPEINFO_TYPE {');
        Target.IncTab;
@@ -4822,7 +4873,7 @@ begin
          // void* vmtInitTable;
          CodeTarget.AddLn('(void*)&'+Name+'_TYPEINFO,');
          // void* vmtTypeInfo;
-         CodeTarget.AddLn('NULL,');
+         CodeTarget.AddLn('(void*)&'+Name+'_RTTI_TYPEINFO,');
          // void* vmtFieldTable;
          if (FieldTableList.Count>0) or (ClassTableList.Count>0) then begin
           CodeTarget.AddLn('(void*)&'+Name+'_FIELD_TABLE,');
