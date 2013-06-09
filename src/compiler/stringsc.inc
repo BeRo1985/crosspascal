@@ -659,4 +659,169 @@ pasLongstring AddLongstring(pasLongstring left, pasLongstring right) {
     CheckRefLongstring(right);
     return result;
 }
+
+int pasCompareStrL(pasLongstring left, pasLongstring right) {
+	uint32_t length,i,a,b;
+    LongstringRefHeader* headerA;
+    LongstringRefHeader* headerB;
+	
+	if(left == NULL) {
+		if(right == NULL)
+			return 0;
+		return -1;
+	}
+	if(right == NULL)
+		return 1;
+		
+    headerA = (LongstringRefHeader*)((uint32_t)(left) - LongstringRefHeaderSize);
+    headerB = (LongstringRefHeader*)((uint32_t)(right) - LongstringRefHeaderSize);		
+		
+	length = headerA->length<headerB->length ? headerA->length : headerB->length;
+	
+	for(i=0;i<length;i++) {
+          switch(headerA->elementSize){
+            case 1:{
+              a = ((uint8_t*)(left))[i];
+              break;
+            }
+            case 2:{
+              a = ((uint16_t*)(left))[i];
+              break;
+            }
+            case 4:{
+              a = ((uint32_t*)(left))[i];
+              break;
+            }
+          }
+          switch(headerB->elementSize){
+            case 1:{
+              b = ((uint8_t*)(right))[i];
+              break;
+            }
+            case 2:{
+              b = ((uint16_t*)(right))[i];
+              break;
+            }
+            case 4:{
+              b = ((uint32_t*)(right))[i];
+              break;
+            }
+			if(a-b!=0)
+				return a-b;
+          }
+	}
+	return headerA->length - headerB->length;
+}
+
+int pasCompareStrP(void* left, void* right) {
+	uint32_t i,a,b;
+	if(left == NULL) {
+		if(right == NULL)
+			return 0;
+		return -1;
+	}
+	if(right == NULL)
+		return 1;	
+	i=0;
+	while((((uint8_t*)(left))[i]!=0)&(((uint8_t*)(right))[i]!=0)&(((uint8_t*)(left))[i]==((uint8_t*)(right))[i]))
+		i++;
+	return ((uint8_t*)(left))[i] - ((uint8_t*)(right))[i];
+}
+
+int pasCompareStrS(pasShortstring255* left, pasShortstring255* right) {
+	uint32_t i, length;
+	length = left->data[0]<right->data[0] ? left->data[0] : right->data[0];
+	for(i=1;i<=length;i++) {
+		if(left->data[i]-right->data[i] != 0)
+			return left->data[i]-right->data[i];
+	}
+	return left->data[0]-right->data[0];
+}
+
+int pasCompareStrSL(pasShortstring255* left, pasLongstring right) {
+	uint32_t length,i,a,b;
+    LongstringRefHeader* header;	
+	if(right==NULL) 
+		return left->data[0];
+
+	header = (LongstringRefHeader*)((uint32_t)(right) - LongstringRefHeaderSize);	
+	
+	length = left->data[0]<header->length ? left->data[0] : header->length;
+	for(i=0;i<length;i++) {
+		a=left->data[i+1];
+        switch(header->elementSize){
+			case 1:{
+				b = ((uint8_t*)(right))[i];
+				break;
+            }
+            case 2:{
+				b = ((uint16_t*)(right))[i];
+				break;
+            }
+            case 4:{
+				b = ((uint32_t*)(right))[i];
+				break;
+            }
+		}
+		if(a-b!=0)
+			return a-b;
+	}
+	return left->data[0]-header->length;
+}
+
+int pasCompareStrPL(void* left, pasLongstring right) {
+	uint32_t i,a,b;
+    LongstringRefHeader* header;	
+	if(right==NULL) {
+		if(left==NULL)
+			return 0;
+		return 1;
+	}
+	if(left==NULL)
+		return -1;
+
+	header = (LongstringRefHeader*)((uint32_t)(right) - LongstringRefHeaderSize);	
+	
+	for(i=0;i<header->length;i++) {
+		a=((uint8_t*)(left))[i];
+		if(a==0)
+			return -1;
+        switch(header->elementSize){
+			case 1:{
+				b = ((uint8_t*)(right))[i];
+				break;
+            }
+            case 2:{
+				b = ((uint16_t*)(right))[i];
+				break;
+            }
+            case 4:{
+				b = ((uint32_t*)(right))[i];
+				break;
+            }
+		}
+		if(a-b!=0)
+			return a-b;
+	}
+	return (((uint8_t*)(left))[header->length]==0) ? 0 : 1;
+}
+
+int pasCompareStrPS(void* left, pasShortstring255* right) {
+	uint32_t i,a;
+	if(left==NULL) 
+		return -right->data[0];
+		
+	for(i=0;i<right->data[0];i++) {
+		a = ((uint8_t*)(left))[i];
+		if(a==0)
+			return -1;
+		a-=right->data[i+1];
+		if(a!=0)
+			return a;
+	}
+	if(((uint8_t*)(left))[i]==0)
+		return 0;
+	return 1;
+}
+
 ]]]

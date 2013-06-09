@@ -256,6 +256,7 @@ typedef struct { uint8_t data[253]; } pasShortstring252;
 typedef struct { uint8_t data[254]; } pasShortstring253;
 typedef struct { uint8_t data[255]; } pasShortstring254;
 typedef struct { uint8_t data[256]; } pasShortstring255;
+
 pasShortstring1 pasToShortstring1(pasLongstring str);
 pasShortstring2 pasToShortstring2(pasLongstring str);
 pasShortstring3 pasToShortstring3(pasLongstring str);
@@ -525,4 +526,10 @@ void AssignShortstring(uint8_t* target, uint32_t maxLength, pasLongstring strInp
 void UniqueLongstring(pasLongstring *target);
 pasLongstring ConvertLongstring(uint32_t codePage, uint32_t elementSize, pasLongstring strInput);
 
+int pasCompareStrP(void* left, void* right);
+int pasCompareStrL(pasLongstring left, pasLongstring right);
+int pasCompareStrS(pasShortstring255* left, pasShortstring255* right);
+int pasCompareStrSL(pasShortstring255* left, pasLongstring right)
+int pasCompareStrPL(void* left, pasLongstring right);
+int pasCompareStrPS(void* left, pasShortstring255* right);
 ]]]

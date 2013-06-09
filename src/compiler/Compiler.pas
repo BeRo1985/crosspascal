@@ -134,7 +134,7 @@ begin
     end;
    end;
   end else begin
-   DebugLog('Compiling '+name+'.c: '+GetDosOutput(Options.TargetCompiler+' '+Options.TargetCompilerParams+' -c '+pansichar(ChangeFileExt(Name,'.c'))));
+   DebugLog('Compiling '+name+'.c: '+GetDosOutput(Options.TargetCompiler+' '+Options.TargetCompilerParams+' -c '+pansichar(ChangeFileExt(ExtractFileName(Name),'.c'))));
   end;
   if not Error.Errors then begin
    result:=true;
