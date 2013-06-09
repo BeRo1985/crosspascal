@@ -28,6 +28,11 @@ const TypeKindUnknown=0;
       TypeKindUString=19;
       TypeKindHString=20;
 
+      iiitSTANDARD=0;
+      iiitFIELDVALUE=1;
+      iiitVIRTUALMETHOD=2;
+      iiitSTATICMETHOD=3;
+
 type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
                        tsaOOPStrictPrivate,tsaOOPPrivate,tsaOOPProtected,
                        tsaOOPPublic,tsaOOPPublished,tsaPublicUnitSymbol,
@@ -116,6 +121,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
 
      TImplementedInterface=class
       public
+       IType:longint;
        InterfaceTypeSymbol:PSymbol;
        InternalClassVTableField:PSymbol;
        InternalClassVTableFieldOffset:longword;
@@ -576,6 +582,7 @@ end;
 constructor TImplementedInterface.Create;
 begin
  inherited Create;
+ IType:=iiitSTANDARD;
  InterfaceTypeSymbol:=nil;
  InternalClassVTableField:=nil;
  InternalClassVTableFieldOffset:=0;

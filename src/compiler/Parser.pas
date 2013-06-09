@@ -5027,6 +5027,7 @@ begin
  for i:=0 to length(InterfaceSymbols)-1 do begin
   ImplementedInterface:=TImplementedInterface.Create;
   result^.ImplementedInterfaces[i]:=ImplementedInterface;
+  ImplementedInterface.IType:=iiitSTANDARD;
   ImplementedInterface.InterfaceTypeSymbol:=InterfaceSymbols[i];
   ImplementedInterface.InternalClassVTableField:=nil;
   ImplementedInterface.InternalClassVTableFieldOffset:=0;
