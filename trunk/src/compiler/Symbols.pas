@@ -28,6 +28,39 @@ const TypeKindUnknown=0;
       TypeKindUString=19;
       TypeKindHString=20;
 
+      otSByte=0;
+      otUByte=1;
+      otSWord=2;
+      otUWord=3;
+      otSLong=4;
+      otULong=5;
+
+      ftSingle=0;
+      ftDouble=1;
+      ftExtended=2;
+      ftComp=3;
+      ftCurr=4;
+
+      mkProcedure=0;
+      mkFunction=1;
+      mkConstructor=2;
+      mkDestructor=3;
+      mkClassProcedure=4;
+      mkClassFunction=5;
+      mkSafeProcedure=6;
+      mkSafeFunction=7;
+
+      pfVar=1 shl 0;
+      pfConst=1 shl 1;
+      pfArray=1 shl 2;
+      pfAddress=1 shl 3;
+      pfReference=1 shl 4;
+      pfOut=1 shl 5;
+
+      ifHasGuid=1 shl 0;
+      ifDispInterface=1 shl 1;
+      ifDispatch=1 shl 2;
+
       iiitSTANDARD=0;
       iiitFIELDVALUE=1;
       iiitVIRTUALMETHOD=2;
