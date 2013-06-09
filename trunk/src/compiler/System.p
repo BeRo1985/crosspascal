@@ -329,8 +329,8 @@ procedure Move(var Src; var Dst; Size: Cardinal);
 #define pastkHString 21
 
 typedef struct pasTypeInfo {
-  size_t kind;
-  size_t codePage;
+  uint8_t kind;
+  uint32_t codePage;
   void* vmt;
   uint8_t* name;
   void* data;

@@ -3682,9 +3682,9 @@ begin
       TypeKindInteger,TypeKindAnsiChar,TypeKindEnumeration,TypeKindSet,TypeKindWideChar,TypeKindHugeChar:begin
        Target.AddLn('typedef struct '+Name+'_RTTI_TYPEINFO_TYPE {');
        Target.IncTab;
-       Target.AddLn('size_t kind;');
+       Target.AddLn('uint8_t kind;');
        Target.AddLn('uint8_t* name;');
-       Target.AddLn('size_t ordType;');
+       Target.AddLn('uint8_t ordType;');
        case Type_.TypeKind of
         TypeKindInteger,TypeKindAnsiChar,TypeKindEnumeration,TypeKindWideChar,TypeKindHugeChar:begin
          Target.AddLn('int64_t minValue;');
@@ -3830,9 +3830,9 @@ begin
       TypeKindFloat:begin
        Target.AddLn('typedef struct '+Name+'_RTTI_TYPEINFO_TYPE {');
        Target.IncTab;
-       Target.AddLn('size_t kind;');
+       Target.AddLn('uint8_t kind;');
        Target.AddLn('uint8_t* name;');
-       Target.AddLn('size_t floatType;');
+       Target.AddLn('uint8_t floatType;');
        Target.DecTab;
        Target.AddLn('} '+Name+'_RTTI_TYPEINFO_TYPE;');
        Target.AddLn('typedef '+Name+'_RTTI_TYPEINFO_TYPE* '+Name+'_RTTI_TYPEINFO_POINTER_TYPE;');
@@ -3865,7 +3865,7 @@ begin
       TypeKindString:begin
        Target.AddLn('typedef struct '+Name+'_RTTI_TYPEINFO_TYPE {');
        Target.IncTab;
-       Target.AddLn('size_t kind;');
+       Target.AddLn('uint8_t kind;');
        Target.AddLn('uint8_t* name;');
        Target.AddLn('uint8_t maxLength;');
        Target.DecTab;
@@ -3880,10 +3880,39 @@ begin
        CodeTarget.AddLn('};');
        CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER = (void*)(&'+Name+'_RTTI_TYPEINFO);');
       end;
+      TypeKindClass:begin
+       Target.AddLn('typedef struct '+Name+'_RTTI_TYPEINFO_TYPE {');
+       Target.IncTab;
+       Target.AddLn('uint8_t kind;');
+       Target.AddLn('uint8_t* name;');
+       Target.AddLn('void* classType;');
+       Target.AddLn('void* parentInfo;');
+       Target.AddLn('uint32_t propCount;');
+       Target.AddLn('uint8_t* unitName;');
+//      Target.AddLn(';');
+       Target.DecTab;
+       Target.AddLn('} '+Name+'_RTTI_TYPEINFO_TYPE;');
+       Target.AddLn('typedef '+Name+'_RTTI_TYPEINFO_TYPE* '+Name+'_RTTI_TYPEINFO_POINTER_TYPE;');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_TYPE '+Name+'_RTTI_TYPEINFO={');
+       CodeTarget.IncTab;
+       CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
+       CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+       CodeTarget.AddLn('(void*)pasClassVMTMask((void*)&'+Name+'_VMT),');
+       if assigned(Type_^.ChildOf) then begin
+        CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.ChildOf^.TypeDefinition)+'_RTTI_TYPEINFO,');
+       end else begin
+        CodeTarget.AddLn('NULL,');
+       end;
+       CodeTarget.AddLn('0,');
+       CodeTarget.AddLn('NULL');
+       CodeTarget.DecTab;
+       CodeTarget.AddLn('};');
+       CodeTarget.AddLn(Name+'_RTTI_TYPEINFO_POINTER_TYPE '+Name+'_RTTI_TYPEINFO_POINTER = (void*)(&'+Name+'_RTTI_TYPEINFO);');
+      end;
       else {TypeKindUnknown,TypeKindLString,TypeKindWString,TypeKindHString,TypeKindVariant:}begin
        Target.AddLn('typedef struct '+Name+'_RTTI_TYPEINFO_TYPE {');
        Target.IncTab;
-       Target.AddLn('size_t kind;');
+       Target.AddLn('uint8_t kind;');
        Target.AddLn('uint8_t* name;');
        Target.DecTab;
        Target.AddLn('} '+Name+'_RTTI_TYPEINFO_TYPE;');
