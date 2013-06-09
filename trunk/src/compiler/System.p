@@ -1399,7 +1399,10 @@ begin
       }
       case 1:{
         /* Field value */
-        obj = self + resultInterfaceEntry->iOffset;
+        obj = *(void**)((void*)(self + resultInterfaceEntry->iOffset));
+        if(obj){
+          ((pasInterfaceIUnknown*)obj)->_AddRef(obj);
+        }
         break;
       }
       case 2:{
