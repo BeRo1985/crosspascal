@@ -159,6 +159,19 @@ begin
 {$endif}
 end;
 
+function IsStringType(AType: PType;TreatPCharAsString: Boolean = True): Boolean;
+begin
+ result:=False;
+ if not Assigned(AType) then
+  Exit;
+ result:=(AType.TypeDefinition = ttdLongstring)or
+         (AType.TypeDefinition = ttdShortString)or
+         ((AType.TypeDefinition = ttdPointer)and Assigned(AType.PointerTo) and
+          TreatPCharAsString and Assigned(AType.PointerTo.TypeDefinition) and
+          ((AType.PointerTo.TypeDefinition.TypeDefinition = ttdSubRange) and
+           (AType.PointerTo.TypeDefinition.SubRangeType in [tstUnsignedChar, tstUnsignedWideChar])));
+end;
+
 function TCodeGenC.GetModuleName(Sym: PSymbol): ansistring;
 begin
  if not Assigned(sym) then
@@ -981,6 +994,50 @@ var SubTreeNode,SubTreeNode2:TTreeNode;
     ObjectClassType:PType;
     MethodSymbol,Symbol:PSymbol;
     TryBlockCounter,Level:longint;
+
+  procedure AddStringCompare(Code: TCodeWriter; FuncName: ansistring; Left, Right: TTreeNode);
+  begin
+   Code.Add(FuncName+'(');
+   if Left.Return.TypeDefinition = ttdShortString then
+    Code.Add('&');
+   if Left.Return.TypeDefinition = ttdPointer then
+    TranslateCode(Left)
+   else
+    TranslateStringCode(Left, Left.Return);
+    Code.Add(',');
+
+   if Right.Return.TypeDefinition = ttdShortString then
+    Code.Add('&');
+   if Right.Return.TypeDefinition = ttdPointer then
+    TranslateCode(Right)
+   else
+    TranslateStringCode(Right, Left.Return);
+   Code.Add(')');
+  end;
+  procedure DoStringCompare(Left, Right: TTreeNode);
+  begin
+   if(Left.Return.TypeDefinition = ttdLongString)and(Right.Return.TypeDefinition = ttdLongString)then
+    AddStringCompare(FProcCode, 'pasCompareStrL', Left, Right)
+   else if(Left.Return.TypeDefinition = ttdShortString)and(Right.Return.TypeDefinition = ttdShortString)then
+    AddStringCompare(FProcCode, 'pasCompareStrS', Left, Right)
+   else if(Left.Return.TypeDefinition = ttdPointer)and(Right.Return.TypeDefinition = ttdPointer)then
+    AddStringCompare(FProcCode, 'pasCompareStrP', Left, Right)
+   else if(Left.Return.TypeDefinition = ttdShortString)and(Right.Return.TypeDefinition = ttdLongString)then
+    AddStringCompare(FProcCode, 'pasCompareStrSL', Left, Right)
+   else if(Left.Return.TypeDefinition = ttdPointer)and(Right.Return.TypeDefinition = ttdLongString)then
+    AddStringCompare(FProcCode, 'pasCompareStrPL', Left, Right)
+   else if(Left.Return.TypeDefinition = ttdPointer)and(Right.Return.TypeDefinition = ttdShortstring)then
+    AddStringCompare(FProcCode, 'pasCompareStrPS', Left, Right)
+   else if(Right.Return.TypeDefinition = ttdShortString)and(Left.Return.TypeDefinition = ttdLongString)then
+    AddStringCompare(FProcCode, 'pasCompareStrSL', Right, Left)
+   else if(Right.Return.TypeDefinition = ttdPointer)and(Left.Return.TypeDefinition = ttdLongString)then
+    AddStringCompare(FProcCode, 'pasCompareStrPL', Right, Left)
+   else if(Right.Return.TypeDefinition = ttdPointer)and(Left.Return.TypeDefinition = ttdShortstring)then
+    AddStringCompare(FProcCode, 'pasCompareStrPS', Right, Left)
+   else Error.InternalError(20130608037242);
+  end;
+
+
 begin
  if assigned(TreeNode) then begin
   if TreeNode.LineNumber=680 then begin
@@ -1048,9 +1105,14 @@ begin
    ttntLess:begin
     if assigned(TreeNode.Left) and assigned(TreeNode.Right) then begin
      FProcCode.Add('(');
-     TranslateCode(TreeNode.Left);
-     FProcCode.Add('<',spacesBOTH);
-     TranslateCode(TreeNode.Right);
+     if IsStringType(TreeNode.Left.Return) and IsStringType(TreeNode.Right.Return) then begin
+      DoStringCompare(TreeNode.Left, TreeNode.Right);
+      FProcCode.Add('<0');
+     end else begin
+      TranslateCode(TreeNode.Left);
+      FProcCode.Add('<',spacesBOTH);
+      TranslateCode(TreeNode.Right);
+     end;
      FProcCode.Add(')');
     end else begin
      Error.InternalError(201302222215000);
@@ -1059,9 +1121,14 @@ begin
    ttntLessOrEqual:begin
     if assigned(TreeNode.Left) and assigned(TreeNode.Right) then begin
      FProcCode.Add('(');
-     TranslateCode(TreeNode.Left);
-     FProcCode.Add('<=',spacesBOTH);
-     TranslateCode(TreeNode.Right);
+     if IsStringType(TreeNode.Left.Return) and IsStringType(TreeNode.Right.Return) then begin
+      DoStringCompare(TreeNode.Left, TreeNode.Right);
+      FProcCode.Add('<=0');
+     end else begin
+      TranslateCode(TreeNode.Left);
+      FProcCode.Add('<=',spacesBOTH);
+      TranslateCode(TreeNode.Right);
+     end;
      FProcCode.Add(')');
     end else begin
      Error.InternalError(201302222215001);
@@ -1070,9 +1137,14 @@ begin
    ttntGreater:begin
     if assigned(TreeNode.Left) and assigned(TreeNode.Right) then begin
      FProcCode.Add('(');
-     TranslateCode(TreeNode.Left);
-     FProcCode.Add('>',spacesBOTH);
-     TranslateCode(TreeNode.Right);
+     if IsStringType(TreeNode.Left.Return) and IsStringType(TreeNode.Right.Return) then begin
+      DoStringCompare(TreeNode.Left, TreeNode.Right);
+      FProcCode.Add('>0');
+     end else begin
+      TranslateCode(TreeNode.Left);
+      FProcCode.Add('>',spacesBOTH);
+      TranslateCode(TreeNode.Right);
+     end;
      FProcCode.Add(')');
     end else begin
      Error.InternalError(201302222215002);
@@ -1081,9 +1153,14 @@ begin
    ttntGreaterOrEqual:begin
     if assigned(TreeNode.Left) and assigned(TreeNode.Right) then begin
      FProcCode.Add('(');
-     TranslateCode(TreeNode.Left);
-     FProcCode.Add('>=',spacesBOTH);
-     TranslateCode(TreeNode.Right);
+     if IsStringType(TreeNode.Left.Return) and IsStringType(TreeNode.Right.Return) then begin
+      DoStringCompare(TreeNode.Left, TreeNode.Right);
+      FProcCode.Add('>=0');
+     end else begin
+      TranslateCode(TreeNode.Left);
+      FProcCode.Add('>=',spacesBOTH);
+      TranslateCode(TreeNode.Right);
+     end;
      FProcCode.Add(')');
     end else begin
      Error.InternalError(201302222216000);
@@ -1092,9 +1169,14 @@ begin
    ttntEqual:begin
     if assigned(TreeNode.Left) and assigned(TreeNode.Right) then begin
      FProcCode.Add('(');
-     TranslateCode(TreeNode.Left);
-     FProcCode.Add('==',spacesBOTH);
-     TranslateCode(TreeNode.Right);
+     if IsStringType(TreeNode.Left.Return) and IsStringType(TreeNode.Right.Return) then begin
+      DoStringCompare(TreeNode.Left, TreeNode.Right);
+      FProcCode.Add('==0');
+     end else begin
+      TranslateCode(TreeNode.Left);
+      FProcCode.Add('==',spacesBOTH);
+      TranslateCode(TreeNode.Right);
+     end;
      FProcCode.Add(')');
     end else begin
      Error.InternalError(201302222216001);
@@ -1103,9 +1185,14 @@ begin
    ttntNotEqual:begin
     if assigned(TreeNode.Left) and assigned(TreeNode.Right) then begin
      FProcCode.Add('(');
-     TranslateCode(TreeNode.Left);
-     FProcCode.Add('!=',spacesBOTH);
-     TranslateCode(TreeNode.Right);
+     if IsStringType(TreeNode.Left.Return) and IsStringType(TreeNode.Right.Return) then begin
+      DoStringCompare(TreeNode.Left, TreeNode.Right);
+      FProcCode.Add('!=0');
+     end else begin
+      TranslateCode(TreeNode.Left);
+      FProcCode.Add('!=',spacesBOTH);
+      TranslateCode(TreeNode.Right);
+     end;
      FProcCode.Add(')');
     end else begin
      Error.InternalError(201302222216002);
@@ -1921,9 +2008,7 @@ begin
           FProcCode.Add('((void*)(');
          end;
 
-         if Assigned(SubTreeNode.Left)and(Assigned(SubTreeNode.Left.Return))and
-           ((SubTreeNode.Left.Return.TypeDefinition = ttdLongstring)or
-            (SubTreeNode.Left.Return.TypeDefinition = ttdShortString)) then begin
+         if Assigned(SubTreeNode.Left)and IsStringType(SubTreeNode.Left.Return, False) then begin
           TranslateStringCode(SubTreeNode.Left, @AnsistringType)
          end else begin
           TranslateCode(SubTreeNode.Left);
@@ -2502,9 +2587,7 @@ begin
       end;
 
       if Assigned(SubTreeNode.Left) and (not SubTreeNode.ReferenceParameter) and
-        Assigned(SubTreeNode.Left.Return) and
-        ((SubTreeNode.Left.Return.TypeDefinition = ttdLongstring) or
-         (SubTreeNode.Left.Return.TypeDefinition = ttdShortString)) then
+         IsStringType(SubTreeNode.Left.Return) then
        TranslateStringCode(SubTreeNode.Left, SubTreeNode.Return)
       else
        TranslateCode(SubTreeNode.Left, SubTreeNode.ReferenceParameter);
@@ -2536,6 +2619,8 @@ begin
      TranslateCode(TreeNode.Left);
      FProcCode.Add('[');
      TranslateCode(TreeNode.Right);
+     if(TreeNode.Left.Return.TypeDefinition = ttdLongString) then
+       FProcCode.Add('-1');
      FProcCode.Add(']');
     end;
    end;
@@ -2697,11 +2782,7 @@ begin
   // string concat
   ttntAdd:begin
    if assigned(TreeNode.Left) and assigned(TreeNode.Right) and
-   Assigned(TreeNode.Left.Return) and Assigned(TreeNode.Right.Return) and
-   ((TreeNode.Left.Return.TypeDefinition = ttdLongString) or
-    (TreeNode.Left.Return.TypeDefinition = ttdShortString)) and
-   ((TreeNode.Right.Return.TypeDefinition = ttdLongString) or
-    (TreeNode.Right.Return.TypeDefinition = ttdShortString))then begin
+      IsStringType(TreeNode.Left.Return) and IsStringType(TreeNode.Right.Return) then begin
     FProcCode.Add('AddLongstring((pasLongstring)');
     TranslateStringCode(TreeNode.Left, DesiredStringType);
     FProcCode.Add(', (pasLongstring)');
@@ -2718,8 +2799,7 @@ begin
    end;
   ttntTYPECONV:begin
    if assigned(TreeNode.Return) and assigned(TreeNode.Left.Return) and (TreeNode.Left.Return<>TreeNode.Return) then begin
-   if ((TreeNode.Return.TypeDefinition <> ttdLongString)and(TreeNode.Return.TypeDefinition <> ttdShortString))
-    or ((TreeNode.Left.Return.TypeDefinition <> ttdLongString)and(TreeNode.Left.Return.TypeDefinition <> ttdShortString)) then
+   if (not IsStringType(TreeNode.Return)) or (not IsStringType(TreeNode.Left.Return)) then
      Error.InternalError(20130406173437);
 
     if (TreeNode.Left.TreeNodeType = ttntAdd)or(TreeNode.Left.TreeNodeType = ttntTYPECONV) then
