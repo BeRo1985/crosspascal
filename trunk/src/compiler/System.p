@@ -444,8 +444,12 @@ typedef struct pasGUID {
    uint32_t GUID[4];
 } pasGUID;
 
+typedef struct pasGUIDBytes {
+   uint8_t GUID[16];
+} pasGUIDBytes;
+
 typedef struct pasInterfaceEntry {
-  pasGUID IID;
+  uint8_t IID[16];
   void* vTable;
   int32_t iType;
   int32_t iOffset;
@@ -1373,10 +1377,11 @@ begin
     if(interfaceTable){
       for(int i = 0; i < interfaceTable->entryCount; i++){
         pasInterfaceEntry* interfaceEntry = (void*)&interfaceTable->entries[i];
-        if((interfaceEntry->IID.GUID[0] == IID->GUID[0])&&
-           (interfaceEntry->IID.GUID[1] == IID->GUID[1])&&
-           (interfaceEntry->IID.GUID[2] == IID->GUID[2])&&
-           (interfaceEntry->IID.GUID[3] == IID->GUID[3])){
+        pasGUID* interfaceEntryIID = (void*)&interfaceEntry->IID;
+        if((interfaceEntryIID->GUID[0] == IID->GUID[0])&&
+           (interfaceEntryIID->GUID[1] == IID->GUID[1])&&
+           (interfaceEntryIID->GUID[2] == IID->GUID[2])&&
+           (interfaceEntryIID->GUID[3] == IID->GUID[3])){
           resultInterfaceEntry = (void*)interfaceEntry;
           goto done;
         }
@@ -1405,9 +1410,9 @@ begin
         }
         break;
       }
-      case 2:{
+      case 2:{            
         /* Virtual method */
-        method = *(void**)((void*)(self + resultInterfaceEntry->iOffset));
+        method = (void*)((*((void**)self)) + resultInterfaceEntry->iOffset);
         obj = method(self);
         break;
       }
@@ -1440,10 +1445,11 @@ begin
     if(interfaceTable){
       for(int i = 0; i < interfaceTable->entryCount; i++){
         pasInterfaceEntry* interfaceEntry = (void*)&interfaceTable->entries[i];
-        if((interfaceEntry->IID.GUID[0] == IID->GUID[0])&&
-           (interfaceEntry->IID.GUID[1] == IID->GUID[1])&&
-           (interfaceEntry->IID.GUID[2] == IID->GUID[2])&&
-           (interfaceEntry->IID.GUID[3] == IID->GUID[3])){
+        pasGUID* interfaceEntryIID = (void*)&interfaceEntry->IID;
+        if((interfaceEntryIID->GUID[0] == IID->GUID[0])&&
+           (interfaceEntryIID->GUID[1] == IID->GUID[1])&&
+           (interfaceEntryIID->GUID[2] == IID->GUID[2])&&
+           (interfaceEntryIID->GUID[3] == IID->GUID[3])){
           <<<result>>> = (void*)interfaceEntry;
           goto done;
         }
