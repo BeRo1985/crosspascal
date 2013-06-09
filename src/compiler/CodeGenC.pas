@@ -169,7 +169,7 @@ begin
          ((AType.TypeDefinition = ttdPointer)and Assigned(AType.PointerTo) and
           TreatPCharAsString and Assigned(AType.PointerTo.TypeDefinition) and
           ((AType.PointerTo.TypeDefinition.TypeDefinition = ttdSubRange) and
-           (AType.PointerTo.TypeDefinition.SubRangeType in [tstUnsignedChar, tstUnsignedWideChar])));
+           (AType.PointerTo.TypeDefinition.SubRangeType in [tstUnsignedChar, tstUnsignedWideChar, tstUnsignedHugeChar])));
 end;
 
 function TCodeGenC.GetModuleName(Sym: PSymbol): ansistring;
