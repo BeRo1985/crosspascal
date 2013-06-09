@@ -1181,7 +1181,16 @@ begin
   <<<result>>>->INTERNAL_FIELD_VMT = (void*)<<<self>>>;
   <<<ClassPtr>>> = <<<self>>>;
   while(<<<ClassPtr>>>){
-    /* INTERFACE TODO */
+    pasInterfaceTable* interfaceTable = ((pasClassVirtualMethodTable*)pasClassVMTUnmask(<<<ClassPtr>>>))->vmtIntfTable;
+    if(interfaceTable){
+      for(uint32_t i = 0; i < interfaceTable->entryCount; i++){
+        pasInterfaceEntry* interfaceEntry = &interfaceTable->entries[i];
+        if(interfaceEntry->vTable && (interfaceEntry->iType == 0)){
+          void** target = (void*)(((void*)<<<result>>>) + interfaceEntry->iOffset);
+          *target = interfaceEntry->vTable;
+        }
+      }
+    }
     <<<ClassPtr>>> = ((pasClassVirtualMethodTable*)pasClassVMTUnmask(<<<ClassPtr>>>))->vmtParent;
   }
 ]]]
