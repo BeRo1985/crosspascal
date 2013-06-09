@@ -3317,6 +3317,8 @@ begin
 end;
 
 procedure TCodeGenC.TranslateModuleTypes(ModuleSymbol:PSymbol;Target,CodeTarget:TCodeWriter);
+type PGUIDCastedBytes=^TGUIDCastedBytes;
+     TGUIDCastedBytes=array[0..15] of byte;
 type TTypeItems=array of PType;
 var TypeItems:TTypeItems;
  procedure SortTypes;
@@ -3590,7 +3592,7 @@ var TypeItems:TTypeItems;
    SetLength(CopyTypeItems,0);
   end;
  end;
-var i,j,k:longint;
+var i,j,k,VirtualIndexCountOffset:longint;
     Type_,CurrentType:PType;
     TypeChain:TPointerList;
     Name:ansistring;
@@ -3604,6 +3606,8 @@ var i,j,k:longint;
     VariantLevelVariants:array of integer;
     HasLast,HasDynamicMethods:boolean;
     DumpedRTTIList:TStringList;
+    ImplementedInterface:TImplementedInterface;
+    GUIDCastedBytes:PGUIDCastedBytes;
 begin
  TypeItems:=nil;
  VariantLevelVariants:=nil;
@@ -3617,6 +3621,14 @@ begin
   for i:=0 to length(TypeItems)-1 do begin
    Type_:=TypeItems[i];
    Type_^.Dumped:=false;
+  end;
+
+  Symbol:=SymbolManager.GetSymbol(tpsIdentifier+'SYSTEM');
+  if assigned(Symbol) and (Symbol^.SymbolType=Symbols.tstUnit) then begin
+   Symbol:=Symbol^.SymbolList.GetSymbol(tpsIdentifier+'TOBJECT');
+   VirtualIndexCountOffset:=Symbol^.TypeDefinition^.VirtualIndexCount;
+  end else begin
+   VirtualIndexCountOffset:=0;
   end;
 
   SortTypes;
@@ -4162,7 +4174,66 @@ begin
          CodeTarget.AddLn('');
         end;{}
 
-        if (Type_.TypeDefinition=ttdCLASS) and (MethodTableList.Count>0) then begin
+        if (Type_^.TypeDefinition=ttdCLASS) and (length(Type_^.ImplementedInterfaces)>0) then begin
+         Target.AddLn('typedef struct {');
+         Target.IncTab;
+         Target.AddLn('uint32_t entryCount;');
+         Target.AddLn('pasInterfaceEntry entries['+IntToStr(length(Type_^.ImplementedInterfaces))+'];');
+         Target.DecTab;
+         Target.AddLn('} '+Name+'_INTERFACE_TABLE_TYPE;');
+         Target.AddLn('extern '+Name+'_INTERFACE_TABLE_TYPE '+Name+'_INTERFACE_TABLE;');
+         CodeTarget.AddLn(Name+'_INTERFACE_TABLE_TYPE '+Name+'_INTERFACE_TABLE = {');
+         CodeTarget.IncTab;
+         CodeTarget.AddLn(IntToStr(length(Type_^.ImplementedInterfaces))+',');
+         for j:=0 to length(Type_^.ImplementedInterfaces)-1 do begin
+          ImplementedInterface:=Type_^.ImplementedInterfaces[j];
+          CodeTarget.AddLn('{');
+          CodeTarget.IncTab;
+          if assigned(ImplementedInterface.InterfaceTypeSymbol) then begin
+           GUIDCastedBytes:=pointer(@ImplementedInterface.InterfaceTypeSymbol^.TypeDefinition.GUID);
+           CodeTarget.AddLn(IntToStr(GUIDCastedBytes^[0])+','+IntToStr(GUIDCastedBytes^[1])+','+IntToStr(GUIDCastedBytes^[2])+','+IntToStr(GUIDCastedBytes^[3])+','+
+                            IntToStr(GUIDCastedBytes^[4])+','+IntToStr(GUIDCastedBytes^[5])+','+IntToStr(GUIDCastedBytes^[6])+','+IntToStr(GUIDCastedBytes^[7])+','+
+                            IntToStr(GUIDCastedBytes^[8])+','+IntToStr(GUIDCastedBytes^[9])+','+IntToStr(GUIDCastedBytes^[10])+','+IntToStr(GUIDCastedBytes^[11])+','+
+                            IntToStr(GUIDCastedBytes^[12])+','+IntToStr(GUIDCastedBytes^[13])+','+IntToStr(GUIDCastedBytes^[14])+','+IntToStr(GUIDCastedBytes^[15])+',');
+          end else begin
+           CodeTarget.AddLn('0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,');
+          end;
+          CodeTarget.AddLn('NULL,');
+          CodeTarget.AddLn(IntToStr(ImplementedInterface.IType)+',');
+          case ImplementedInterface.IType of
+           iiitSTANDARD:begin
+            CodeTarget.AddLn(IntToStr(ImplementedInterface.InternalClassVTableFieldOffset)+',');
+            CodeTarget.AddLn('NULL');
+           end;
+           iiitFIELDVALUE:begin
+            CodeTarget.AddLn(IntToStr(ImplementedInterface.InternalClassVTableFieldOffset)+',');
+            CodeTarget.AddLn('NULL');
+           end;
+           iiitVIRTUALMETHOD:begin
+            CodeTarget.AddLn(IntToStr(ImplementedInterface.InternalClassVTableField^.VirtualIndex-VirtualIndexCountOffset)+'*sizeof(void*),');
+            CodeTarget.AddLn('NULL');
+           end;
+           iiitSTATICMETHOD:begin
+            CodeTarget.AddLn('0,');
+            CodeTarget.AddLn('&'+GetSymbolName(ImplementedInterface.InternalClassVTableField));
+           end;
+           else begin
+            CodeTarget.AddLn('0,');
+            CodeTarget.AddLn('NULL');
+           end;
+          end;
+          CodeTarget.DecTab;
+          if (j+1)<length(Type_^.ImplementedInterfaces) then begin
+           CodeTarget.AddLn('},');
+          end else begin
+           CodeTarget.AddLn('}');
+          end;
+         end;
+         CodeTarget.DecTab;
+         CodeTarget.AddLn('};');
+        end;
+
+        if (Type_^.TypeDefinition=ttdCLASS) and (MethodTableList.Count>0) then begin
          Target.AddLn('typedef struct {');
          Target.IncTab;
          Target.AddLn('size_t count;');
@@ -4180,7 +4251,7 @@ begin
          CodeTarget.AddLn('};');
         end;
 
-        if (Type_.TypeDefinition=ttdCLASS) and ((FieldTableList.Count>0) or (ClassTableList.Count>0)) then begin
+        if (Type_^.TypeDefinition=ttdCLASS) and ((FieldTableList.Count>0) or (ClassTableList.Count>0)) then begin
          Target.AddLn('typedef struct {');
          Target.IncTab;
          Target.AddLn('size_t count;');
@@ -4243,7 +4314,11 @@ begin
          // void* vmtSelfPtr;
          CodeTarget.AddLn('(void*)&'+Name+'_VMT,');
          // void* vmtIntfTable;
-         CodeTarget.AddLn('NULL,');
+         if (Type_^.TypeDefinition=ttdCLASS) and (length(Type_^.ImplementedInterfaces)>0) then begin
+          CodeTarget.AddLn('(void*)&'+Name+'_INTERFACE_TABLE,');
+         end else begin
+          CodeTarget.AddLn('NULL,');
+         end;
          // void* vmtAutoTable;
          CodeTarget.AddLn('NULL,');
          // void* vmtInitTable;
