@@ -3883,12 +3883,11 @@ begin
           end;
           CodeTarget.AddLn(IntToStr(Type_^.LowerLimit)+'ll,');
           CodeTarget.AddLn(IntToStr(Type_^.UpperLimit)+'ll,');
- {        if assigned(Type_^.Definition) then begin
+          if assigned(Type_^.Definition) and Type_^.Definition^.RuntimeTypeInfo then begin
            CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.Definition)+'_RUNTIME_TYPEINFO,');
           end else begin
            CodeTarget.AddLn('NULL,');
-          end;}
-          CodeTarget.AddLn('NULL,');
+          end;
           CodeTarget.AddLn('NULL');
          end;
          TypeKindSet:begin
@@ -3918,7 +3917,7 @@ begin
             CodeTarget.AddLn(IntToStr(otUQuad)+',');
            end;
           end;
-          if assigned(Type_^.SetOf) and Type_^.SetOf^.GeneralTypeInfo then begin
+          if assigned(Type_^.SetOf) and Type_^.SetOf^.RunTimeTypeInfo then begin
            CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.SetOf)+'_RUNTIME_TYPEINFO');
           end else begin
            CodeTarget.AddLn('NULL');
@@ -4026,7 +4025,7 @@ begin
         CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
         CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
         CodeTarget.AddLn('(void*)pasClassVMTMask((void*)&'+Name+'_VMT),');
-        if assigned(Type_^.ChildOf) and Type_^.ChildOf^.TypeDefinition^.GeneralTypeInfo then begin
+        if assigned(Type_^.ChildOf) and Type_^.ChildOf^.TypeDefinition^.RuntimeTypeInfo then begin
          CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.ChildOf^.TypeDefinition)+'_RUNTIME_TYPEINFO,');
         end else begin
          CodeTarget.AddLn('NULL,');
@@ -4042,7 +4041,7 @@ begin
              dec(k);
              CodeTarget.AddLn('{');
              CodeTarget.IncTab;
-             if assigned(Symbol.PropertyType) and Symbol.PropertyType^.GeneralTypeInfo then begin
+             if assigned(Symbol.PropertyType) and Symbol.PropertyType^.RuntimeTypeInfo then begin
               CodeTarget.AddLn('(void*)&'+GetTypeName(Symbol.PropertyType)+'_RUNTIME_TYPEINFO,');
              end else begin
               CodeTarget.AddLn('NULL,');
@@ -4157,7 +4156,7 @@ begin
            end;
            if assigned(Symbol^.TypeDefinition) and (Symbol^.TypeDefinition^.TypeDefinition=ttdArray) then begin
             j:=j or pfArray;
-           end;                                                                                      
+           end;
            if assigned(Symbol^.TypeDefinition) and (Symbol^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
             j:=j or pfAddress;
            end;
@@ -4208,7 +4207,7 @@ begin
         CodeTarget.IncTab;
         CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
         CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
-        if assigned(Type_^.ChildOf) and Type_^.ChildOf^.TypeDefinition^.GeneralTypeInfo then begin
+        if assigned(Type_^.ChildOf) and Type_^.ChildOf^.TypeDefinition^.RuntimeTypeInfo then begin
          CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.ChildOf^.TypeDefinition)+'_RUNTIME_TYPEINFO,');
         end else begin
          CodeTarget.AddLn('NULL,');
@@ -4274,7 +4273,7 @@ begin
         CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
         if assigned(Type_^.Definition) then begin
          CodeTarget.AddLn(IntToStr(SymbolManager.GetSize(Type_^.Definition))+',');
-         if Type_^.Definition^.GeneralTypeInfo then begin
+         if Type_^.Definition^.RuntimeTypeInfo then begin
           CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.Definition)+'_RUNTIME_TYPEINFO,');
          end else begin
           CodeTarget.AddLn('NULL,');
@@ -4284,6 +4283,28 @@ begin
          CodeTarget.AddLn('NULL,');
         end;
         CodeTarget.AddLn('(void*)&'+GetSymbolName(ModuleSymbol)+'_UNIT_NAME');
+        CodeTarget.DecTab;
+        CodeTarget.AddLn('};');
+        CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_POINTER_TYPE '+Name+'_RUNTIME_TYPEINFO_POINTER = (void*)(&'+Name+'_RUNTIME_TYPEINFO);');
+       end;
+       TypeKindPointer:begin
+        Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');
+        Target.IncTab;
+        Target.AddLn('uint8_t kind;');
+        Target.AddLn('uint8_t* name;');
+        Target.AddLn('void* pointerType;');
+        Target.DecTab;
+        Target.AddLn('} '+Name+'_RUNTIME_TYPEINFO_TYPE;');
+        Target.AddLn('typedef '+Name+'_RUNTIME_TYPEINFO_TYPE* '+Name+'_RUNTIME_TYPEINFO_POINTER_TYPE;');
+        CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_TYPE '+Name+'_RUNTIME_TYPEINFO={');
+        CodeTarget.IncTab;
+        CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
+        CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+        if assigned(Type_^.PointerTo) and Type_^.PointerTo^.TypeDefinition^.RuntimeTypeInfo then begin
+         CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.PointerTo^.TypeDefinition)+'_RUNTIME_TYPEINFO,');
+        end else begin
+         CodeTarget.AddLn('NULL,');
+        end;
         CodeTarget.DecTab;
         CodeTarget.AddLn('};');
         CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_POINTER_TYPE '+Name+'_RUNTIME_TYPEINFO_POINTER = (void*)(&'+Name+'_RUNTIME_TYPEINFO);');
