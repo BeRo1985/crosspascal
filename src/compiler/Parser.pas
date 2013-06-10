@@ -211,7 +211,7 @@ begin
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
- AType^.TypeKind:=TypeKindUnknown;
+ AType^.TypeKind:=TypeKindPointer;
  AType^.GeneralTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
@@ -607,7 +607,7 @@ begin
 
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
- AType^.TypeKind:=TypeKindUnknown;
+ AType^.TypeKind:=TypeKindPointer;
  AType^.GeneralTypeInfo:=false;
  AType^.TypeDefinition:=ttdPointer;
  AType^.PointerTo:=LastSymbol;
@@ -655,7 +655,7 @@ begin
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
- AType^.TypeKind:=TypeKindUnknown;
+ AType^.TypeKind:=TypeKindPointer;
  AType^.GeneralTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
@@ -688,7 +688,7 @@ begin
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
- AType^.TypeKind:=TypeKindUnknown;
+ AType^.TypeKind:=TypeKindPointer;
  AType^.GeneralTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
@@ -6613,7 +6613,7 @@ begin
    Scanner.Match(tstPointer);
    CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
    CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
-   CurrentType^.TypeKind:=TypeKindUnknown;
+   CurrentType^.TypeKind:=TypeKindPointer;
    CurrentType^.GeneralTypeInfo:=false;
    CurrentType^.TypeDefinition:=ttdPointer;
    CurrentType^.PointerTo:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);

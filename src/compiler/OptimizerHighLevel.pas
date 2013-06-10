@@ -916,6 +916,7 @@ begin
    Symbol^.TypeDefinition:=TreeNode.Left.Return;
    TreeNode.Return:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass);
    TreeNode.Return^.TypeDefinition:=ttdPointer;
+   TreeNode.Return^.TypeKind:=TypeKindPointer;
    TreeNode.Return^.PointerTo:=Symbol;
   end else begin
    Symbol:=SymbolManager.GetSymbol(tpsIdentifier+'POINTER');

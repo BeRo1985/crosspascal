@@ -327,6 +327,7 @@ procedure Move(var Src; var Dst; Size: Cardinal);
 #define pastkHugeChar 19
 #define pastkUString 20
 #define pastkHString 21
+#define pastkPointer 22
 
 typedef struct pasTypeInfo {
   uint8_t kind;
@@ -956,7 +957,8 @@ void pasInitializeArray(void* p, pasTypeInfo* t, size_t count){
       case pastkUString:
       case pastkHString:
       case pastkInterface:
-      case pastkDynArray:{
+      case pastkDynArray:
+      case pastkPointer:{
         while(count--){
           *((void**)p) = NULL;
           p += sizeof(void*);
@@ -1012,28 +1014,28 @@ void pasFinalizeArray(void* p, pasTypeInfo* t, size_t count){
     switch(t->kind){
       case pastkLString:{
         while(count--){
-		  FreeLongstring((pasLongstring*)(p));
+          FreeLongstring((pasLongstring*)(p));
           p += sizeof(void*);
         }
         break;
       }
       case pastkWString:{
         while(count--){
-		  FreeLongstring((pasLongstring*)(p));
+          FreeLongstring((pasLongstring*)(p));
           p += sizeof(void*);
         }
         break;
       }
       case pastkUString:{
         while(count--){
-		  FreeLongstring((pasLongstring*)(p));
+          FreeLongstring((pasLongstring*)(p));
           p += sizeof(void*);
         }
         break;
       }
       case pastkHString:{
         while(count--){
-		  FreeLongstring((pasLongstring*)(p));
+          FreeLongstring((pasLongstring*)(p));
           p += sizeof(void*);
         }
         break;
@@ -1072,7 +1074,7 @@ void pasFinalizeArray(void* p, pasTypeInfo* t, size_t count){
         break;
       }
       case pastkRecord:{
-		ft = t->data;
+        ft = t->data;
         while(count--){
           pasFinalizeRecord(p, t);
           p += ft->size;

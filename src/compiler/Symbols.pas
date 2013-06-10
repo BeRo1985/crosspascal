@@ -28,6 +28,7 @@ const TypeKindUnknown=0;
       TypeKindHugeChar=19;
       TypeKindUString=20;
       TypeKindHString=21;
+      TypeKindPointer=22;
 
       otSByte=0;
       otUByte=1;
