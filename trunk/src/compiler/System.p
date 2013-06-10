@@ -4,7 +4,7 @@ unit System;
 
 interface                                                                               
 
-const CompilerInfoString:pchar='OBJPAS2C';
+const CompilerInfoString:pchar='CrossPascal';
      
       fmClosed=$D7B0;
       fmInput=$D7B1;

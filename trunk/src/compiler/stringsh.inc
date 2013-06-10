@@ -529,7 +529,7 @@ pasLongstring ConvertLongstring(uint32_t codePage, uint32_t elementSize, pasLong
 int pasCompareStrP(void* left, void* right);
 int pasCompareStrL(pasLongstring left, pasLongstring right);
 int pasCompareStrS(pasShortstring255* left, pasShortstring255* right);
-int pasCompareStrSL(pasShortstring255* left, pasLongstring right)
+int pasCompareStrSL(pasShortstring255* left, pasLongstring right);
 int pasCompareStrPL(void* left, pasLongstring right);
 int pasCompareStrPS(void* left, pasShortstring255* right);
 ]]]

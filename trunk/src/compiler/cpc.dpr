@@ -72,6 +72,6 @@ begin
 end;
 
 begin
- WriteLn('ObjPas2C 1.00 - Copyright (C) 2005-2013, BeRo & red');
+ WriteLn('CrossPascal 1.00 - Copyright (C) 2005-2013, BeRo & red');
  Compile;
 end.
