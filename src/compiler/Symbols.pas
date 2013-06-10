@@ -191,7 +191,9 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
 
       TypeKind:longint;
 
-      NeedTypeInfo:boolean;
+      GeneralTypeInfo:boolean;
+
+      GeneralTypeInfoDumped:boolean;
 
       RuntimeTypeInfo:boolean;
 
@@ -1633,7 +1635,8 @@ begin
  New(result);
  FillChar(result^,SizeOf(TType),#0);
  result^.TypeKind:=0;
- result^.NeedTypeInfo:=false;
+ result^.GeneralTypeInfo:=false;
+ result^.GeneralTypeInfoDumped:=false;
  result^.RuntimeTypeInfo:=false;
  result^.RuntimeTypeInfoDumped:=false;
  result^.Dumped:=false;
