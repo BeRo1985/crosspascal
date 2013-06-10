@@ -4032,6 +4032,7 @@ begin
         end;
         CodeTarget.AddLn('0,');
         if assigned(Type_.RecordTable) then begin
+         j:=0;
          CodeTarget.AddLn('(void*)&'+GetSymbolName(ModuleSymbol)+'_UNIT_NAME,');
          Symbol:=Type_.RecordTable.First;
          while assigned(Symbol) do begin
@@ -4069,9 +4070,10 @@ begin
              if assigned(Symbol.PropertyDefault) and (Symbol.PropertyDefault.SymbolType=Symbols.tstConstant) and (Symbol.PropertyDefault.ConstantType=tctOrdinal) then begin
               CodeTarget.AddLn(IntToStr(Symbol.PropertyDefault.IntValue)+',');
              end else begin
-              CodeTarget.AddLn('-1,');
+              CodeTarget.AddLn('-2147483648,');
              end;
-             CodeTarget.AddLn('-1,');
+             CodeTarget.AddLn(IntToStr(j)+',');
+             inc(j);
              TranslateShortStringConstant(Symbol.OriginalCaseName,CodeTarget);
              CodeTarget.AddLn('');
              CodeTarget.DecTab;
@@ -4166,7 +4168,7 @@ begin
            if Symbol^.VariableType=tvtParameterResult then begin
             j:=j or pfOut;
            end;
-           CodeTarget.AddLn(IntToStr(k)+',');
+           CodeTarget.AddLn(IntToStr(j)+',');
            TranslateShortStringConstant(Symbol.OriginalCaseName,CodeTarget);
            CodeTarget.AddLn(',');
            TranslateShortStringConstant(GetOriginalTypeName(Symbol^.TypeDefinition),CodeTarget);
