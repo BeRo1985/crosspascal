@@ -6552,7 +6552,8 @@ begin
       AType:=CurrentType^.Range;
       CurrentType^.Range:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
       CurrentType^.Range^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
-      CurrentType^.TypeKind:=TypeKindEnumeration;
+      CurrentType^.Range^.TypeKind:=TypeKindEnumeration;
+      CurrentType^.Range^.Definition:=SymbolManager.TypeLongint;
       CurrentType^.Range^.TypeDefinition:=ttdSubRange;
       CurrentType^.Range^.SubRangeType:=tstSigned32Bit;
       CurrentType^.Range^.LowerLimit:=AType^.LowerLimit;
