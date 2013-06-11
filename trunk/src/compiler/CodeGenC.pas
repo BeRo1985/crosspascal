@@ -4164,6 +4164,9 @@ begin
            Symbol:=Symbol^.Next;
           end;
          end;
+         if assigned(Type_^.ReturnType) then begin
+          TypeNameList.Add(TranslateStringConstantDataOnly(UTF8ToHugeString(GetOriginalTypeName(Type_^.ReturnType)),CodeTarget));
+         end;
          Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');
          Target.IncTab;
          Target.AddLn('uint8_t kind;');
@@ -4173,7 +4176,7 @@ begin
          if k>0 then begin
           Target.AddLn('pasParamInfo params['+IntToStr(k)+'];');
          end;
-         Target.AddLn('char* resultType;');
+         Target.AddLn('void* resultType;');
          Target.DecTab;
          Target.AddLn('} '+Name+'_RUNTIME_TYPEINFO_TYPE;');
          Target.AddLn('typedef '+Name+'_RUNTIME_TYPEINFO_TYPE* '+Name+'_RUNTIME_TYPEINFO_POINTER_TYPE;');
@@ -4243,8 +4246,7 @@ begin
           end;
          end;
          if assigned(Type_^.ReturnType) then begin
-          TranslateShortStringConstant(GetOriginalTypeName(Type_^.ReturnType),CodeTarget);
-          Target.AddLn('');
+          Target.AddLn(TypeNameList[TypeNameList.Count-1]);
          end else begin
           Target.AddLn('NULL');
          end;
