@@ -6318,11 +6318,11 @@ begin
      Symbol^.ConstantTypeRecord:=StartType;
      CurrentType^.Definition:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
      CurrentType^.Definition^.Symbol:=Symbol;
-     CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
      CurrentType:=CurrentType^.Definition;
+     CurrentType^.RuntimeTypeInfo:=false;//LocalSwitches^.TypeInfo;
      CurrentType^.TypeDefinition:=ttdEnumerated;
      CurrentType^.TypeKind:=TypeKindEnumeration;
-     CurrentType^.InitializationTypeInfo:=true;
+     CurrentType^.InitializationTypeInfo:=false;//true;
      if Scanner.CurrentToken=tstEqual then begin
       Scanner.Match(tstEqual);
       NewTreeNode:=ParseExpression(false);

@@ -3817,27 +3817,40 @@ begin
        TypeKindInteger,TypeKindAnsiChar,TypeKindEnumeration,TypeKindSet,TypeKindWideChar,TypeKindHugeChar,TypeKindBool:begin
         case Type_.TypeKind of
          TypeKindEnumeration,TypeKindBool:begin
-          if Type_^.TypeDefinition=ttdBoolean then begin
-           NameListString:='False,True';
-          end else if (Type_^.TypeDefinition=ttdEnumerated) and assigned(Type_^.Definition) then begin
-           NameListString:='';
-           CurrentType:=Type_^.Definition;
-           while assigned(CurrentType) do begin
-            if assigned(CurrentType^.Symbol) then begin
-             if length(NameListString)>0 then begin
-              NameListString:=NameListString+',';
+          TypeNameList:=TStringList.Create;
+          try
+           if Type_^.TypeDefinition=ttdBoolean then begin
+            TypeNameList.Add(TranslateStringConstantDataOnly(UTF8ToHugeString('False'),CodeTarget));
+            TypeNameList.Add(TranslateStringConstantDataOnly(UTF8ToHugeString('True'),CodeTarget));
+           end else if (Type_^.TypeDefinition=ttdEnumerated) and assigned(Type_^.Definition) then begin
+            CurrentType:=Type_^.Definition;
+            while assigned(CurrentType) do begin
+             if assigned(CurrentType^.Symbol) then begin
+              TypeNameList.Add(TranslateStringConstantDataOnly(UTF8ToHugeString(CurrentType^.Symbol.OriginalCaseName),CodeTarget));
              end;
-             NameListString:=NameListString+CurrentType^.Symbol.OriginalCaseName;
+             CurrentType:=CurrentType^.Definition;
             end;
-            CurrentType:=CurrentType^.Definition;
            end;
-          end else begin
-           NameListString:='';
+           if TypeNameList.Count>0 then begin
+            CodeTarget.AddLn('static void* '+Name+'_RUNTIME_TYPEINFO_NAMELIST_ARRAY['+IntToStr(TypeNameList.Count)+']={');
+            for j:=0 to TypeNameList.Count-1 do begin
+             if (j+1)<TypeNameList.Count then begin
+              CodeTarget.AddLn(TypeNameList[j]+',');
+             end else begin
+              CodeTarget.AddLn(TypeNameList[j]);
+             end;
+            end;
+            CodeTarget.AddLn('};');
+            NameListString:='(void*)&'+Name+'_RUNTIME_TYPEINFO_NAMELIST_ARRAY';
+           end else begin
+            NameListString:='NULL';
+           end;
+          finally
+           TypeNameList.Free;
           end;
-          NameListString:=TranslateStringConstantDataOnly(UTF8ToHugeString(NameListString),CodeTarget);
          end;
          else begin
-          NameListString:='';
+          NameListString:='NULL';
          end;
         end;
         Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');
