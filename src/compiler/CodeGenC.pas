@@ -3715,7 +3715,7 @@ var TypeItems:TTypeItems;
    SetLength(CopyTypeItems,0);
   end;
  end;
-var i,j,k,VirtualIndexCountOffset:longint;
+var i,j,k,Value,VirtualIndexCountOffset:longint;
     Type_,CurrentType:PType;
     TypeChain:TPointerList;
     Name:ansistring;
@@ -3725,6 +3725,8 @@ var i,j,k,VirtualIndexCountOffset:longint;
     FieldTableList:TPointerList;
     ClassTableList:TPointerList;
     PropNameList:TStringList;
+    ParamNameList:TStringList;
+    TypeNameList:TStringList;
     Symbol,OtherSymbol:PSymbol;
     CurrentVariantLevelIndex:longint;
     VariantLevelVariants:array of integer;
@@ -4122,103 +4124,112 @@ begin
         end;
        end;
        TypeKindMethod:begin
-        k:=0;
-        if assigned(Type_.Parameter) then begin
-         Symbol:=Type_.Parameter.First;
-         while assigned(Symbol) do begin
-          if not (tsaHiddenParameter in Symbol^.Attributes) then begin
-           inc(k);
+        ParamNameList:=TStringList.Create;
+        TypeNameList:=TStringList.Create;
+        try
+         k:=0;
+         if assigned(Type_.Parameter) then begin
+          Symbol:=Type_.Parameter.First;
+          while assigned(Symbol) do begin
+           if not (tsaHiddenParameter in Symbol^.Attributes) then begin
+            ParamNameList.Add(TranslateStringConstantDataOnly(UTF8ToHugeString(Symbol^.OriginalCaseName),CodeTarget));
+            TypeNameList.Add(TranslateStringConstantDataOnly(UTF8ToHugeString(GetOriginalTypeName(Symbol^.TypeDefinition)),CodeTarget));
+            inc(k);
+           end;
+           Symbol:=Symbol^.Next;
           end;
-          Symbol:=Symbol^.Next;
          end;
-        end;
-        Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');
-        Target.IncTab;
-        Target.AddLn('uint8_t kind;');
-        Target.AddLn('void* name;');
-        Target.AddLn('uint8_t methodKind;');
-        Target.AddLn('uint8_t paramCount;');
-        if k>0 then begin
-         Target.AddLn('pasParamInfo params['+IntToStr(k)+'];');
-        end;
-        Target.AddLn('char* resultType;');
-        Target.DecTab;
-        Target.AddLn('} '+Name+'_RUNTIME_TYPEINFO_TYPE;');
-        Target.AddLn('typedef '+Name+'_RUNTIME_TYPEINFO_TYPE* '+Name+'_RUNTIME_TYPEINFO_POINTER_TYPE;');
-        CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_TYPE '+Name+'_RUNTIME_TYPEINFO={');
-        CodeTarget.IncTab;
-        CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
-        CodeTarget.AddLn(NameString+',');
-        if assigned(Type_.ReturnType) then begin
-         if tpaClass in Type_^.ProcedureAttributes then begin
-          Target.AddLn(IntToStr(mkClassFunction)+',');
-         end else begin
-          Target.AddLn(IntToStr(mkFunction)+',');
+         Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');
+         Target.IncTab;
+         Target.AddLn('uint8_t kind;');
+         Target.AddLn('void* name;');
+         Target.AddLn('uint8_t methodKind;');
+         Target.AddLn('uint8_t paramCount;');
+         if k>0 then begin
+          Target.AddLn('pasParamInfo params['+IntToStr(k)+'];');
          end;
-        end else begin
-         if tpaConstructor in Type_^.ProcedureAttributes then begin
-          Target.AddLn(IntToStr(mkConstructor)+',');
-         end else if tpaDestructor in Type_^.ProcedureAttributes then begin
-          Target.AddLn(IntToStr(mkDestructor)+',');
-         end else begin
+         Target.AddLn('char* resultType;');
+         Target.DecTab;
+         Target.AddLn('} '+Name+'_RUNTIME_TYPEINFO_TYPE;');
+         Target.AddLn('typedef '+Name+'_RUNTIME_TYPEINFO_TYPE* '+Name+'_RUNTIME_TYPEINFO_POINTER_TYPE;');
+         CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_TYPE '+Name+'_RUNTIME_TYPEINFO={');
+         CodeTarget.IncTab;
+         CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
+         CodeTarget.AddLn(NameString+',');
+         if assigned(Type_.ReturnType) then begin
           if tpaClass in Type_^.ProcedureAttributes then begin
-           Target.AddLn(IntToStr(mkClassProcedure)+',');
+           Target.AddLn(IntToStr(mkClassFunction)+',');
           end else begin
-           Target.AddLn(IntToStr(mkProcedure)+',');
+           Target.AddLn(IntToStr(mkFunction)+',');
           end;
-         end;
-        end;
-        Target.AddLn(IntToStr(k)+',');
-        if (k>0) and assigned(Type_.Parameter) then begin
-         Symbol:=Type_.Parameter.First;
-         while assigned(Symbol) do begin
-          if not (tsaHiddenParameter in Symbol^.Attributes) then begin
-           dec(k);
-           CodeTarget.AddLn('{');
-           CodeTarget.IncTab;
-           j:=0;
-           if Symbol^.VariableType=tvtParameterVariable then begin
-            j:=j or pfVar;
-           end;
-           if Symbol^.VariableType=tvtParameterConstant then begin
-            j:=j or pfConst;
-           end;
-           if assigned(Symbol^.TypeDefinition) and (Symbol^.TypeDefinition^.TypeDefinition=ttdArray) then begin
-            j:=j or pfArray;
-           end;
-           if assigned(Symbol^.TypeDefinition) and (Symbol^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
-            j:=j or pfAddress;
-           end;
-           if IsSymbolReference(Symbol) then begin
-            j:=j or pfReference;
-           end;
-           if Symbol^.VariableType=tvtParameterResult then begin
-            j:=j or pfOut;
-           end;
-           CodeTarget.AddLn(IntToStr(j)+',');
-           TranslateShortStringConstant(Symbol.OriginalCaseName,CodeTarget);
-           CodeTarget.AddLn(',');
-           TranslateShortStringConstant(GetOriginalTypeName(Symbol^.TypeDefinition),CodeTarget);
-           CodeTarget.AddLn('');
-           CodeTarget.DecTab;
-           if k>0 then begin
-            CodeTarget.AddLn('},');
+         end else begin
+          if tpaConstructor in Type_^.ProcedureAttributes then begin
+           Target.AddLn(IntToStr(mkConstructor)+',');
+          end else if tpaDestructor in Type_^.ProcedureAttributes then begin
+           Target.AddLn(IntToStr(mkDestructor)+',');
+          end else begin
+           if tpaClass in Type_^.ProcedureAttributes then begin
+            Target.AddLn(IntToStr(mkClassProcedure)+',');
            end else begin
-            CodeTarget.AddLn('}');
+            Target.AddLn(IntToStr(mkProcedure)+',');
            end;
           end;
-          Symbol:=Symbol^.Next;
          end;
+         Target.AddLn(IntToStr(k)+',');
+         if (k>0) and assigned(Type_.Parameter) then begin
+          j:=0;
+          Symbol:=Type_.Parameter.First;
+          while assigned(Symbol) do begin
+           if not (tsaHiddenParameter in Symbol^.Attributes) then begin
+            dec(k);
+            CodeTarget.AddLn('{');
+            CodeTarget.IncTab;
+            Value:=0;
+            if Symbol^.VariableType=tvtParameterVariable then begin
+             Value:=Value or pfVar;
+            end;
+            if Symbol^.VariableType=tvtParameterConstant then begin
+             Value:=Value or pfConst;
+            end;
+            if assigned(Symbol^.TypeDefinition) and (Symbol^.TypeDefinition^.TypeDefinition=ttdArray) then begin
+             Value:=Value or pfArray;
+            end;
+            if assigned(Symbol^.TypeDefinition) and (Symbol^.TypeDefinition^.TypeDefinition=ttdPointer) then begin
+             Value:=Value or pfAddress;
+            end;
+            if IsSymbolReference(Symbol) then begin
+             Value:=Value or pfReference;
+            end;
+            if Symbol^.VariableType=tvtParameterResult then begin
+             Value:=Value or pfOut;
+            end;
+            CodeTarget.AddLn(IntToStr(Value)+',');
+            CodeTarget.AddLn(ParamNameList[j]+',');
+            CodeTarget.AddLn(TypeNameList[j]);
+            inc(j);
+            CodeTarget.DecTab;
+            if k>0 then begin
+             CodeTarget.AddLn('},');
+            end else begin
+             CodeTarget.AddLn('}');
+            end;
+           end;
+           Symbol:=Symbol^.Next;
+          end;
+         end;
+         if assigned(Type_^.ReturnType) then begin
+          TranslateShortStringConstant(GetOriginalTypeName(Type_^.ReturnType),CodeTarget);
+          Target.AddLn('');
+         end else begin
+          Target.AddLn('NULL');
+         end;
+         CodeTarget.DecTab;
+         CodeTarget.AddLn('};');
+         CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_POINTER_TYPE '+Name+'_RUNTIME_TYPEINFO_POINTER = (void*)(&'+Name+'_RUNTIME_TYPEINFO);');
+        finally
+         ParamNameList.Free;
+         TypeNameList.Free;
         end;
-        if assigned(Type_^.ReturnType) then begin
-         TranslateShortStringConstant(GetOriginalTypeName(Type_^.ReturnType),CodeTarget);
-         Target.AddLn('');
-        end else begin
-         Target.AddLn('NULL');
-        end;
-        CodeTarget.DecTab;
-        CodeTarget.AddLn('};');
-        CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_POINTER_TYPE '+Name+'_RUNTIME_TYPEINFO_POINTER = (void*)(&'+Name+'_RUNTIME_TYPEINFO);');
        end;
        TypeKindInterface:begin
         Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');

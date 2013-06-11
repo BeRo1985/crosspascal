@@ -381,8 +381,8 @@ typedef pasPropInfoPointer* pasPropInfoPointerPointer;
 
 typedef struct pasParamInfo {
   uint8_t paramFlags;
-  char* paramName;
-  char* typeName;
+  void* paramName;
+  void* typeName;
 } pasParamInfo;
 
 typedef pasParamInfo* pasParamInfoPointer;
