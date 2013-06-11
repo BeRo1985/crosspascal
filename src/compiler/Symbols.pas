@@ -1280,8 +1280,7 @@ begin
    ttdVariant:begin
     result:=0;
    end;
-   ttdEmpty,ttdEnumerated,ttdProcedure,ttdPointer,ttdLongString,ttdClass,
-   ttdInterface:begin
+   ttdEmpty,ttdProcedure,ttdPointer,ttdLongString,ttdClass,ttdInterface:begin
     case Options.TargetArchitecture of
      taX64,taX64WIN64:begin
       result:=8;
@@ -1291,7 +1290,7 @@ begin
      end;
     end;
    end;
-   ttdBoolean,ttdSubRange,ttdCurrency:begin
+   ttdEnumerated,ttdBoolean,ttdSubRange,ttdCurrency:begin
     case AType^.SubRangeType of
      tstSigned8Bit,tstUnsigned8Bit,tstUnsignedChar:begin
       result:=1;
@@ -1402,8 +1401,7 @@ begin
    ttdVariant:begin
     result:=0;
    end;
-   ttdEmpty,ttdEnumerated,ttdProcedure,ttdPointer,ttdLongString,ttdClass,
-   ttdInterface:begin
+   ttdEmpty,ttdProcedure,ttdPointer,ttdLongString,ttdClass,ttdInterface:begin
     case Options.TargetArchitecture of
      taX64,taX64WIN64:begin
       result:=8;
@@ -1413,7 +1411,7 @@ begin
      end;
     end;
    end;
-   ttdBoolean,ttdSubRange,ttdCurrency:begin
+   ttdEnumerated,ttdBoolean,ttdSubRange,ttdCurrency:begin
     case AType^.SubRangeType of
      tstSigned8Bit,tstUnsigned8Bit,tstUnsignedChar:begin
       result:=1;
