@@ -90,7 +90,8 @@ type TCodeWriter = class
        procedure ProcessTypedConstant(var Constant: PConstant; AType: PType; Target: TCodeWriter);
        procedure ProcessFunctionType(Symbol:PSymbol; ReturnType: PType; Parameter: TSymbolList; const funcName: ansistring; Target: TCodeWriter; InjectinstanceData:boolean=false);
 
-       function TranslateStringConstant(ConstantStr: THugeString): ansistring;
+       function TranslateStringConstant(ConstantStr: THugeString; ATarget: TCodeWriter = nil): ansistring;
+       function TranslateStringConstantDataOnly(ConstantStr: THugeString; ATarget: TCodeWriter): ansistring;
 
        procedure TranslateShortStringConstant(const Name:ansistring; const ConstantStr: ShortString; ATarget: TCodeWriter); overload;
        procedure TranslateShortStringConstant(const ConstantStr: ShortString; ATarget: TCodeWriter); overload;
@@ -3001,29 +3002,57 @@ begin
  Target.AddLn('//Reg ' + Symbol.Name);
 end;
 
+function UIntToCString(const Value: Cardinal): ansistring;
+begin
+  result := '\x'+IntToHex(Byte(Value shr 0), 2) +
+            '\x'+IntToHex(Byte(Value shr 8), 2) +
+            '\x'+IntToHex(Byte(Value shr 16), 2) +
+            '\x'+IntToHex(Byte(Value shr 24), 2);
+end;
+
 function TCodeGenC.TranslateStringConstant(
-  ConstantStr: THugeString): ansistring;
-
+  ConstantStr: THugeString; ATarget: TCodeWriter = nil): ansistring;
 var AStr: ansistring;
-
-  function UIntToCString(const Value: Cardinal): ansistring;
-  begin
-    result := '\x'+IntToHex(Byte(Value shr 0), 2) +
-              '\x'+IntToHex(Byte(Value shr 8), 2) +
-              '\x'+IntToHex(Byte(Value shr 16), 2) +
-              '\x'+IntToHex(Byte(Value shr 24), 2);
-  end;
-
 begin
   result := GetSymbolName(FSelf) +'_STRING_CONST_'+INTTOSTR(FStringConstCount);
   Inc(FStringConstCount);
 
   AStr := HugeStringToAnsiString(ConstantStr);
 
-  FProcCode.InsertAtMark('static const char '+result+'_DATA['+IntToStr(Length(AStr)+17)+'] = "' + UIntToCString(65535)+UIntToCSTring(1)
+  if assigned(ATarget) then begin
+    ATarget.AddLn('static const char '+result+'_DATA['+IntToStr(Length(AStr)+17)+'] = "' + UIntToCString(65535)+UIntToCSTring(1)+
+                  UIntToCString($FFFFFFFF)+UIntToCString(Length(AStr))+'" ' +
+                  AnsiStringEscape(AStr+#0,True) + ';');
+    ATarget.AddLn('void* '+result+' = (void*)(((void*)(&'+result+'_DATA))+16);');
+  end else begin
+    FProcCode.InsertAtMark('static const char '+result+'_DATA['+IntToStr(Length(AStr)+17)+'] = "' + UIntToCString(65535)+UIntToCSTring(1)
                          +UIntToCString($FFFFFFFF)+UIntToCString(Length(AStr))+'" ' +
                          AnsiStringEscape(AStr+#0,True) + ';');
-  FProcCode.InsertAtMark('void* '+result+' = (void*)((uint32_t)(&'+result+'_DATA)+16);');
+    FProcCode.InsertAtMark('void* '+result+' = (void*)(((void*)(&'+result+'_DATA))+16);');
+  end;
+end;
+
+function TCodeGenC.TranslateStringConstantDataOnly(
+  ConstantStr: THugeString; ATarget: TCodeWriter): ansistring;
+var AStr: ansistring;
+begin
+  result := GetSymbolName(FSelf) +'_STRING_CONST_'+INTTOSTR(FStringConstCount);
+  Inc(FStringConstCount);
+  AStr := HugeStringToAnsiString(ConstantStr);
+  if length(AStr)=0 then begin
+   result:='NULL';
+  end else begin
+   if assigned(ATarget) then begin
+    ATarget.AddLn('static const char '+result+'_DATA['+IntToStr(Length(AStr)+17)+'] = "' + UIntToCString(65535)+UIntToCSTring(1)+
+                  UIntToCString($FFFFFFFF)+UIntToCString(Length(AStr))+'" ' +
+                  AnsiStringEscape(AStr+#0,True) + ';');
+   end else begin
+    FProcCode.InsertAtMark('static const char '+result+'_DATA['+IntToStr(Length(AStr)+17)+'] = "' + UIntToCString(65535)+UIntToCSTring(1)
+                         +UIntToCString($FFFFFFFF)+UIntToCString(Length(AStr))+'" ' +
+                         AnsiStringEscape(AStr+#0,True) + ';');
+   end;
+   result:='((void*)(((void*)(&'+result+'_DATA))+16))';
+  end;
 end;
 
 procedure TCodeGenC.TranslateShortStringConstant(const Name:ansistring; const ConstantStr: ShortString; ATarget: TCodeWriter);
@@ -3695,6 +3724,7 @@ var i,j,k,VirtualIndexCountOffset:longint;
     MethodTableList:TStringList;
     FieldTableList:TPointerList;
     ClassTableList:TPointerList;
+    PropNameList:TStringList;
     Symbol,OtherSymbol:PSymbol;
     CurrentVariantLevelIndex:longint;
     VariantLevelVariants:array of integer;
@@ -3702,6 +3732,7 @@ var i,j,k,VirtualIndexCountOffset:longint;
     DumpedRTTIList:TStringList;
     ImplementedInterface:TImplementedInterface;
     GUIDCastedBytes:PGUIDCastedBytes;
+    UnitNameString,NameString:ansistring;
 begin
  TypeItems:=nil;
  VariantLevelVariants:=nil;
@@ -3746,13 +3777,9 @@ begin
   end;
   Target.AddLn(''); *)
 
-  Target.AddLn('extern static uint8_t '+GetSymbolName(ModuleSymbol)+'_UNIT_NAME['+IntToStr(length(ModuleSymbol.OriginalCaseName)+1)+'];');
-  CodeTarget.Add('static uint8_t '+GetSymbolName(ModuleSymbol)+'_UNIT_NAME['+IntToStr(length(ModuleSymbol.OriginalCaseName)+1)+'] = {');
-  CodeTarget.Add(IntToStr(length(ModuleSymbol.OriginalCaseName)));
-  for j:=1 to length(ModuleSymbol.OriginalCaseName) do begin
-   CodeTarget.Add(','+IntToStr(byte(ansichar(ModuleSymbol.OriginalCaseName[j]))));
-  end;
-  CodeTarget.AddLn('};');
+  UnitNameString:=TranslateStringConstantDataOnly(UTF8ToHugeString(ModuleSymbol.OriginalCaseName),CodeTarget);
+  Target.AddLn('extern static void* '+GetSymbolName(ModuleSymbol)+'_UNIT_NAME;');
+  CodeTarget.AddLn('static void* '+GetSymbolName(ModuleSymbol)+'_UNIT_NAME = '+UnitNameString+';');
 
   DumpedRTTIList:=TStringList.Create;
   try
@@ -3775,26 +3802,21 @@ begin
 
      if DoRuntimeTypeInfo or DoGeneralTypeInfo then begin
       if assigned(Type_.Symbol) then begin
-       Target.AddLn('extern static uint8_t '+Name+'_TYPE_NAME['+IntToStr(length(Type_.Symbol.OriginalCaseName)+1)+'];');
-       CodeTarget.Add('static uint8_t '+Name+'_TYPE_NAME['+IntToStr(length(Type_.Symbol.OriginalCaseName)+1)+'] = {');
-       CodeTarget.Add(IntToStr(length(Type_.Symbol.OriginalCaseName)));
-       for j:=1 to length(Type_.Symbol.OriginalCaseName) do begin
-        CodeTarget.Add(','+IntToStr(byte(ansichar(Type_.Symbol.OriginalCaseName[j]))));
-       end;
-       CodeTarget.AddLn('};');
+       NameString:=TranslateStringConstantDataOnly(UTF8ToHugeString(Type_.Symbol.OriginalCaseName),CodeTarget);
       end else begin
-       Target.AddLn('extern static uint8_t '+Name+'_TYPE_NAME[1];');
-       CodeTarget.AddLn('static uint8_t '+Name+'_TYPE_NAME[1] = { 0 };');
+       NameString:='NULL';
       end;
+     end else begin
+      NameString:='';
      end;
 
      if DoRuntimeTypeInfo then begin
       case Type_.TypeKind of
        TypeKindInteger,TypeKindAnsiChar,TypeKindEnumeration,TypeKindSet,TypeKindWideChar,TypeKindHugeChar:begin
         Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');
-        Target.IncTab;
+        Target.IncTab;       
         Target.AddLn('uint8_t kind;');
-        Target.AddLn('uint8_t* name;');
+        Target.AddLn('void* name;');
         Target.AddLn('uint8_t ordType;');
         case Type_.TypeKind of
          TypeKindInteger,TypeKindAnsiChar,TypeKindEnumeration,TypeKindWideChar,TypeKindHugeChar:begin
@@ -3817,7 +3839,7 @@ begin
         CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_TYPE '+Name+'_RUNTIME_TYPEINFO={');
         CodeTarget.IncTab;
         CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
-        CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+        CodeTarget.AddLn(NameString+',');
         case Type_.TypeKind of
          TypeKindInteger:begin
           case Type_.SubRangeType of
@@ -3942,7 +3964,7 @@ begin
         Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');
         Target.IncTab;
         Target.AddLn('uint8_t kind;');
-        Target.AddLn('uint8_t* name;');
+        Target.AddLn('void* name;');
         Target.AddLn('uint8_t floatType;');
         Target.DecTab;
         Target.AddLn('} '+Name+'_RUNTIME_TYPEINFO_TYPE;');
@@ -3950,7 +3972,7 @@ begin
         CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_TYPE '+Name+'_RUNTIME_TYPEINFO={');
         CodeTarget.IncTab;
         CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
-        CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+        CodeTarget.AddLn(NameString+',');
         case Type_^.TypeDefinition of
          ttdCurrency:begin
           CodeTarget.AddLn(IntToStr(ftCurr));
@@ -3977,7 +3999,7 @@ begin
         Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');
         Target.IncTab;
         Target.AddLn('uint8_t kind;');
-        Target.AddLn('uint8_t* name;');
+        Target.AddLn('void* name;');
         Target.AddLn('uint8_t maxLength;');
         Target.DecTab;
         Target.AddLn('} '+Name+'_RUNTIME_TYPEINFO_TYPE;');
@@ -3985,114 +4007,119 @@ begin
         CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_TYPE '+Name+'_RUNTIME_TYPEINFO={');
         CodeTarget.IncTab;
         CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
-        CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+        CodeTarget.AddLn(NameString+',');
         CodeTarget.AddLn(IntToStr(Type_^.Length));
         CodeTarget.DecTab;
         CodeTarget.AddLn('};');
         CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_POINTER_TYPE '+Name+'_RUNTIME_TYPEINFO_POINTER = (void*)(&'+Name+'_RUNTIME_TYPEINFO);');
        end;
        TypeKindClass:begin
-        k:=0;
-        if assigned(Type_.RecordTable) then begin
-         Symbol:=Type_.RecordTable.First;
-         while assigned(Symbol) do begin
-          case Symbol^.SymbolType of
-           Symbols.tstProperty:begin
-            if tsaOOPPublished in Symbol^.Attributes then begin
-             inc(k);
-            end;
-           end;
-          end;
-          Symbol:=Symbol^.Next;
-         end;
-        end;
-        Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');
-        Target.IncTab;
-        Target.AddLn('uint8_t kind;');
-        Target.AddLn('uint8_t* name;');
-        Target.AddLn('void* classType;');
-        Target.AddLn('void* parentInfo;');
-        Target.AddLn('uint32_t propCount;');
-        Target.AddLn('uint8_t* unitName;');
-        if k>0 then begin
-         Target.AddLn('pasPropInfo props['+IntToStr(k)+'];');
-        end;
-        Target.DecTab;
-        Target.AddLn('} '+Name+'_RUNTIME_TYPEINFO_TYPE;');
-        Target.AddLn('typedef '+Name+'_RUNTIME_TYPEINFO_TYPE* '+Name+'_RUNTIME_TYPEINFO_POINTER_TYPE;');
-        CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_TYPE '+Name+'_RUNTIME_TYPEINFO={');
-        CodeTarget.IncTab;
-        CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
-        CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
-        CodeTarget.AddLn('(void*)pasClassVMTMask((void*)&'+Name+'_VMT),');
-        if assigned(Type_^.ChildOf) and Type_^.ChildOf^.TypeDefinition^.RuntimeTypeInfo then begin
-         CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.ChildOf^.TypeDefinition)+'_RUNTIME_TYPEINFO,');
-        end else begin
-         CodeTarget.AddLn('NULL,');
-        end;
-        CodeTarget.AddLn('0,');
-        if assigned(Type_.RecordTable) then begin
-         j:=0;
-         CodeTarget.AddLn('(void*)&'+GetSymbolName(ModuleSymbol)+'_UNIT_NAME,');
-         Symbol:=Type_.RecordTable.First;
-         while assigned(Symbol) do begin
-          case Symbol^.SymbolType of
-           Symbols.tstProperty:begin
-            if tsaOOPPublished in Symbol^.Attributes then begin
-             dec(k);
-             CodeTarget.AddLn('{');
-             CodeTarget.IncTab;
-             if assigned(Symbol.PropertyType) and Symbol.PropertyType^.RuntimeTypeInfo then begin
-              CodeTarget.AddLn('(void*)&'+GetTypeName(Symbol.PropertyType)+'_RUNTIME_TYPEINFO,');
-             end else begin
-              CodeTarget.AddLn('NULL,');
-             end;
-             if assigned(Symbol.PropertyRead) then begin
-              CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol.PropertyRead)+',');
-             end else begin
-              CodeTarget.AddLn('NULL,');
-             end;
-             if assigned(Symbol.PropertyWrite) then begin
-              CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol.PropertyWrite)+',');
-             end else begin
-              CodeTarget.AddLn('NULL,');
-             end;
-             if assigned(Symbol.PropertyStored) and (Symbol.PropertyStored.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction]) then begin
-              CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol.PropertyStored)+',');
-             end else begin
-              CodeTarget.AddLn('NULL,');
-             end;
-             if assigned(Symbol.PropertyIndex) and (Symbol.PropertyIndex.SymbolType=Symbols.tstConstant) and (Symbol.PropertyIndex.ConstantType=tctOrdinal) then begin
-              CodeTarget.AddLn(IntToStr(Symbol.PropertyIndex.IntValue)+',');
-             end else begin
-              CodeTarget.AddLn('NULL,');
-             end;
-             if assigned(Symbol.PropertyDefault) and (Symbol.PropertyDefault.SymbolType=Symbols.tstConstant) and (Symbol.PropertyDefault.ConstantType=tctOrdinal) then begin
-              CodeTarget.AddLn(IntToStr(Symbol.PropertyDefault.IntValue)+',');
-             end else begin
-              CodeTarget.AddLn('-2147483648,');
-             end;
-             CodeTarget.AddLn(IntToStr(j)+',');
-             inc(j);
-             TranslateShortStringConstant(Symbol.OriginalCaseName,CodeTarget);
-             CodeTarget.AddLn('');
-             CodeTarget.DecTab;
-             if k>0 then begin
-              CodeTarget.AddLn('},');
-             end else begin
-              CodeTarget.AddLn('}');
+        PropNameList:=TStringList.Create;
+        try
+         k:=0;
+         if assigned(Type_.RecordTable) then begin
+          Symbol:=Type_.RecordTable.First;
+          while assigned(Symbol) do begin
+           case Symbol^.SymbolType of
+            Symbols.tstProperty:begin
+             if tsaOOPPublished in Symbol^.Attributes then begin
+              PropNameList.Add(TranslateStringConstantDataOnly(UTF8ToHugeString(Symbol^.OriginalCaseName),CodeTarget));
+              inc(k);
              end;
             end;
            end;
+           Symbol:=Symbol^.Next;
           end;
-          Symbol:=Symbol^.Next;
          end;
-        end else begin
-         CodeTarget.AddLn('(void*)&'+GetSymbolName(ModuleSymbol)+'_UNIT_NAME');
+         Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');
+         Target.IncTab;
+         Target.AddLn('uint8_t kind;');
+         Target.AddLn('void* name;');
+         Target.AddLn('void* classType;');
+         Target.AddLn('void* parentInfo;');
+         Target.AddLn('uint32_t propCount;');
+         Target.AddLn('void* unitName;');
+         if k>0 then begin
+          Target.AddLn('pasPropInfo props['+IntToStr(k)+'];');
+         end;
+         Target.DecTab;
+         Target.AddLn('} '+Name+'_RUNTIME_TYPEINFO_TYPE;');
+         Target.AddLn('typedef '+Name+'_RUNTIME_TYPEINFO_TYPE* '+Name+'_RUNTIME_TYPEINFO_POINTER_TYPE;');
+         CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_TYPE '+Name+'_RUNTIME_TYPEINFO={');
+         CodeTarget.IncTab;
+         CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
+         CodeTarget.AddLn(NameString+',');
+         CodeTarget.AddLn('(void*)pasClassVMTMask((void*)&'+Name+'_VMT),');
+         if assigned(Type_^.ChildOf) and Type_^.ChildOf^.TypeDefinition^.RuntimeTypeInfo then begin
+          CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.ChildOf^.TypeDefinition)+'_RUNTIME_TYPEINFO,');
+         end else begin
+          CodeTarget.AddLn('NULL,');
+         end;
+         CodeTarget.AddLn('0,');
+         if assigned(Type_.RecordTable) then begin
+          j:=0;
+          CodeTarget.AddLn(UnitNameString+',');
+          Symbol:=Type_.RecordTable.First;
+          while assigned(Symbol) do begin
+           case Symbol^.SymbolType of
+            Symbols.tstProperty:begin
+             if tsaOOPPublished in Symbol^.Attributes then begin
+              dec(k);
+              CodeTarget.AddLn('{');
+              CodeTarget.IncTab;
+              if assigned(Symbol.PropertyType) and Symbol.PropertyType^.RuntimeTypeInfo then begin
+               CodeTarget.AddLn('(void*)&'+GetTypeName(Symbol.PropertyType)+'_RUNTIME_TYPEINFO,');
+              end else begin
+               CodeTarget.AddLn('NULL,');
+              end;
+              if assigned(Symbol.PropertyRead) then begin
+               CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol.PropertyRead)+',');
+              end else begin
+               CodeTarget.AddLn('NULL,');
+              end;
+              if assigned(Symbol.PropertyWrite) then begin
+               CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol.PropertyWrite)+',');
+              end else begin
+               CodeTarget.AddLn('NULL,');
+              end;
+              if assigned(Symbol.PropertyStored) and (Symbol.PropertyStored.SymbolType in [Symbols.tstProcedure,Symbols.tstFunction]) then begin
+               CodeTarget.AddLn('(void*)&'+GetSymbolName(Symbol.PropertyStored)+',');
+              end else begin
+               CodeTarget.AddLn('NULL,');
+              end;
+              if assigned(Symbol.PropertyIndex) and (Symbol.PropertyIndex.SymbolType=Symbols.tstConstant) and (Symbol.PropertyIndex.ConstantType=tctOrdinal) then begin
+               CodeTarget.AddLn(IntToStr(Symbol.PropertyIndex.IntValue)+',');
+              end else begin
+               CodeTarget.AddLn('NULL,');
+              end;
+              if assigned(Symbol.PropertyDefault) and (Symbol.PropertyDefault.SymbolType=Symbols.tstConstant) and (Symbol.PropertyDefault.ConstantType=tctOrdinal) then begin
+               CodeTarget.AddLn(IntToStr(Symbol.PropertyDefault.IntValue)+',');
+              end else begin
+               CodeTarget.AddLn('-2147483648,');
+              end;
+              CodeTarget.AddLn(IntToStr(j)+',');
+              CodeTarget.AddLn(PropNameList[j]);
+              inc(j);
+              CodeTarget.DecTab;
+              if k>0 then begin
+               CodeTarget.AddLn('},');
+              end else begin
+               CodeTarget.AddLn('}');
+              end;
+             end;
+            end;
+           end;
+           Symbol:=Symbol^.Next;
+          end;
+         end else begin
+          CodeTarget.AddLn(UnitNameString);
+         end;
+         CodeTarget.DecTab;
+         CodeTarget.AddLn('};');
+         CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_POINTER_TYPE '+Name+'_RUNTIME_TYPEINFO_POINTER = (void*)(&'+Name+'_RUNTIME_TYPEINFO);');
+        finally
+         PropNameList.Free;
         end;
-        CodeTarget.DecTab;
-        CodeTarget.AddLn('};');
-        CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_POINTER_TYPE '+Name+'_RUNTIME_TYPEINFO_POINTER = (void*)(&'+Name+'_RUNTIME_TYPEINFO);');
        end;
        TypeKindMethod:begin
         k:=0;
@@ -4108,7 +4135,7 @@ begin
         Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');
         Target.IncTab;
         Target.AddLn('uint8_t kind;');
-        Target.AddLn('uint8_t* name;');
+        Target.AddLn('void* name;');
         Target.AddLn('uint8_t methodKind;');
         Target.AddLn('uint8_t paramCount;');
         if k>0 then begin
@@ -4121,7 +4148,7 @@ begin
         CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_TYPE '+Name+'_RUNTIME_TYPEINFO={');
         CodeTarget.IncTab;
         CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
-        CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+        CodeTarget.AddLn(NameString+',');
         if assigned(Type_.ReturnType) then begin
          if tpaClass in Type_^.ProcedureAttributes then begin
           Target.AddLn(IntToStr(mkClassFunction)+',');
@@ -4197,18 +4224,18 @@ begin
         Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');
         Target.IncTab;
         Target.AddLn('uint8_t kind;');
-        Target.AddLn('uint8_t* name;');
+        Target.AddLn('void* name;');
         Target.AddLn('void* intfParent;');
         Target.AddLn('uint8_t intfFlags;');
         Target.AddLn('uint8_t intfGUID[16];');
-        Target.AddLn('uint8_t* intfUnitName;');
+        Target.AddLn('void* intfUnitName;');
         Target.DecTab;
         Target.AddLn('} '+Name+'_RUNTIME_TYPEINFO_TYPE;');
         Target.AddLn('typedef '+Name+'_RUNTIME_TYPEINFO_TYPE* '+Name+'_RUNTIME_TYPEINFO_POINTER_TYPE;');
         CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_TYPE '+Name+'_RUNTIME_TYPEINFO={');
         CodeTarget.IncTab;
         CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
-        CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+        CodeTarget.AddLn(NameString+',');
         if assigned(Type_^.ChildOf) and Type_^.ChildOf^.TypeDefinition^.RuntimeTypeInfo then begin
          CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.ChildOf^.TypeDefinition)+'_RUNTIME_TYPEINFO,');
         end else begin
@@ -4229,7 +4256,7 @@ begin
          j:=GUIDCastedBytes^[k];
          CodeTarget.AddLn(IntToStr(j)+',');
         end;
-        CodeTarget.AddLn('(void*)&'+GetSymbolName(ModuleSymbol)+'_UNIT_NAME');
+        CodeTarget.AddLn(UnitNameString);
         CodeTarget.DecTab;
         CodeTarget.AddLn('};');
         CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_POINTER_TYPE '+Name+'_RUNTIME_TYPEINFO_POINTER = (void*)(&'+Name+'_RUNTIME_TYPEINFO);');
@@ -4238,7 +4265,7 @@ begin
         Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');
         Target.IncTab;
         Target.AddLn('uint8_t kind;');
-        Target.AddLn('uint8_t* name;');
+        Target.AddLn('void* name;');
         Target.AddLn('int64_t minValue;');
         Target.AddLn('int64_t maxValue;');
         Target.DecTab;
@@ -4247,7 +4274,7 @@ begin
         CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_TYPE '+Name+'_RUNTIME_TYPEINFO={');
         CodeTarget.IncTab;
         CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
-        CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+        CodeTarget.AddLn(NameString+',');
         CodeTarget.AddLn(IntToStr(Type_^.LowerLimit)+',');
         CodeTarget.AddLn(IntToStr(Type_^.UpperLimit));
         CodeTarget.DecTab;
@@ -4258,10 +4285,10 @@ begin
         Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');
         Target.IncTab;
         Target.AddLn('uint8_t kind;');
-        Target.AddLn('uint8_t* name;');
+        Target.AddLn('void* name;');
         Target.AddLn('uint32_t elSize;');
         Target.AddLn('void* elType;');
-        Target.AddLn('uint8_t* dynUnitName;');
+        Target.AddLn('void* dynUnitName;');
         Target.DecTab;
         Target.AddLn('} '+Name+'_RUNTIME_TYPEINFO_TYPE;');
         Target.AddLn('typedef '+Name+'_RUNTIME_TYPEINFO_TYPE* '+Name+'_RUNTIME_TYPEINFO_POINTER_TYPE;');
@@ -4272,7 +4299,7 @@ begin
         end else begin
          CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
         end;
-        CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+        CodeTarget.AddLn(NameString+',');
         if assigned(Type_^.Definition) then begin
          CodeTarget.AddLn(IntToStr(SymbolManager.GetSize(Type_^.Definition))+',');
          if Type_^.Definition^.RuntimeTypeInfo then begin
@@ -4284,7 +4311,7 @@ begin
          CodeTarget.AddLn('0,');
          CodeTarget.AddLn('NULL,');
         end;
-        CodeTarget.AddLn('(void*)&'+GetSymbolName(ModuleSymbol)+'_UNIT_NAME');
+        CodeTarget.AddLn(UnitNameString);
         CodeTarget.DecTab;
         CodeTarget.AddLn('};');
         CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_POINTER_TYPE '+Name+'_RUNTIME_TYPEINFO_POINTER = (void*)(&'+Name+'_RUNTIME_TYPEINFO);');
@@ -4293,7 +4320,7 @@ begin
         Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');
         Target.IncTab;
         Target.AddLn('uint8_t kind;');
-        Target.AddLn('uint8_t* name;');
+        Target.AddLn('void* name;');
         Target.AddLn('void* pointerType;');
         Target.DecTab;
         Target.AddLn('} '+Name+'_RUNTIME_TYPEINFO_TYPE;');
@@ -4301,7 +4328,7 @@ begin
         CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_TYPE '+Name+'_RUNTIME_TYPEINFO={');
         CodeTarget.IncTab;
         CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
-        CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+        CodeTarget.AddLn(NameString+',');
         if assigned(Type_^.PointerTo) and Type_^.PointerTo^.TypeDefinition^.RuntimeTypeInfo then begin
          CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.PointerTo^.TypeDefinition)+'_RUNTIME_TYPEINFO,');
         end else begin
@@ -4315,14 +4342,14 @@ begin
         Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');
         Target.IncTab;
         Target.AddLn('uint8_t kind;');
-        Target.AddLn('uint8_t* name;');
+        Target.AddLn('void* name;');
         Target.DecTab;
         Target.AddLn('} '+Name+'_RUNTIME_TYPEINFO_TYPE;');
         Target.AddLn('typedef '+Name+'_RUNTIME_TYPEINFO_TYPE* '+Name+'_RUNTIME_TYPEINFO_POINTER_TYPE;');
         CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_TYPE '+Name+'_RUNTIME_TYPEINFO={');
         CodeTarget.IncTab;
         CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
-        CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME');
+        CodeTarget.AddLn(NameString);
         CodeTarget.DecTab;
         CodeTarget.AddLn('};');
         CodeTarget.AddLn(Name+'_RUNTIME_TYPEINFO_POINTER_TYPE '+Name+'_RUNTIME_TYPEINFO_POINTER = (void*)(&'+Name+'_RUNTIME_TYPEINFO);');
@@ -4473,7 +4500,7 @@ begin
       end else begin
        CodeTarget.AddLn('NULL,');
       end;
-      CodeTarget.AddLn('(void*)&'+Name+'_TYPE_NAME,');
+      CodeTarget.AddLn(NameString+',');
       case Type_.TypeDefinition of
        ttdRecord,ttdObject,ttdClass,ttdArray:begin
         CodeTarget.AddLn('(void*)&'+Name+'_FIELDTABLE');
