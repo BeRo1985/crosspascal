@@ -3815,6 +3815,7 @@ begin
      if DoRuntimeTypeInfo then begin
       case Type_.TypeKind of
        TypeKindInteger,TypeKindAnsiChar,TypeKindEnumeration,TypeKindSet,TypeKindWideChar,TypeKindHugeChar,TypeKindBool:begin
+        k:=0;
         case Type_.TypeKind of
          TypeKindEnumeration,TypeKindBool:begin
           TypeNameList:=TStringList.Create;
@@ -3822,11 +3823,14 @@ begin
            if Type_^.TypeDefinition=ttdBoolean then begin
             TypeNameList.Add(TranslateStringConstantDataOnly(UTF8ToHugeString('False'),CodeTarget));
             TypeNameList.Add(TranslateStringConstantDataOnly(UTF8ToHugeString('True'),CodeTarget));
+            k:=2;
            end else if (Type_^.TypeDefinition=ttdEnumerated) and assigned(Type_^.Definition) then begin
+            k:=0;
             CurrentType:=Type_^.Definition;
             while assigned(CurrentType) do begin
              if assigned(CurrentType^.Symbol) then begin
               TypeNameList.Add(TranslateStringConstantDataOnly(UTF8ToHugeString(CurrentType^.Symbol.OriginalCaseName),CodeTarget));
+              inc(k);
              end;
              CurrentType:=CurrentType^.Definition;
             end;
@@ -3864,7 +3868,8 @@ begin
           Target.AddLn('int64_t maxValue;');
           case Type_.TypeKind of
            TypeKindEnumeration,TypeKindBool:begin
-            Target.AddLn('void* baseType;');
+//          Target.AddLn('void* baseType;');
+            Target.AddLn('uint32_t nameListCount;');
             Target.AddLn('void* nameList;');
            end;
           end;
@@ -3945,11 +3950,12 @@ begin
           end;
           CodeTarget.AddLn(IntToStr(Type_^.LowerLimit)+'ll,');
           CodeTarget.AddLn(IntToStr(Type_^.UpperLimit)+'ll,');
-          if assigned(Type_^.Definition) and Type_^.Definition^.RuntimeTypeInfo then begin
+{         if assigned(Type_^.Definition) and Type_^.Definition^.RuntimeTypeInfo then begin
            CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.Definition)+'_RUNTIME_TYPEINFO,');
           end else begin
            CodeTarget.AddLn('NULL,');
-          end;
+          end;{}
+          CodeTarget.AddLn(IntToStr(k)+',');
           CodeTarget.AddLn(NameListString);
          end;
          TypeKindSet:begin
