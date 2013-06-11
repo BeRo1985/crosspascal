@@ -3734,7 +3734,7 @@ var i,j,k,Value,VirtualIndexCountOffset:longint;
     DumpedRTTIList:TStringList;
     ImplementedInterface:TImplementedInterface;
     GUIDCastedBytes:PGUIDCastedBytes;
-    UnitNameString,NameString:ansistring;
+    UnitNameString,NameString,NameListString:ansistring;
 begin
  TypeItems:=nil;
  VariantLevelVariants:=nil;
@@ -3815,8 +3815,33 @@ begin
      if DoRuntimeTypeInfo then begin
       case Type_.TypeKind of
        TypeKindInteger,TypeKindAnsiChar,TypeKindEnumeration,TypeKindSet,TypeKindWideChar,TypeKindHugeChar:begin
+        case Type_.TypeKind of
+         TypeKindEnumeration:begin
+          if Type_^.TypeDefinition=ttdBoolean then begin
+           NameListString:='False,True';
+          end else if (Type_^.TypeDefinition=ttdEnumerated) and assigned(Type_^.Definition) then begin
+           NameListString:='';
+           CurrentType:=Type_^.Definition;
+           while assigned(CurrentType) do begin
+            if assigned(CurrentType^.Symbol) then begin
+             if length(NameListString)>0 then begin
+              NameListString:=NameListString+',';
+             end;
+             NameListString:=NameListString+CurrentType^.Symbol.OriginalCaseName;
+            end;
+            CurrentType:=CurrentType^.Definition;
+           end;
+          end else begin
+           NameListString:='';
+          end;
+          NameListString:=TranslateStringConstantDataOnly(UTF8ToHugeString(NameListString),CodeTarget);
+         end;
+         else begin
+          NameListString:='';
+         end;
+        end;
         Target.AddLn('typedef struct '+Name+'_RUNTIME_TYPEINFO_TYPE {');
-        Target.IncTab;       
+        Target.IncTab;
         Target.AddLn('uint8_t kind;');
         Target.AddLn('void* name;');
         Target.AddLn('uint8_t ordType;');
@@ -3912,7 +3937,7 @@ begin
           end else begin
            CodeTarget.AddLn('NULL,');
           end;
-          CodeTarget.AddLn('NULL');
+          CodeTarget.AddLn(NameListString);
          end;
          TypeKindSet:begin
           case Type_.SubRangeType of
@@ -3976,7 +4001,7 @@ begin
         CodeTarget.AddLn(IntToStr(Type_^.TypeKind)+',');
         CodeTarget.AddLn(NameString+',');
         case Type_^.TypeDefinition of
-         ttdCurrency:begin
+         ttdCurrency:begin                
           CodeTarget.AddLn(IntToStr(ftCurr));
          end;
          else begin
