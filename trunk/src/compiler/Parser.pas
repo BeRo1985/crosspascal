@@ -6315,6 +6315,14 @@ begin
      HashSymbol(Symbol);
      Symbol^.SymbolType:=Symbols.tstConstant;
      Symbol^.ConstantType:=tctOrdinal;
+     Symbol^.ConstantTypeRecord:=StartType;
+     CurrentType^.Definition:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
+     CurrentType^.Definition^.Symbol:=Symbol;
+     CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
+     CurrentType:=CurrentType^.Definition;
+     CurrentType^.TypeDefinition:=ttdEnumerated;
+     CurrentType^.TypeKind:=TypeKindEnumeration;
+     CurrentType^.InitializationTypeInfo:=true;
      if Scanner.CurrentToken=tstEqual then begin
       Scanner.Match(tstEqual);
       NewTreeNode:=ParseExpression(false);
@@ -6356,13 +6364,6 @@ begin
       break;
      end;
      inc(Value);
-     CurrentType^.Definition:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
-     CurrentType^.Definition^.Symbol:=Symbol;
-     CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
-     CurrentType:=CurrentType^.Definition;
-     CurrentType^.TypeDefinition:=ttdEnumerated;
-     CurrentType^.TypeKind:=TypeKindEnumeration;
-     CurrentType^.InitializationTypeInfo:=true;
     end;
     CurrentType:=StartType;
     CurrentType.LowerLimit:=LowerValue;
