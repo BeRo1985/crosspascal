@@ -333,7 +333,7 @@ typedef struct pasTypeInfo {
   uint8_t kind;
   uint32_t codePage;
   void* vmt;
-  uint8_t* name;
+  void* name;
   void* data;
 } pasTypeInfo;
 
@@ -373,7 +373,7 @@ typedef struct pasPropInfo {
   int32_t index;
   int32_t default;
   int32_t nameIndex;
-  char* name;
+  void* name;
 } pasPropInfo;
 
 typedef pasPropInfo* pasPropInfoPointer;
