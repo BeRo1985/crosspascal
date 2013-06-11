@@ -976,6 +976,9 @@ begin
       exit;
      end;
     end;
+    if (Flags and 8)<>0 then begin
+     ReadTypeReference(AType^.Definition);
+    end;
     if Stream.Read(AType^.SubRangeType,SizeOf(TStandardType))<>SizeOf(TStandardType) then begin
      SetLength(UsedUnits,0);
      exit;
@@ -1912,6 +1915,9 @@ begin
     if AType^.UpperLimit<>0 then begin
      Flags:=Flags or 4;
     end;
+    if assigned(AType^.Definition) then begin
+     Flags:=Flags or 8;
+    end;
     Stream.WriteByte(Flags);
     if (Flags and 1)<>0 then begin
      if Stream.Write(AType^.Number,SizeOf(int64))<>SizeOf(int64) then begin
@@ -1927,6 +1933,9 @@ begin
      if Stream.Write(AType^.UpperLimit,SizeOf(int64))<>SizeOf(int64) then begin
       exit;
      end;
+    end;
+    if (Flags and 8)<>0 then begin
+     WriteTypeReference(AType^.Definition);
     end;
     if Stream.Write(AType^.SubRangeType,SizeOf(TStandardType))<>SizeOf(TStandardType) then begin
      exit;

@@ -29,6 +29,7 @@ const TypeKindUnknown=0;
       TypeKindUString=20;
       TypeKindHString=21;
       TypeKindPointer=22;
+      TypeKindBool=23;
 
       otSByte=0;
       otUByte=1;
@@ -202,6 +203,8 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
 
       Dumped:boolean;
 
+      Definition:PType;
+
       case TypeDefinition:TTypeDefinition of
        ttdEnumerated,ttdBoolean,ttdSubRange,ttdCurrency:(
         SubRangeType:TStandardType;
@@ -209,7 +212,6 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
        ttdArray,ttdShortString:(
         Length:int64;
         Range:PType;
-        Definition:PType;
         OpenArray:boolean;
         DynamicArray:boolean;
         VariantArray:boolean;
@@ -539,7 +541,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
        TypePAnsiChar,TypePWideChar,TypePHugeChar,
        TypeAnsiString,TypeWideString,TypeUnicodeString,TypeHugeString,
        TypeSingle,TypeDouble,TypeExtended,
-       TypePointer,TypeInt64,TypeLongint,TypeLongword,TypeSmallint,TypeWord,TypeShortint,
+       TypePointer,TypeInt64,TypeQWord,TypeLongint,TypeLongword,TypeSmallint,TypeWord,TypeShortint,
        TypeByte,TypeBoolean,TypeByteBool,TypeWordBool,TypeLongBool,TypeBool64,
        TypeTOBJECT,TypeTGUID,TypeCExpression,TypeEmpty:PType;
        GlobalSwitches:PGlobalSwitches;
@@ -1161,6 +1163,12 @@ begin
   TypeInt64:=Symbol^.TypeDefinition;
  end else begin
   TypeInt64:=nil;
+ end;
+ Symbol:=GetSymbol(tpsIdentifier+'QWORD');
+ if assigned(Symbol) then begin
+  TypeQWord:=Symbol^.TypeDefinition;
+ end else begin
+  TypeQWord:=nil;
  end;
  Symbol:=GetSymbol(tpsIdentifier+'POINTER');
  if assigned(Symbol) then begin

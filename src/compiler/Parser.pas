@@ -226,7 +226,7 @@ begin
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
- AType^.TypeKind:=TypeKindEnumeration;
+ AType^.TypeKind:=TypeKindBool;
  AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
@@ -244,7 +244,7 @@ begin
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
- AType^.TypeKind:=TypeKindEnumeration;
+ AType^.TypeKind:=TypeKindBool;
  AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
@@ -261,7 +261,7 @@ begin
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
- AType^.TypeKind:=TypeKindEnumeration;
+ AType^.TypeKind:=TypeKindBool;
  AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
@@ -278,7 +278,7 @@ begin
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
- AType^.TypeKind:=TypeKindEnumeration;
+ AType^.TypeKind:=TypeKindBool;
  AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
@@ -295,7 +295,7 @@ begin
  Symbol^.Attributes:=[tsaPublic,tsaPublicUnitSymbol];
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
- AType^.TypeKind:=TypeKindEnumeration;
+ AType^.TypeKind:=TypeKindBool;
  AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
@@ -2356,6 +2356,11 @@ begin
    end else if assigned(NewTreeNode.Right.Return) and (NewTreeNode.Right.Return.TypeDefinition=ttdCEXPRESSION) then begin
     NewTreeNode.Right.Return:=NewTreeNode.Left.Return;
    end;
+   if assigned(NewTreeNode.Left) and assigned(NewTreeNode.Left.Return) then begin
+    NewTreeNode.Return:=NewTreeNode.Left.Return;
+   end else if assigned(NewTreeNode.Right) and assigned(NewTreeNode.Right.Return) then begin
+    NewTreeNode.Return:=NewTreeNode.Right.Return;
+   end;
   end;
   tstAssign:begin
    Scanner.Match(tstAssign);
@@ -4016,7 +4021,9 @@ begin
   TypeName:=tpsIdentifier+Scanner.CurrentIdentifier;
   Symbol:=SymbolManager.GetSymbol(TypeName,ModuleSymbol,CurrentObjectClass);
   if assigned(Symbol) then begin
-   if (Symbol^.SymbolType<>Symbols.tstType) and ((assigned(Symbol^.TypeDefinition) and (Symbol^.TypeDefinition^.TypeDefinition<>ttdEnumerated) and (Symbol^.TypeDefinition^.TypeDefinition<>ttdSubRange) and (Symbol^.TypeDefinition^.TypeDefinition<>ttdCurrency)) or not assigned(Symbol^.TypeDefinition)) then begin
+   if (Symbol^.SymbolType<>Symbols.tstType) and
+      ((assigned(Symbol^.TypeDefinition) and not (Symbol^.TypeDefinition^.TypeDefinition in [ttdEnumerated,ttdSubRange,ttdCurrency])) or
+       not assigned(Symbol^.TypeDefinition)) then begin
     Error.AbortCode(0);
    end;
    Scanner.Match(tstIdentifier);
@@ -6662,14 +6669,14 @@ begin
    CurrentType^.TypeDefinition:=ttdSet;
    CurrentType^.SetOf:=ParseTypeDefinition('');
    case CurrentType^.SetOf^.TypeDefinition of
-    ttdEnumerated,ttdSubRange:begin // ttdEnumerated needed ??? !!! TO FIX !!!
-     LowerValue:=CurrentType^.setof^.LowerLimit;
-     HigherValue:=CurrentType^.setof^.UpperLimit;
+    ttdEnumerated,ttdSubRange,ttdBoolean:begin
+     LowerValue:=CurrentType^.SetOf^.LowerLimit;
+     HigherValue:=CurrentType^.SetOf^.UpperLimit;
      if (LowerValue>=0) and (HigherValue<=255) then begin
       Value:=HigherValue-LowerValue;
       CurrentType^.SetSize:=(Value+7) shr 3;
      end else begin
-      Error.AbortCode(28); // <- ('Set base type out of range'); !!! TO FIX !!!
+      Error.AbortCode(28); 
      end;
     end;
    end;
@@ -6762,21 +6769,44 @@ begin
      CurrentType^.SubRangeType:=Symbols.tstUnsignedChar;
      CurrentType^.LowerLimit:=ord(NewTreeNode.Left.CharValue);
      CurrentType^.UpperLimit:=ord(NewTreeNode.Right.CharValue);
+     CurrentType^.Definition:=SymbolManager.TypeChar;
     end else begin
-     if (LowerValue64Bit>=0) and (HigherValue64Bit<=255) then begin
+     if assigned(NewTreeNode.Return) and ((NewTreeNode.Return=SymbolManager.TypeBoolean) or (NewTreeNode.Return=SymbolManager.TypeByteBool)) then begin
       CurrentType^.SubRangeType:=Symbols.tstUnsigned8Bit;
+      CurrentType^.Definition:=NewTreeNode.Return;
+     end else if assigned(NewTreeNode.Return) and (NewTreeNode.Return=SymbolManager.TypeWordBool) then begin
+      CurrentType^.SubRangeType:=Symbols.tstUnsigned16Bit;
+      CurrentType^.Definition:=SymbolManager.TypeWordBool;
+     end else if assigned(NewTreeNode.Return) and (NewTreeNode.Return=SymbolManager.TypeLongBool) then begin
+      CurrentType^.SubRangeType:=Symbols.tstUnsigned32Bit;
+      CurrentType^.Definition:=SymbolManager.TypeLongBool;
+     end else if assigned(NewTreeNode.Return) and (NewTreeNode.Return=SymbolManager.TypeBool64) then begin
+      CurrentType^.SubRangeType:=Symbols.tstUnsigned64Bit;
+      CurrentType^.Definition:=SymbolManager.TypeBool64;
+     end else if (LowerValue64Bit>=0) and (HigherValue64Bit<=255) then begin
+      CurrentType^.SubRangeType:=Symbols.tstUnsigned8Bit;
+      CurrentType^.Definition:=SymbolManager.TypeByte;
      end else if (LowerValue64Bit>=-128) and (HigherValue64Bit<=127) then begin
       CurrentType^.SubRangeType:=Symbols.tstSigned8Bit;
+      CurrentType^.Definition:=SymbolManager.TypeShortint;
      end else if (LowerValue64Bit>=0) and (HigherValue64Bit<=65535) then begin
       CurrentType^.SubRangeType:=Symbols.tstUnsigned16Bit;
+      CurrentType^.Definition:=SymbolManager.TypeWord;
      end else if (LowerValue64Bit>=-32768) and (HigherValue64Bit<=32767) then begin
       CurrentType^.SubRangeType:=Symbols.tstSigned16Bit;
+      CurrentType^.Definition:=SymbolManager.TypeSmallint;
      end else if (LowerValue64Bit>=0) and (HigherValue64Bit<=$ffffffff) then begin
       CurrentType^.SubRangeType:=Symbols.tstUnsigned32Bit;
+      CurrentType^.Definition:=SymbolManager.TypeLongword;
      end else if (LowerValue64Bit>=low(longint)) and (HigherValue64Bit<=high(longint)) then begin
       CurrentType^.SubRangeType:=Symbols.tstSigned32Bit;
-     end else begin
+      CurrentType^.Definition:=SymbolManager.TypeLongint;
+     end else if LowerValue64Bit<=HigherValue64Bit then begin
       CurrentType^.SubRangeType:=Symbols.tstSigned64Bit;
+      CurrentType^.Definition:=SymbolManager.TypeInt64;
+     end else begin
+      CurrentType^.SubRangeType:=Symbols.tstUnsigned64Bit;
+      CurrentType^.Definition:=SymbolManager.TypeQWord;
      end;
     end;
    end;
@@ -6799,7 +6829,7 @@ begin
     CurrentType^.FloatUpperLimit:=HigherFloatValue;
    end;
    else begin
-    Error.AbortCode(114); // <-- 'Error in expression' !!! TO FIX !!!
+    Error.AbortCode(114); 
    end;
   end;
  end;
