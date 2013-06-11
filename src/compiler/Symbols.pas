@@ -192,7 +192,7 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
 
       TypeKind:longint;
 
-      GeneralTypeInfo:boolean;
+      InitializationTypeInfo:boolean;
 
       GeneralTypeInfoDumped:boolean;
 
@@ -578,8 +578,8 @@ type TSymbolAttribute=(tsaPublic,tsaExtern,tsaVarDmp,tsaVarExt,tsaUsed,
        function AreConstSymbolEqual(SymbolA,SymbolB:PSymbol):boolean;
        procedure AlignRecord(RecordType:PType;DefaultAlignment:longint);
        function SearchProcedureSymbol(Symbol,FirstSymbol:PSymbol;var OK:boolean):PSymbol;
-       function TypeDoNeedTypeInfo(AType:PType):boolean;
-       function TypeDoNeedInitialization(AType:PType):boolean;
+       function TyppeDoNeedInitializationTypeInfo(AType:PType):boolean;
+       function TyppeDoNeedUseInitializationTypeInfo(AType:PType):boolean;
      end;
 
 const ProcedureCallingConventionAttributes:TProcedureAttributes=[tpaSTDCALL,tpaPASCAL,tpaCDECL,tpaSAFECALL,tpaFASTCALL,tpaRegister];
@@ -1636,7 +1636,7 @@ begin
  New(result);
  FillChar(result^,SizeOf(TType),#0);
  result^.TypeKind:=0;
- result^.GeneralTypeInfo:=false;
+ result^.InitializationTypeInfo:=false;
  result^.GeneralTypeInfoDumped:=false;
  result^.RuntimeTypeInfo:=false;
  result^.RuntimeTypeInfoDumped:=false;
@@ -2255,7 +2255,7 @@ begin
  OK:=OK and assigned(result);
 end;
 
-function TSymbolManager.TypeDoNeedTypeInfo(AType:PType):boolean;
+function TSymbolManager.TyppeDoNeedInitializationTypeInfo(AType:PType):boolean;
 var Symbol:PSymbol;
 begin
  result:=false;
@@ -2279,7 +2279,7 @@ begin
     result:=true;
    end;
    ttdArray:begin
-    result:=AType^.DynamicArray or (assigned(AType) and TypeDoNeedTypeInfo(AType^.Definition));
+    result:=AType^.DynamicArray or (assigned(AType) and TyppeDoNeedInitializationTypeInfo(AType^.Definition));
    end;
    ttdRecord:begin
     result:=false;
@@ -2290,7 +2290,7 @@ begin
        tstVariable:begin
         if assigned(Symbol^.TypeDefinition) and
            (Symbol^.TypeDefinition^.TypeDefinition in [ttdVariant,ttdArray,ttdRecord,ttdLongString,ttdObject,ttdClass,ttdInterface]) and
-           TypeDoNeedTypeInfo(Symbol^.TypeDefinition) then begin
+           TyppeDoNeedInitializationTypeInfo(Symbol^.TypeDefinition) then begin
          result:=true;
         end;
        end;
@@ -2326,7 +2326,7 @@ begin
        tstVariable:begin
         if assigned(Symbol^.TypeDefinition) and
            (Symbol^.TypeDefinition^.TypeDefinition in [ttdVariant,ttdArray,ttdRecord,ttdLongString,ttdObject,ttdClass,ttdInterface]) and
-           TypeDoNeedTypeInfo(Symbol^.TypeDefinition) then begin
+           TyppeDoNeedInitializationTypeInfo(Symbol^.TypeDefinition) then begin
          result:=true;
         end;
        end;
@@ -2354,7 +2354,7 @@ begin
  end;
 end;
 
-function TSymbolManager.TypeDoNeedInitialization(AType:PType):boolean;
+function TSymbolManager.TyppeDoNeedUseInitializationTypeInfo(AType:PType):boolean;
 var Symbol:PSymbol;
 begin
  result:=false;
@@ -2378,7 +2378,7 @@ begin
     result:=false;
    end;
    ttdArray:begin
-    result:=AType^.DynamicArray or (assigned(AType) and TypeDoNeedInitialization(AType^.Definition));
+    result:=AType^.DynamicArray or (assigned(AType) and TyppeDoNeedUseInitializationTypeInfo(AType^.Definition));
    end;
    ttdRecord:begin
     result:=false;
@@ -2389,7 +2389,7 @@ begin
        tstVariable:begin
         if assigned(Symbol^.TypeDefinition) and
            (Symbol^.TypeDefinition^.TypeDefinition in [ttdVariant,ttdArray,ttdRecord,ttdLongString,ttdObject,ttdClass,ttdInterface]) and
-           TypeDoNeedInitialization(Symbol^.TypeDefinition) then begin
+           TyppeDoNeedUseInitializationTypeInfo(Symbol^.TypeDefinition) then begin
          result:=true;
         end;
        end;
@@ -2425,7 +2425,7 @@ begin
        tstVariable:begin
         if assigned(Symbol^.TypeDefinition) and
            (Symbol^.TypeDefinition^.TypeDefinition in [ttdVariant,ttdArray,ttdRecord,ttdLongString,ttdObject,ttdClass,ttdInterface]) and
-           TypeDoNeedInitialization(Symbol^.TypeDefinition) then begin
+           TyppeDoNeedUseInitializationTypeInfo(Symbol^.TypeDefinition) then begin
          result:=true;
         end;
        end;

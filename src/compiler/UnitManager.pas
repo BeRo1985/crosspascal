@@ -941,7 +941,7 @@ begin
     exit;
    end;
   end;
-  AType^.GeneralTypeInfo:=(Flags and 128)<>0;
+  AType^.InitializationTypeInfo:=(Flags and 128)<>0;
   if Stream.Read(Flags,SizeOf(byte))<>SizeOf(byte) then begin
    SetLength(UsedUnits,0);
    exit;
@@ -1865,7 +1865,7 @@ begin
   if AType^.ID<>0 then begin
    Flags:=Flags or 64;
   end;
-  if AType^.GeneralTypeInfo then begin
+  if AType^.InitializationTypeInfo then begin
    Flags:=Flags or 128;
   end;
   Stream.WriteByte(Flags);

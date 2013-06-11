@@ -362,8 +362,8 @@ begin
        Target.Add('NULL');
      end;
      else begin
-      if Sym.TypeDefinition.GeneralTypeInfo and SymbolManager.TypeDoNeedInitialization(Sym.TypeDefinition) then begin
-       Target.Add('pasInitialize((void*)&'+GetSymbolName(Sym)+', &'+GetTypeName(Sym.TypeDefinition)+'_GENERAL_TYPEINFO)');
+      if Sym.TypeDefinition.InitializationTypeInfo and SymbolManager.TyppeDoNeedUseInitializationTypeInfo(Sym.TypeDefinition) then begin
+       Target.Add('pasInitialize((void*)&'+GetSymbolName(Sym)+', &'+GetTypeName(Sym.TypeDefinition)+'_INITIALIZATION_TYPEINFO)');
       end;
      end;
     end;
@@ -603,11 +603,11 @@ begin
      begin
       // todo: string-ref checks for arrays
       if Sym.TypeDefinition.DynamicArray then
-        Target.Add('pasFreeArray(&'+GetSymbolName(Sym)+', &'+GetTypeName(Sym.TypeDefinition)+'_GENERAL_TYPEINFO)');
+        Target.Add('pasFreeArray(&'+GetSymbolName(Sym)+', &'+GetTypeName(Sym.TypeDefinition)+'_INITIALIZATION_TYPEINFO)');
      end;
      else begin
-      if Sym.TypeDefinition.GeneralTypeInfo and SymbolManager.TypeDoNeedInitialization(Sym.TypeDefinition) then begin
-       Target.Add('pasFinalize((void*)&'+GetSymbolName(Sym)+', &'+GetTypeName(Sym.TypeDefinition)+'_GENERAL_TYPEINFO)');
+      if Sym.TypeDefinition.InitializationTypeInfo and SymbolManager.TyppeDoNeedUseInitializationTypeInfo(Sym.TypeDefinition) then begin
+       Target.Add('pasFinalize((void*)&'+GetSymbolName(Sym)+', &'+GetTypeName(Sym.TypeDefinition)+'_INITIALIZATION_TYPEINFO)');
       end;
      end;
     end;
@@ -1085,7 +1085,7 @@ begin
       TranslateCode(TreeNode.Left, true);
       FProcCode.Add(', (pasDynArray)',spacesRIGHT);
       TranslateCode(TreeNode.Right);
-      FProcCode.Add(', &'+GetTypeName(TreeNode.Left.Symbol.TypeDefinition)+'_GENERAL_TYPEINFO)');
+      FProcCode.Add(', &'+GetTypeName(TreeNode.Left.Symbol.TypeDefinition)+'_INITIALIZATION_TYPEINFO)');
      end else
      begin
       TranslateCode(TreeNode.Left, true);
@@ -2130,8 +2130,8 @@ begin
          FProcCode.IncTab;
          FProcCode.AddLn('pasZeroMem(tempObject, '+IntToStr(SymbolManager.GetSize(TreeNode.Left.Left.Return.PointerTo.TypeDefinition))+');');
          FProcCode.AddLn('(('+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'*)tempObject)->INTERNAL_FIELD_VMT = (void*)&'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_VMT;');
-         if TreeNode.Left.Left.Return.PointerTo.TypeDefinition.GeneralTypeInfo and SymbolManager.TypeDoNeedInitialization(TreeNode.Left.Left.Return.PointerTo.TypeDefinition) then begin
-          FProcCode.AddLn('pasInitialize(tempObject, &'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_GENERAL_TYPEINFO);');
+         if TreeNode.Left.Left.Return.PointerTo.TypeDefinition.InitializationTypeInfo and SymbolManager.TyppeDoNeedUseInitializationTypeInfo(TreeNode.Left.Left.Return.PointerTo.TypeDefinition) then begin
+          FProcCode.AddLn('pasInitialize(tempObject, &'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_INITIALIZATION_TYPEINFO);');
          end;
          FProcCode.DecTab;
          FProcCode.AddLn('}');
@@ -2140,11 +2140,11 @@ begin
          FProcCode.DecTab;
          FProcCode.AddLn('}');
         end else begin
-         if TreeNode.Left.Left.Return.PointerTo.TypeDefinition.GeneralTypeInfo and SymbolManager.TypeDoNeedInitialization(TreeNode.Left.Left.Return.PointerTo.TypeDefinition) then begin
+         if TreeNode.Left.Left.Return.PointerTo.TypeDefinition.InitializationTypeInfo and SymbolManager.TyppeDoNeedUseInitializationTypeInfo(TreeNode.Left.Left.Return.PointerTo.TypeDefinition) then begin
           FProcCode.AddLn('{');
           FProcCode.IncTab;
           FProcCode.AddLn('void* tempPointer = pasGetMem('+IntToStr(SymbolManager.GetSize(TreeNode.Left.Left.Return.PointerTo.TypeDefinition))+');');
-          FProcCode.AddLn('pasInitialize(tempPointer, &'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_GENERAL_TYPEINFO);');
+          FProcCode.AddLn('pasInitialize(tempPointer, &'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_INITIALIZATION_TYPEINFO);');
           TranslateCode(TreeNode.Left.Left);
           FProcCode.AddLn(' = tempPointer;');
           FProcCode.DecTab;
@@ -2163,8 +2163,8 @@ begin
          FProcCode.IncTab;
          FProcCode.AddLn('pasZeroMem(tempObject, '+IntToStr(SymbolManager.GetSize(TreeNode.Left.Left.Return.PointerTo.TypeDefinition))+');');
          FProcCode.AddLn('(('+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'*)tempObject)->INTERNAL_FIELD_VMT = (void*)&'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_VMT;');
-         if TreeNode.Left.Left.Return.PointerTo.TypeDefinition.GeneralTypeInfo and SymbolManager.TypeDoNeedInitialization(TreeNode.Left.Left.Return.PointerTo.TypeDefinition) then begin
-          FProcCode.AddLn('pasInitialize(tempObject, &'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_GENERAL_TYPEINFO);');
+         if TreeNode.Left.Left.Return.PointerTo.TypeDefinition.InitializationTypeInfo and SymbolManager.TyppeDoNeedUseInitializationTypeInfo(TreeNode.Left.Left.Return.PointerTo.TypeDefinition) then begin
+          FProcCode.AddLn('pasInitialize(tempObject, &'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_INITIALIZATION_TYPEINFO);');
          end;
          FProcCode.Add('if(');
          TranslateCode(TreeNode.Left.Right);
@@ -2202,20 +2202,20 @@ begin
          FProcCode.AddLn(';');
          TranslateCode(TreeNode.Left.Right);
          FProcCode.AddLn(';');
-         if TreeNode.Left.Left.Return.PointerTo.TypeDefinition.GeneralTypeInfo and SymbolManager.TypeDoNeedInitialization(TreeNode.Left.Left.Return.PointerTo.TypeDefinition) then begin
-          FProcCode.AddLn('pasFinalize(tempObject, &'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_GENERAL_TYPEINFO);');
+         if TreeNode.Left.Left.Return.PointerTo.TypeDefinition.InitializationTypeInfo and SymbolManager.TyppeDoNeedUseInitializationTypeInfo(TreeNode.Left.Left.Return.PointerTo.TypeDefinition) then begin
+          FProcCode.AddLn('pasFinalize(tempObject, &'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_INITIALIZATION_TYPEINFO);');
          end;
          FProcCode.AddLn('pasFreeMem(tempObject);');
          FProcCode.DecTab;
          FProcCode.AddLn('}');
         end else begin
-         if TreeNode.Left.Left.Return.PointerTo.TypeDefinition.GeneralTypeInfo and SymbolManager.TypeDoNeedInitialization(TreeNode.Left.Left.Return.PointerTo.TypeDefinition) then begin
+         if TreeNode.Left.Left.Return.PointerTo.TypeDefinition.InitializationTypeInfo and SymbolManager.TyppeDoNeedUseInitializationTypeInfo(TreeNode.Left.Left.Return.PointerTo.TypeDefinition) then begin
           FProcCode.AddLn('{');
           FProcCode.IncTab;
           FProcCode.Add('void* tempPointer = (void*)(');
           TranslateCode(TreeNode.Left.Left);
           FProcCode.AddLn(');');
-          FProcCode.AddLn('pasFinalize(tempPointer, &'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_GENERAL_TYPEINFO);');
+          FProcCode.AddLn('pasFinalize(tempPointer, &'+GetTypeName(TreeNode.Left.Left.Return.PointerTo.TypeDefinition)+'_INITIALIZATION_TYPEINFO);');
           FProcCode.AddLn('pasFreeMem(tempPointer);');
           FProcCode.DecTab;
           FProcCode.AddLn('}');
@@ -2345,17 +2345,17 @@ begin
       end;
       tipTYPEINFO:begin
        if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and not assigned(TreeNode.Left.Right) then begin
-        FProcCode.Add('((void*)(&'+GetTypeName(TreeNode.Left.Left.Return)+'_GENERAL_TYPEINFO))');
+        FProcCode.Add('((void*)(&'+GetTypeName(TreeNode.Left.Left.Return)+'_INITIALIZATION_TYPEINFO))');
        end else begin
         Error.InternalError(201304111953000);
        end;
       end;
       tipINITIALIZE:begin
        if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and not assigned(TreeNode.Left.Right) then begin
-        if TreeNode.Left.Left.Return^.GeneralTypeInfo then begin
+        if TreeNode.Left.Left.Return^.InitializationTypeInfo then begin
          FProcCode.Add('(pasInitialize((void*)(&(');
          TranslateCode(TreeNode.Left.Left);
-         FProcCode.AddLn(')), ((void*)(&'+GetTypeName(TreeNode.Left.Left.Return)+'_GENERAL_TYPEINFO)));');
+         FProcCode.AddLn(')), ((void*)(&'+GetTypeName(TreeNode.Left.Left.Return)+'_INITIALIZATION_TYPEINFO)));');
         end else begin
          if assigned(TreeNode.Left.Left.Return^.Symbol) then begin
           Error.AbortCode(138,CorrectSymbolName(TreeNode.Left.Left.Return^.Symbol^.Name));
@@ -2364,10 +2364,10 @@ begin
          end;
         end;
        end else if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and assigned(TreeNode.Left.Right) and assigned(TreeNode.Left.Right.Left) and assigned(TreeNode.Left.Right.Left.Return) and not assigned(TreeNode.Left.Right.Right) then begin
-        if TreeNode.Left.Left.Return^.GeneralTypeInfo then begin
+        if TreeNode.Left.Left.Return^.InitializationTypeInfo then begin
          FProcCode.Add('(pasInitializeArray((void*)(&(');
          TranslateCode(TreeNode.Left.Left);
-         FProcCode.Add(')), ((void*)(&'+GetTypeName(TreeNode.Left.Left.Return)+'_GENERAL_TYPEINFO)),',spacesRIGHT);
+         FProcCode.Add(')), ((void*)(&'+GetTypeName(TreeNode.Left.Left.Return)+'_INITIALIZATION_TYPEINFO)),',spacesRIGHT);
          TranslateCode(TreeNode.Left.Right.Left);
          FProcCode.AddLn(');');
         end else begin
@@ -2383,10 +2383,10 @@ begin
       end;
       tipFINALIZE:begin
        if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and not assigned(TreeNode.Left.Right) then begin
-        if TreeNode.Left.Left.Return^.GeneralTypeInfo then begin
+        if TreeNode.Left.Left.Return^.InitializationTypeInfo then begin
          FProcCode.Add('(pasFinalize((void*)(&(');
          TranslateCode(TreeNode.Left.Left);
-         FProcCode.AddLn(')), ((void*)(&'+GetTypeName(TreeNode.Left.Left.Return)+'_GENERAL_TYPEINFO)));');
+         FProcCode.AddLn(')), ((void*)(&'+GetTypeName(TreeNode.Left.Left.Return)+'_INITIALIZATION_TYPEINFO)));');
         end else begin
          if assigned(TreeNode.Left.Left.Return^.Symbol) then begin
           Error.AbortCode(138,CorrectSymbolName(TreeNode.Left.Left.Return^.Symbol^.Name));
@@ -2395,10 +2395,10 @@ begin
          end;
         end;
        end else if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and assigned(TreeNode.Left.Right) and assigned(TreeNode.Left.Right.Left) and assigned(TreeNode.Left.Right.Left.Return) and not assigned(TreeNode.Left.Right.Right) then begin
-        if TreeNode.Left.Left.Return^.GeneralTypeInfo then begin
+        if TreeNode.Left.Left.Return^.InitializationTypeInfo then begin
          FProcCode.Add('(pasFinalizeArray((void*)(&(');
          TranslateCode(TreeNode.Left.Left);
-         FProcCode.Add(')), ((void*)(&'+GetTypeName(TreeNode.Left.Left.Return)+'_GENERAL_TYPEINFO)),',spacesRIGHT);
+         FProcCode.Add(')), ((void*)(&'+GetTypeName(TreeNode.Left.Left.Return)+'_INITIALIZATION_TYPEINFO)),',spacesRIGHT);
          TranslateCode(TreeNode.Left.Right.Left);
          FProcCode.AddLn(');');
         end else begin
@@ -3770,7 +3770,7 @@ begin
      DoRuntimeTypeInfo:=Type_^.RuntimeTypeInfo and not Type_^.RuntimeTypeInfoDumped;
      Type_^.RuntimeTypeInfoDumped:=true;
 
-     DoGeneralTypeInfo:=(Type_^.GeneralTypeInfo or not (Type_.TypeKind in [TypeKindUnknown,TypeKindRecord,TypeKindArray])) and not Type_^.GeneralTypeInfoDumped;
+     DoGeneralTypeInfo:=(Type_^.InitializationTypeInfo or not (Type_.TypeKind in [TypeKindUnknown,TypeKindRecord,TypeKindArray])) and not Type_^.GeneralTypeInfoDumped;
      Type_^.GeneralTypeInfoDumped:=true;
 
      if DoRuntimeTypeInfo or DoGeneralTypeInfo then begin
@@ -4335,8 +4335,8 @@ begin
 
      if DoGeneralTypeInfo then begin
 
-      Target.AddLn('extern pasTypeInfo '+Name+'_GENERAL_TYPEINFO;');
-      Target.AddLn('extern pasTypeInfoPointer '+Name+'_GENERAL_TYPEINFO_POINTER;');
+      Target.AddLn('extern pasTypeInfo '+Name+'_INITIALIZATION_TYPEINFO;');
+      Target.AddLn('extern pasTypeInfoPointer '+Name+'_INITIALIZATION_TYPEINFO_POINTER;');
       case Type_.TypeDefinition of
        ttdRecord,ttdObject,ttdClass:begin
         k:=0;
@@ -4394,8 +4394,8 @@ begin
               if not (tsaInternalField in Symbol^.Attributes) then begin
                CodeTarget.AddLn('{');
                CodeTarget.IncTab;
-               if assigned(Symbol^.TypeDefinition) and Symbol^.TypeDefinition^.GeneralTypeInfo then begin
-                CodeTarget.AddLn('(void*)&'+GetTypeName(Symbol^.TypeDefinition)+'_GENERAL_TYPEINFO_POINTER,');
+               if assigned(Symbol^.TypeDefinition) and Symbol^.TypeDefinition^.InitializationTypeInfo then begin
+                CodeTarget.AddLn('(void*)&'+GetTypeName(Symbol^.TypeDefinition)+'_INITIALIZATION_TYPEINFO_POINTER,');
                end else begin
                 CodeTarget.AddLn('(void*)&pasTypeInfoUnknownPointer,');
                end;
@@ -4442,8 +4442,8 @@ begin
         CodeTarget.IncTab;
         CodeTarget.AddLn('{');
         CodeTarget.IncTab;
-        if assigned(Type_^.Definition) and Type_^.Definition^.GeneralTypeInfo then begin
-         CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.Definition)+'_GENERAL_TYPEINFO_POINTER,');
+        if assigned(Type_^.Definition) and Type_^.Definition^.InitializationTypeInfo then begin
+         CodeTarget.AddLn('(void*)&'+GetTypeName(Type_^.Definition)+'_INITIALIZATION_TYPEINFO_POINTER,');
         end else begin
          CodeTarget.AddLn('(void*)&pasTypeInfoUnknownPointer,');
         end;
@@ -4456,7 +4456,7 @@ begin
         CodeTarget.AddLn('};');
        end;
       end;
-      CodeTarget.AddLn('pasTypeInfo '+Name+'_GENERAL_TYPEINFO={');
+      CodeTarget.AddLn('pasTypeInfo '+Name+'_INITIALIZATION_TYPEINFO={');
       CodeTarget.IncTab;
       if (Type_^.TypeKind=TypeKindArray) and Type_^.DynamicArray then begin
        CodeTarget.AddLn(IntToStr(TypeKindDynArray)+',');
@@ -4484,7 +4484,7 @@ begin
       end;
       CodeTarget.DecTab;
       CodeTarget.AddLn('};');
-      CodeTarget.AddLn('pasTypeInfoPointer '+Name+'_GENERAL_TYPEINFO_POINTER = &'+Name+'_GENERAL_TYPEINFO;');
+      CodeTarget.AddLn('pasTypeInfoPointer '+Name+'_INITIALIZATION_TYPEINFO_POINTER = &'+Name+'_INITIALIZATION_TYPEINFO;');
 
      end;
     end;
@@ -4992,7 +4992,7 @@ begin
          // void* vmtAutoTable;
          CodeTarget.AddLn('NULL,');
          // void* vmtInitTable;
-         CodeTarget.AddLn('(void*)&'+Name+'_GENERAL_TYPEINFO,');
+         CodeTarget.AddLn('(void*)&'+Name+'_INITIALIZATION_TYPEINFO,');
          // void* vmtTypeInfo;
          CodeTarget.AddLn('(void*)&'+Name+'_RUNTIME_TYPEINFO,');
          // void* vmtFieldTable;
