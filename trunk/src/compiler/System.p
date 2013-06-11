@@ -328,6 +328,7 @@ procedure Move(var Src; var Dst; Size: Cardinal);
 #define pastkUString 20
 #define pastkHString 21
 #define pastkPointer 22
+#define pastkBool 23
 
 typedef struct pasTypeInfo {
   uint8_t kind;

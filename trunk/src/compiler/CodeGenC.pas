@@ -3814,9 +3814,9 @@ begin
 
      if DoRuntimeTypeInfo then begin
       case Type_.TypeKind of
-       TypeKindInteger,TypeKindAnsiChar,TypeKindEnumeration,TypeKindSet,TypeKindWideChar,TypeKindHugeChar:begin
+       TypeKindInteger,TypeKindAnsiChar,TypeKindEnumeration,TypeKindSet,TypeKindWideChar,TypeKindHugeChar,TypeKindBool:begin
         case Type_.TypeKind of
-         TypeKindEnumeration:begin
+         TypeKindEnumeration,TypeKindBool:begin
           if Type_^.TypeDefinition=ttdBoolean then begin
            NameListString:='False,True';
           end else if (Type_^.TypeDefinition=ttdEnumerated) and assigned(Type_^.Definition) then begin
@@ -3846,11 +3846,11 @@ begin
         Target.AddLn('void* name;');
         Target.AddLn('uint8_t ordType;');
         case Type_.TypeKind of
-         TypeKindInteger,TypeKindAnsiChar,TypeKindEnumeration,TypeKindWideChar,TypeKindHugeChar:begin
+         TypeKindInteger,TypeKindAnsiChar,TypeKindEnumeration,TypeKindWideChar,TypeKindHugeChar,TypeKindBool:begin
           Target.AddLn('int64_t minValue;');
           Target.AddLn('int64_t maxValue;');
           case Type_.TypeKind of
-           TypeKindEnumeration:begin
+           TypeKindEnumeration,TypeKindBool:begin
             Target.AddLn('void* baseType;');
             Target.AddLn('void* nameList;');
            end;
@@ -3903,7 +3903,7 @@ begin
           CodeTarget.AddLn(IntToStr(Type_^.LowerLimit)+'ll,');
           CodeTarget.AddLn(IntToStr(Type_^.UpperLimit)+'ll');
          end;
-         TypeKindEnumeration:begin
+         TypeKindEnumeration,TypeKindBool:begin
           case Type_.SubRangeType of
            tstSigned8Bit:begin
             CodeTarget.AddLn(IntToStr(otSByte)+',');
