@@ -1998,7 +1998,7 @@ begin
   end;
   tipINITIALIZE:begin
    if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and not assigned(TreeNode.Left.Right) then begin
-    if not TreeNode.Left.Left.Return^.GeneralTypeInfo then begin
+    if not TreeNode.Left.Left.Return^.InitializationTypeInfo then begin
      if assigned(TreeNode.Left.Left.Return^.Symbol) then begin
       Error.AbortCode(138,CorrectSymbolName(TreeNode.Left.Left.Return^.Symbol^.Name));
      end else begin
@@ -2006,7 +2006,7 @@ begin
      end;
     end;
    end else if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and assigned(TreeNode.Left.Right) and assigned(TreeNode.Left.Right.Left) and assigned(TreeNode.Left.Right.Left.Return) and not assigned(TreeNode.Left.Right.Right) then begin
-    if not TreeNode.Left.Left.Return^.GeneralTypeInfo then begin
+    if not TreeNode.Left.Left.Return^.InitializationTypeInfo then begin
      if assigned(TreeNode.Left.Left.Return^.Symbol) then begin
       Error.AbortCode(138,CorrectSymbolName(TreeNode.Left.Left.Return^.Symbol^.Name));
      end else begin
@@ -2021,7 +2021,7 @@ begin
   end;
   tipFINALIZE:begin
    if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and not assigned(TreeNode.Left.Right) then begin
-    if not TreeNode.Left.Left.Return^.GeneralTypeInfo then begin
+    if not TreeNode.Left.Left.Return^.InitializationTypeInfo then begin
      if assigned(TreeNode.Left.Left.Return^.Symbol) then begin
       Error.AbortCode(138,CorrectSymbolName(TreeNode.Left.Left.Return^.Symbol^.Name));
      end else begin
@@ -2029,7 +2029,7 @@ begin
      end;
     end;
    end else if assigned(TreeNode.Left) and assigned(TreeNode.Left.Left) and assigned(TreeNode.Left.Left.Return) and assigned(TreeNode.Left.Right) and assigned(TreeNode.Left.Right.Left) and assigned(TreeNode.Left.Right.Left.Return) and not assigned(TreeNode.Left.Right.Right) then begin
-    if not TreeNode.Left.Left.Return^.GeneralTypeInfo then begin
+    if not TreeNode.Left.Left.Return^.InitializationTypeInfo then begin
      if assigned(TreeNode.Left.Left.Return^.Symbol) then begin
       Error.AbortCode(138,CorrectSymbolName(TreeNode.Left.Left.Return^.Symbol^.Name));
      end else begin

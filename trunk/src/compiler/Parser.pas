@@ -212,7 +212,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindPointer;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdPointer;
@@ -227,7 +227,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindEnumeration;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  BooleanType:=AType;
@@ -245,7 +245,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindEnumeration;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdBoolean;
@@ -262,7 +262,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindEnumeration;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdBoolean;
@@ -279,7 +279,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindEnumeration;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdBoolean;
@@ -296,7 +296,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindEnumeration;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdBoolean;
@@ -333,7 +333,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindInt64;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdSubRange;
@@ -352,7 +352,7 @@ begin
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  Symbol^.TypeDefinition:=AType;
  AType^.TypeKind:=TypeKindUInt64;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdSubRange;
  AType^.SubRangeType:=Symbols.tstUnsigned64Bit;
@@ -377,7 +377,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindInteger;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdSubRange;
@@ -395,7 +395,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindInteger;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdSubRange;
@@ -412,7 +412,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindInteger;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdSubRange;
  AType^.SubRangeType:=Symbols.tstSigned32Bit;
@@ -430,7 +430,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindInteger;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdSubRange;
@@ -447,7 +447,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindInteger;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdSubRange;
@@ -464,7 +464,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindInteger;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdSubRange;
@@ -481,7 +481,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindInteger;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdSubRange;
@@ -498,7 +498,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindInteger;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdSubRange;
@@ -579,7 +579,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindAnsiChar;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  AType^.TypeDefinition:=ttdSubRange;
  AType^.SubRangeType:=Symbols.tstUnsignedChar;
  AType^.LowerLimit:=0;
@@ -608,7 +608,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindPointer;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  AType^.TypeDefinition:=ttdPointer;
  AType^.PointerTo:=LastSymbol;
 
@@ -638,7 +638,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindWideChar;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdSubRange;
@@ -656,7 +656,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindPointer;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdPointer;
@@ -671,7 +671,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindHugeChar;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdSubRange;
@@ -689,7 +689,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindPointer;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdPointer;
@@ -704,7 +704,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindFloat;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdFloat;
@@ -719,7 +719,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindFloat;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdFloat;
@@ -734,7 +734,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindFloat;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdFloat;
@@ -749,7 +749,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindFloat;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdFloat;
@@ -764,7 +764,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindUnknown;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdFile;
@@ -779,7 +779,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindLString;
- AType^.GeneralTypeInfo:=true;
+ AType^.InitializationTypeInfo:=true;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdLongString;
@@ -796,7 +796,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindWString;
- AType^.GeneralTypeInfo:=true;
+ AType^.InitializationTypeInfo:=true;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdLongString;
@@ -813,7 +813,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindHString;
- AType^.GeneralTypeInfo:=true;
+ AType^.InitializationTypeInfo:=true;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdLongString;
@@ -830,7 +830,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindUString;
- AType^.GeneralTypeInfo:=true;
+ AType^.InitializationTypeInfo:=true;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdLongString;
@@ -847,7 +847,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindUnknown;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdCExpression;
@@ -861,7 +861,7 @@ begin
  AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  AType^.TypeKind:=TypeKindUnknown;
- AType^.GeneralTypeInfo:=false;
+ AType^.InitializationTypeInfo:=false;
  Symbol^.TypeDefinition:=AType;
  AType^.Symbol:=Symbol;
  AType^.TypeDefinition:=ttdEmpty;
@@ -1195,7 +1195,7 @@ begin
  result:=nil;
  AType:=ParseTypeDefinition('');
  if assigned(AType) then begin
-  if AType^.GeneralTypeInfo then begin
+  if AType^.InitializationTypeInfo then begin
    result:=TreeManager.GenerateParameterNode(TreeManager.GenerateTypeInfoNode(AType),nil);
   end else begin
    if assigned(AType^.Symbol) then begin
@@ -1978,7 +1978,7 @@ begin
          AType^.TypeDefinition:=ttdSubRange;
          AType^.SubRangeType:=tstUnsignedChar;
          AType^.TypeKind:=TypeKindAnsiChar;
-         AType^.GeneralTypeInfo:=false;
+         AType^.InitializationTypeInfo:=false;
          AType^.LowerLimit:=0;
          AType^.UpperLimit:=255;
          NewTreeNode.Return:=AType;
@@ -2517,7 +2517,7 @@ begin
      CastType^.OpenArray:=true;
      CastType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
      CastType^.TypeKind:=TypeKindArray;
-     CastType^.GeneralTypeInfo:=true;
+     CastType^.InitializationTypeInfo:=true;
     end;
 {   CastType^.Range^.TypeDefinition:=ttdSubRange;
     CastType^.Range^.SubRangeType:=tstSigned32Bit;
@@ -4587,7 +4587,7 @@ begin
  result:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  result^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  result^.TypeKind:=TypeKindUnknown;
- result^.GeneralTypeInfo:=false;
+ result^.InitializationTypeInfo:=false;
  result^.TypeDefinition:=ttdProcedure;
  Symbol:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  Symbol^.ParameterSuffix:='';
@@ -4632,7 +4632,7 @@ begin
  result:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  result^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  result^.TypeKind:=TypeKindRecord;
- result^.GeneralTypeInfo:=false;
+ result^.InitializationTypeInfo:=false;
  result^.TypeDefinition:=ttdObject;
  result^.RecordAlignment:=0;
  result^.RecordPacked:=IsPacked or (LocalSwitches^.Alignment=1);
@@ -4829,7 +4829,7 @@ begin
 
  result^.PortabilityDirectives:=ParsePortabilityDirectives;
 
- result^.GeneralTypeInfo:=SymbolManager.TypeDoNeedTypeInfo(result);
+ result^.InitializationTypeInfo:=SymbolManager.TyppeDoNeedInitializationTypeInfo(result);
 
  SymbolManager.VariableType:=OldVariableType;
  SymbolManager.CurrentList:=OldList;
@@ -4960,13 +4960,13 @@ begin
  if assigned(ForwardClass) then begin
   result:=ForwardClass^.TypeDefinition;
   result^.WasForwardedClass:=true;
-  result^.GeneralTypeInfo:=false;
+  result^.InitializationTypeInfo:=false;
  end else begin
   result:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
   result^.TypeKind:=TypeKindClass;
   result^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
   result^.WasForwardedClass:=false;
-  result^.GeneralTypeInfo:=false;
+  result^.InitializationTypeInfo:=false;
  end;
  if not IsForward then begin
   if IsSystemUnit then begin
@@ -5275,7 +5275,7 @@ begin
 
  result^.PortabilityDirectives:=ParsePortabilityDirectives;
 
- result^.GeneralTypeInfo:=SymbolManager.TypeDoNeedTypeInfo(result);
+ result^.InitializationTypeInfo:=SymbolManager.TyppeDoNeedInitializationTypeInfo(result);
 
  SymbolManager.VariableType:=OldVariableType;
  SymbolManager.CurrentList:=OldList;
@@ -5329,7 +5329,7 @@ begin
  result:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
  result^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
  result^.TypeKind:=TypeKindInterface;
- result^.GeneralTypeInfo:=false;
+ result^.InitializationTypeInfo:=false;
  result^.TypeDefinition:=ttdInterface;
  result^.RecordAlignment:=0;
  result^.RecordPacked:=IsPacked or (LocalSwitches^.Alignment=1);
@@ -5411,7 +5411,7 @@ begin
 
  result^.PortabilityDirectives:=ParsePortabilityDirectives;
 
- result^.GeneralTypeInfo:=SymbolManager.TypeDoNeedTypeInfo(result);
+ result^.InitializationTypeInfo:=SymbolManager.TyppeDoNeedInitializationTypeInfo(result);
 
  SymbolManager.AlignRecord(result,LocalSwitches^.Alignment);
  
@@ -5494,7 +5494,7 @@ begin
      AType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
      AType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
      AType^.TypeKind:=TypeKindUnknown;
-     AType^.GeneralTypeInfo:=false;
+     AType^.InitializationTypeInfo:=false;
      TypeName:='EMPTY';
   // TypeName:=tpsOverload;
      AType^.TypeDefinition:=ttdEmpty;
@@ -6296,7 +6296,7 @@ begin
     CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
     CurrentType^.TypeDefinition:=ttdEnumerated;
     CurrentType^.TypeKind:=TypeKindEnumeration;
-    CurrentType^.GeneralTypeInfo:=true;
+    CurrentType^.InitializationTypeInfo:=true;
     StartType:=CurrentType;
     Value:=0;
     First:=true;
@@ -6355,7 +6355,7 @@ begin
      CurrentType:=CurrentType^.Definition;
      CurrentType^.TypeDefinition:=ttdEnumerated;
      CurrentType^.TypeKind:=TypeKindEnumeration;
-     CurrentType^.GeneralTypeInfo:=true;
+     CurrentType^.InitializationTypeInfo:=true;
     end;
     CurrentType:=StartType;
     CurrentType.LowerLimit:=LowerValue;
@@ -6388,7 +6388,7 @@ begin
     CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
     CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
     CurrentType^.TypeKind:=TypeKindString;
-    CurrentType^.GeneralTypeInfo:=true;
+    CurrentType^.InitializationTypeInfo:=true;
     CurrentType^.TypeDefinition:=ttdShortString;
     CurrentType^.Length:=Value;
     CurrentType^.OpenString:=false;
@@ -6397,7 +6397,7 @@ begin
      Value:=255;
      CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
      CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
-     CurrentType^.GeneralTypeInfo:=true;
+     CurrentType^.InitializationTypeInfo:=true;
      CurrentType^.TypeKind:=TypeKindString;
      CurrentType^.TypeDefinition:=ttdShortString;
      CurrentType^.Length:=Value;
@@ -6408,7 +6408,7 @@ begin
        CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
        CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
        CurrentType^.TypeKind:=TypeKindWString;
-       CurrentType^.GeneralTypeInfo:=true;
+       CurrentType^.InitializationTypeInfo:=true;
        CurrentType^.TypeDefinition:=ttdLongString;
        CurrentType^.LongStringType:=Symbols.tstUnsignedWideChar;
        CurrentType^.LongStringCodePage:=$ffff;
@@ -6417,7 +6417,7 @@ begin
        CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
        CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
        CurrentType^.TypeKind:=TypeKindLString;
-       CurrentType^.GeneralTypeInfo:=true;
+       CurrentType^.InitializationTypeInfo:=true;
        CurrentType^.TypeDefinition:=ttdLongString;
        CurrentType^.LongStringType:=Symbols.tstUnsignedChar;
        CurrentType^.LongStringCodePage:=$ffff;
@@ -6428,7 +6428,7 @@ begin
       CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
       CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
       CurrentType^.TypeKind:=TypeKindString;
-      CurrentType^.GeneralTypeInfo:=true;
+      CurrentType^.InitializationTypeInfo:=true;
       CurrentType^.TypeDefinition:=ttdShortString;
       CurrentType^.Length:=Value;
       CurrentType^.OpenString:=false;
@@ -6439,7 +6439,7 @@ begin
     CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
     CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
     CurrentType^.TypeKind:=TypeKindString;
-    CurrentType^.GeneralTypeInfo:=true;
+    CurrentType^.InitializationTypeInfo:=true;
     CurrentType^.TypeDefinition:=ttdShortString;
     CurrentType^.Length:=Value;
     CurrentType^.OpenString:=false;
@@ -6447,7 +6447,7 @@ begin
     CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
     CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
     CurrentType^.TypeKind:=TypeKindWString;
-    CurrentType^.GeneralTypeInfo:=true;
+    CurrentType^.InitializationTypeInfo:=true;
     CurrentType^.TypeDefinition:=ttdLongString;
     CurrentType^.LongStringType:=Symbols.tstUnsignedWideChar;
     CurrentType^.LongStringCodePage:=$ffff;
@@ -6456,7 +6456,7 @@ begin
     CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
     CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
     CurrentType^.TypeKind:=TypeKindUString;
-    CurrentType^.GeneralTypeInfo:=true;
+    CurrentType^.InitializationTypeInfo:=true;
     CurrentType^.TypeDefinition:=ttdLongString;
     CurrentType^.LongStringType:=Symbols.tstUnsignedWideChar;
     CurrentType^.LongStringCodePage:=$ffff;
@@ -6466,7 +6466,7 @@ begin
     CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
     CurrentType^.TypeKind:=TypeKindHString;
     CurrentType^.TypeDefinition:=ttdLongString;
-    CurrentType^.GeneralTypeInfo:=true;
+    CurrentType^.InitializationTypeInfo:=true;
     CurrentType^.LongStringCodePage:=$ffff;
     CurrentType^.LongStringType:=Symbols.tstUnsignedHugeChar;
     CurrentType^.LongStringReferenceCounted:=true;
@@ -6474,7 +6474,7 @@ begin
     CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
     CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
     CurrentType^.TypeKind:=TypeKindLString;
-    CurrentType^.GeneralTypeInfo:=true;
+    CurrentType^.InitializationTypeInfo:=true;
     CurrentType^.TypeDefinition:=ttdLongString;
     CurrentType^.LongStringType:=Symbols.tstUnsignedChar;
     CurrentType^.LongStringCodePage:=$ffff;
@@ -6504,7 +6504,7 @@ begin
       CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
       CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
       CurrentType^.TypeKind:=TypeKindWString;
-      CurrentType^.GeneralTypeInfo:=true;
+      CurrentType^.InitializationTypeInfo:=true;
       CurrentType^.TypeDefinition:=ttdLongString;
       CurrentType^.LongStringType:=Symbols.tstUnsignedWideChar;
       CurrentType^.LongStringCodePage:=$ffff;
@@ -6513,7 +6513,7 @@ begin
       CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
       CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
       CurrentType^.TypeKind:=TypeKindLString;
-      CurrentType^.GeneralTypeInfo:=true;
+      CurrentType^.InitializationTypeInfo:=true;
       CurrentType^.TypeDefinition:=ttdLongString;
       CurrentType^.LongStringType:=Symbols.tstUnsignedChar;
       CurrentType^.LongStringCodePage:=$ffff;
@@ -6524,7 +6524,7 @@ begin
      CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
      CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
      CurrentType^.TypeKind:=TypeKindString;
-     CurrentType^.GeneralTypeInfo:=true;
+     CurrentType^.InitializationTypeInfo:=true;
      CurrentType^.TypeDefinition:=ttdShortString;
      CurrentType^.Length:=Value;
     end;
@@ -6584,7 +6584,7 @@ begin
    CurrentType^.PortabilityDirectives:=ParsePortabilityDirectives;
    CurrentType:=StartType;
    while assigned(CurrentType) do begin
-    CurrentType^.GeneralTypeInfo:=SymbolManager.TypeDoNeedTypeInfo(CurrentType);
+    CurrentType^.InitializationTypeInfo:=SymbolManager.TyppeDoNeedInitializationTypeInfo(CurrentType);
     if CurrentType^.TypeDefinition=ttdArray then begin
      CurrentType:=CurrentType^.Definition;
     end else begin
@@ -6598,7 +6598,7 @@ begin
    CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
    CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
    CurrentType^.TypeKind:=TypeKindUnknown;
-   CurrentType^.GeneralTypeInfo:=false;
+   CurrentType^.InitializationTypeInfo:=false;
    CurrentType^.TypeDefinition:=ttdFile;
    if Scanner.CurrentToken=tstOF then begin
     Scanner.Match(tstOF);
@@ -6614,7 +6614,7 @@ begin
    CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
    CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
    CurrentType^.TypeKind:=TypeKindPointer;
-   CurrentType^.GeneralTypeInfo:=false;
+   CurrentType^.InitializationTypeInfo:=false;
    CurrentType^.TypeDefinition:=ttdPointer;
    CurrentType^.PointerTo:=SymbolManager.NewSymbol(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
    Symbol:=SymbolManager.GetSymbol(tpsIdentifier+Scanner.CurrentIdentifier,ModuleSymbol,CurrentObjectClass);
@@ -6658,7 +6658,7 @@ begin
    CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
    CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
    CurrentType^.TypeKind:=TypeKindSet;
-   CurrentType^.GeneralTypeInfo:=true;
+   CurrentType^.InitializationTypeInfo:=true;
    CurrentType^.TypeDefinition:=ttdSet;
    CurrentType^.SetOf:=ParseTypeDefinition('');
    case CurrentType^.SetOf^.TypeDefinition of
@@ -6693,7 +6693,7 @@ begin
    end;}
    Scanner.Match(tstEND);
    CurrentType^.PortabilityDirectives:=ParsePortabilityDirectives;
-   CurrentType^.GeneralTypeInfo:=SymbolManager.TypeDoNeedTypeInfo(CurrentType);
+   CurrentType^.InitializationTypeInfo:=SymbolManager.TyppeDoNeedInitializationTypeInfo(CurrentType);
   end;
   tstOBJECT:begin
    CurrentType:=ParseObjectDeclaration(Name,IsPacked);
@@ -6750,7 +6750,7 @@ begin
     CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
     CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
     CurrentType^.TypeKind:=TypeKindInteger;
-    CurrentType^.GeneralTypeInfo:=true;
+    CurrentType^.InitializationTypeInfo:=true;
     CurrentType^.TypeDefinition:=ttdSubRange;
     CurrentType^.LowerLimit:=NewTreeNode.Left.Value;
     CurrentType^.UpperLimit:=NewTreeNode.Right.Value;
@@ -6784,7 +6784,7 @@ begin
     CurrentType:=SymbolManager.NewType(ModuleSymbol,CurrentObjectClass,MakeSymbolsPublic);
     CurrentType^.RuntimeTypeInfo:=LocalSwitches^.TypeInfo;
     CurrentType^.TypeKind:=TypeKindFloat;
-    CurrentType^.GeneralTypeInfo:=true;
+    CurrentType^.InitializationTypeInfo:=true;
     CurrentType^.TypeDefinition:=ttdFloat;
     LowerFloatValue:=NewTreeNode.Left.FloatValue;
     HigherFloatValue:=NewTreeNode.Right.FloatValue;
