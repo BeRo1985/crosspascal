@@ -1,6 +1,6 @@
 program withtest;
 {$apptype console}
-
+ 
 type TTestRecord=record
       a:longint;
      end;
