@@ -1,3 +1,7 @@
+> [!IMPORTANT]
+> The primary repository has moved to [git.rosseaux.net/BeRo1985/crosspascal](https://git.rosseaux.net/BeRo1985/crosspascal).
+> This GitHub repository is kept up-to-date via push mirroring.
+
 # CrossPascal
 
 ## Abstract
